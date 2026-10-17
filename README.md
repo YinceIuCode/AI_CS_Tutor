@@ -21,7 +21,7 @@ AI_CS_Tutor/
 ```
 
 ## 🛠 Installation & Setup
-Prerequisites: **Node.js (v18+)** and **Python (v3.10+)**.
+Prerequisites: **Node.js (v20+)** and **Python (v3.11+)**.
 
 1. Running the Backend (Port 8000)
 Open a new terminal and run the following commands:
@@ -55,7 +55,7 @@ npm install
 # Start the development server
 npm run dev
 ```
-The application will be running at: `http://localhost:3000/dashboard`
+The application will be running at: `http://localhost:3000/`
 
 ## 👥 Team Members
 * Hoàng Đức Vinh (Team Leader)
