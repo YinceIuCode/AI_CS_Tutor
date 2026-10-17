@@ -147,3 +147,25 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+
+# =========================
+# Python & FastAPI Backend
+# =========================
+# Cache của Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Môi trường ảo (Virtual Environments)
+venv/
+env/
+.venv/
+api/venv/
+
+# =========================
+# IDE & OS (Hệ điều hành)
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
