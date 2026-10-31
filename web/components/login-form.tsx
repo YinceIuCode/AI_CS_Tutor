@@ -2,24 +2,30 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
+  AlertCircle,
+  ArrowLeft,
   Brain,
   Code2,
   Eye,
   EyeOff,
   GitFork,
   Home,
+  Info,
+  Loader2,
   Lock,
   Mail,
   User,
 } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
 
 /**
  * Cấu hình đường dẫn điều hướng cho trang Đăng nhập / Đăng ký (Auth).
  */
 export const AUTH_LINKS = {
-  backToHome: "/landing",
+  backToHome: "/",
   forgotPassword: "/auth/forgot-password",
   afterLoginRedirect: "/roadmap",
   afterSignupRedirect: "/roadmap",
@@ -37,13 +43,101 @@ export function LoginForm({
   defaultTab = "login",
   ...props
 }: LoginFormProps) {
+  const router = useRouter()
+  const {
+    isAuthenticated,
+    isInitializing,
+    isLoading,
+    login,
+    register,
+    loginAsGuest,
+  } = useAuth()
+
   const [activeTab, setActiveTab] = React.useState<AuthTab>(defaultTab)
   const [showPassword, setShowPassword] = React.useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
+
+  // Controlled form state
+  const [fullName, setFullName] = React.useState("")
+  const [email, setEmail] = React.useState("")
+  const [password, setPassword] = React.useState("")
+  const [confirmPassword, setConfirmPassword] = React.useState("")
+
+  // Error & Info feedback messages
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
+  const [infoMessage, setInfoMessage] = React.useState<string | null>(null)
+
+  // Nếu người dùng đã có phiên đăng nhập và truy cập /auth thì chuyển về /roadmap
+  React.useEffect(() => {
+    if (!isInitializing && isAuthenticated) {
+      router.replace(AUTH_LINKS.afterLoginRedirect)
+    }
+  }, [isInitializing, isAuthenticated, router])
+
+  const handleTabSwitch = (nextTab: AuthTab) => {
+    setActiveTab(nextTab)
+    setErrorMessage(null)
+    setInfoMessage(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setErrorMessage(null)
+    setInfoMessage(null)
+
+    try {
+      if (activeTab === "login") {
+        await login(email, password)
+        router.push(AUTH_LINKS.afterLoginRedirect)
+      } else {
+        await register({
+          fullName,
+          email,
+          password,
+          confirmPassword,
+        })
+        router.push(AUTH_LINKS.afterSignupRedirect)
+      }
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Authentication failed. Please check your input."
+      )
+    }
+  }
+
+  const handleGuestLogin = async () => {
+    setErrorMessage(null)
+    setInfoMessage(null)
+    try {
+      await loginAsGuest()
+      router.push(AUTH_LINKS.continueAsGuest)
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Could not start Guest session."
+      )
+    }
+  }
+
+  const handleGoogleSignInClick = () => {
+    setErrorMessage(null)
+    setInfoMessage("Google Sign-In is not configured yet.")
+  }
+
+  const handleForgotPasswordClick = () => {
+    setErrorMessage(null)
+    setInfoMessage(
+      "Password recovery requires Backend and Email Service integration, which is not configured yet."
+    )
+  }
 
   return (
     <div
       className={cn(
-        "relative flex min-h-svh flex-col justify-between overflow-hidden bg-[#15161E] px-5 py-5 font-sans text-[#A9B1D6] selection:bg-[#7AA2F7]/30 selection:text-[#C0CAF5] md:px-9 md:py-6",
+        "relative flex min-h-svh w-full items-center justify-center overflow-x-hidden bg-[#15161E] px-4 py-4 font-sans text-[#A9B1D6] selection:bg-[#7AA2F7]/30 selection:text-[#C0CAF5] sm:px-6 lg:h-svh lg:overflow-hidden lg:py-6",
         className
       )}
       {...props}
@@ -51,62 +145,52 @@ export function LoginForm({
       {/* Hiệu ứng quầng sáng nền Tokyo Night */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-[18%] left-[8%] h-[420px] w-[420px] rounded-full bg-[#7AA2F7]/12 blur-[130px]"
+        className="pointer-events-none absolute top-[15%] left-[8%] h-[400px] w-[400px] rounded-full bg-[#7AA2F7]/12 blur-[130px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-[10%] bottom-[12%] h-[460px] w-[460px] rounded-full bg-[#7DCFFF]/10 blur-[140px]"
+        className="pointer-events-none absolute right-[10%] bottom-[12%] h-[420px] w-[420px] rounded-full bg-[#7DCFFF]/10 blur-[140px]"
       />
 
-      {/* ==================== THANH ĐIỀU HƯỚNG TRÊN (TOP HEADER BAR) ==================== */}
-      <header className="relative z-10 mx-auto w-full max-w-[1400px]">
-        <nav className="flex items-center justify-between rounded-xl border border-[#292E42] bg-[#1A1B26]/95 px-6 py-3.5 shadow-lg backdrop-blur-md">
-          {/* Logo AlgoPath */}
-          <Link
-            href={AUTH_LINKS.backToHome}
-            className="flex items-center gap-3 transition-opacity hover:opacity-90"
-          >
-            <span className="size-8 shrink-0 rounded-full bg-gradient-to-tr from-[#7AA2F7] to-[#7DCFFF] shadow-[0_0_16px_rgba(122,162,247,0.45)]" />
-            <span className="text-lg font-bold tracking-tight text-[#C0CAF5]">
-              AlgoPath
-            </span>
-          </Link>
-
-          {/* Nút Back to Home */}
-          <Link
-            href={AUTH_LINKS.backToHome}
-            className="inline-flex items-center gap-2 text-xs font-medium text-[#A9B1D6] transition-colors hover:text-[#C0CAF5]"
-          >
-            <Home className="size-4 text-[#7AA2F7]" />
-            <span>Back to Home</span>
-          </Link>
-        </nav>
-      </header>
-
-      {/* ==================== KHUNG THẺ CHÍNH 2 CỘT (MAIN SPLIT CARD) ==================== */}
-      <main className="relative z-10 mx-auto my-auto flex w-full max-w-[1180px] items-center justify-center py-8">
+      {/* ==================== KHUNG THẺ CHÍNH 2 CỘT CĂN GIỮA MÀN HÌNH ==================== */}
+      <main className="relative z-10 mx-auto flex w-full max-w-[1100px] items-center justify-center">
         <div className="grid w-full grid-cols-1 overflow-hidden rounded-2xl border border-[#292E42] bg-[#1A1B26]/90 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md lg:grid-cols-12">
-          {/* -------------------- CỘT TRÁI: THÔNG ĐIỆP & CÂY NHỊ PHÂN -------------------- */}
-          <div className="flex flex-col justify-between border-b border-[#292E42] bg-[#15161E]/45 p-8 sm:p-10 lg:col-span-6 lg:border-r lg:border-b-0 lg:p-12">
-            {/* Tiêu đề & mô tả */}
+          {/* -------------------- CỘT TRÁI: THƯƠNG HIỆU, THÔNG ĐIỆP & CÂY NHỊ PHÂN -------------------- */}
+          <div className="flex flex-col justify-between border-b border-[#292E42] bg-[#15161E]/45 p-6 sm:p-8 lg:col-span-6 lg:border-r lg:border-b-0 lg:px-10 lg:py-8">
             <div>
-              <h1 className="text-3xl leading-[1.2] font-extrabold tracking-tight sm:text-4xl lg:text-[40px]">
+              <div className="mb-5 flex items-center justify-between">
+                <Link
+                  href={AUTH_LINKS.backToHome}
+                  className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-90"
+                >
+                  <span className="size-7 shrink-0 rounded-full bg-gradient-to-tr from-[#7AA2F7] to-[#7DCFFF] shadow-[0_0_14px_rgba(122,162,247,0.45)]" />
+                  <span className="text-base font-bold tracking-tight text-[#C0CAF5]">
+                    AlgoPath
+                  </span>
+                </Link>
+
+                <span className="rounded-full border border-[#292E42] bg-[#1A1B26] px-3 py-1 font-mono text-[10px] text-[#7AA2F7]">
+                  DSA Learning Platform
+                </span>
+              </div>
+
+              <h1 className="text-2xl leading-[1.2] font-extrabold tracking-tight sm:text-3xl lg:text-[36px]">
                 <span className="block text-[#C0CAF5]">
                   Learn DSA by <span className="text-[#7DCFFF]">thinking,</span>
                 </span>
                 <span className="mt-1 block text-[#7AA2F7]">not copying.</span>
               </h1>
-              <p className="mt-4 max-w-[400px] text-sm leading-relaxed text-[#A9B1D6]">
+              <p className="mt-3 max-w-[390px] text-xs leading-relaxed text-[#A9B1D6] sm:text-sm">
                 Build algorithmic confidence with guided practice and Socratic
                 AI hints.
               </p>
             </div>
 
-            {/* Sơ đồ Cây Nhị Phân (8 -> 4, 12 -> 2, 6, 10, 14) đúng theo mẫu thiết kế */}
-            <div className="my-6 flex items-center justify-center select-none">
+            {/* Sơ đồ Cây Nhị Phân (8 -> 4, 12 -> 2, 6, 10, 14) nối tâm vuông góc tiếp tuyến */}
+            <div className="my-4 flex items-center justify-center select-none">
               <svg
-                viewBox="0 0 380 230"
-                className="h-[220px] w-full max-w-[380px] overflow-visible"
+                viewBox="0 0 380 220"
+                className="h-[185px] w-full max-w-[360px] overflow-visible sm:h-[200px]"
                 aria-label="Binary Search Tree Illustration"
               >
                 <defs>
@@ -126,7 +210,6 @@ export function LoginForm({
                   </filter>
                 </defs>
 
-                {/* Các hạt sáng trang trí nhỏ xung quanh cây giống bản mẫu */}
                 <circle
                   cx="95"
                   cy="45"
@@ -172,69 +255,61 @@ export function LoginForm({
                   fill="#7AA2F7"
                   fillOpacity="0.4"
                 />
-                <circle
-                  cx="260"
-                  cy="210"
-                  r="2"
-                  fill="#7AA2F7"
-                  fillOpacity="0.5"
-                />
 
-                {/* Các cạnh nối của cây (8 -> 4, 12 -> 2, 6, 10, 14) nối chuẩn tiếp điểm đường tròn (vuông góc 90° với tiếp tuyến) */}
                 <g strokeWidth="1.8" strokeLinecap="round">
                   {[
                     {
                       x1: 190,
-                      y1: 44,
-                      r1: 23,
+                      y1: 42,
+                      r1: 22,
                       x2: 122,
-                      y2: 112,
-                      r2: 22,
+                      y2: 108,
+                      r2: 21,
                       color: "#7DCFFF",
                     },
                     {
                       x1: 190,
-                      y1: 44,
-                      r1: 23,
+                      y1: 42,
+                      r1: 22,
                       x2: 258,
-                      y2: 112,
-                      r2: 22,
+                      y2: 108,
+                      r2: 21,
                       color: "#7AA2F7",
                     },
                     {
                       x1: 122,
-                      y1: 112,
-                      r1: 22,
+                      y1: 108,
+                      r1: 21,
                       x2: 78,
-                      y2: 180,
-                      r2: 20,
+                      y2: 174,
+                      r2: 19,
                       color: "#7DCFFF",
                     },
                     {
                       x1: 122,
-                      y1: 112,
-                      r1: 22,
+                      y1: 108,
+                      r1: 21,
                       x2: 162,
-                      y2: 180,
-                      r2: 20,
+                      y2: 174,
+                      r2: 19,
                       color: "#7DCFFF",
                     },
                     {
                       x1: 258,
-                      y1: 112,
-                      r1: 22,
+                      y1: 108,
+                      r1: 21,
                       x2: 218,
-                      y2: 180,
-                      r2: 20,
+                      y2: 174,
+                      r2: 19,
                       color: "#7AA2F7",
                     },
                     {
                       x1: 258,
-                      y1: 112,
-                      r1: 22,
+                      y1: 108,
+                      r1: 21,
                       x2: 302,
-                      y2: 180,
-                      r2: 20,
+                      y2: 174,
+                      r2: 19,
                       color: "#7AA2F7",
                     },
                   ].map((edge, idx) => {
@@ -256,61 +331,60 @@ export function LoginForm({
                   })}
                 </g>
 
-                {/* Các đỉnh (Nodes: 8, 4, 12, 2, 6, 10, 14) */}
                 {[
                   {
                     val: "8",
                     x: 190,
-                    y: 44,
-                    r: 22,
+                    y: 42,
+                    r: 21,
                     stroke: "#7DCFFF",
                     glow: "#7DCFFF",
                   },
                   {
                     val: "4",
                     x: 122,
-                    y: 112,
-                    r: 21,
+                    y: 108,
+                    r: 20,
                     stroke: "#7DCFFF",
                     glow: "#7DCFFF",
                   },
                   {
                     val: "12",
                     x: 258,
-                    y: 112,
-                    r: 21,
+                    y: 108,
+                    r: 20,
                     stroke: "#7AA2F7",
                     glow: "#7AA2F7",
                   },
                   {
                     val: "2",
                     x: 78,
-                    y: 180,
-                    r: 19,
+                    y: 174,
+                    r: 18,
                     stroke: "#7DCFFF",
                     glow: "#7DCFFF",
                   },
                   {
                     val: "6",
                     x: 162,
-                    y: 180,
-                    r: 19,
+                    y: 174,
+                    r: 18,
                     stroke: "#7DCFFF",
                     glow: "#7DCFFF",
                   },
                   {
                     val: "10",
                     x: 218,
-                    y: 180,
-                    r: 19,
+                    y: 174,
+                    r: 18,
                     stroke: "#7DCFFF",
                     glow: "#7DCFFF",
                   },
                   {
                     val: "14",
                     x: 302,
-                    y: 180,
-                    r: 19,
+                    y: 174,
+                    r: 18,
                     stroke: "#C7A9FF",
                     glow: "#7AA2F7",
                   },
@@ -319,7 +393,6 @@ export function LoginForm({
                     key={node.val}
                     transform={`translate(${node.x}, ${node.y})`}
                   >
-                    {/* Vòng sáng nhẹ quanh Node */}
                     <circle
                       r={node.r + 2}
                       fill="none"
@@ -338,7 +411,7 @@ export function LoginForm({
                       y="5"
                       textAnchor="middle"
                       fill="#C0CAF5"
-                      fontSize="14"
+                      fontSize="13.5"
                       fontWeight="700"
                     >
                       {node.val}
@@ -368,13 +441,40 @@ export function LoginForm({
           </div>
 
           {/* -------------------- CỘT PHẢI: BIỂU MẪU LOG IN / SIGN UP -------------------- */}
-          <div className="flex flex-col justify-center p-8 sm:p-10 lg:col-span-6 lg:p-12">
-            <div className="mx-auto w-full max-w-[420px]">
+          <div className="flex flex-col justify-center p-6 sm:p-8 lg:col-span-6 lg:px-10 lg:py-7">
+            <div className="mx-auto w-full max-w-[410px]">
+              {/* Nút quay về trang chủ tích hợp trực tiếp trong khung đăng nhập / đăng ký */}
+              <div className="mb-3 flex items-center justify-between">
+                <Link
+                  href={AUTH_LINKS.backToHome}
+                  className="group inline-flex items-center gap-2 rounded-lg border border-[#292E42] bg-[#15161E]/80 px-3 py-1.5 text-xs font-medium text-[#A9B1D6] transition-all hover:border-[#7AA2F7]/60 hover:bg-[#283457]/40 hover:text-[#C0CAF5]"
+                >
+                  <ArrowLeft className="size-3.5 text-[#7AA2F7] transition-transform group-hover:-translate-x-0.5" />
+                  <Home className="size-3.5 text-[#7AA2F7]" />
+                  <span>Back to Home</span>
+                </Link>
+
+                {activeTab === "login" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail("student@algopath.demo")
+                      setPassword("Demo1234")
+                      setErrorMessage(null)
+                      setInfoMessage(null)
+                    }}
+                    className="cursor-pointer rounded-md border border-[#292E42] bg-[#15161E]/80 px-2.5 py-1 font-mono text-[10px] text-[#7DCFFF] transition-colors hover:border-[#7AA2F7]/60"
+                  >
+                    Fill Demo Account
+                  </button>
+                )}
+              </div>
+
               {/* Tiêu đề chào mừng */}
-              <h2 className="text-2xl font-bold tracking-tight text-[#C0CAF5] sm:text-3xl">
+              <h2 className="text-2xl font-bold tracking-tight text-[#C0CAF5]">
                 Welcome to AlgoPath
               </h2>
-              <p className="mt-1.5 text-sm text-[#A9B1D6]">
+              <p className="mt-1 text-xs text-[#A9B1D6]">
                 {activeTab === "login"
                   ? "Your next step in mastering DSA starts here."
                   : "Create an account to build your personalized DSA Skill Tree."}
@@ -384,15 +484,15 @@ export function LoginForm({
               <div
                 role="tablist"
                 aria-label="Authentication mode"
-                className="mt-6 grid grid-cols-2 rounded-full border border-[#292E42] bg-[#15161E] p-1"
+                className="mt-3.5 grid grid-cols-2 rounded-full border border-[#292E42] bg-[#15161E] p-1"
               >
                 <button
                   type="button"
                   role="tab"
                   aria-selected={activeTab === "login"}
-                  onClick={() => setActiveTab("login")}
+                  onClick={() => handleTabSwitch("login")}
                   className={cn(
-                    "cursor-pointer rounded-full py-2.5 text-xs font-semibold transition-all",
+                    "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
                     activeTab === "login"
                       ? "bg-[#7AA2F7] font-bold text-[#15161E] shadow-[0_0_20px_rgba(122,162,247,0.3)]"
                       : "text-[#A9B1D6] hover:text-[#C0CAF5]"
@@ -404,9 +504,9 @@ export function LoginForm({
                   type="button"
                   role="tab"
                   aria-selected={activeTab === "signup"}
-                  onClick={() => setActiveTab("signup")}
+                  onClick={() => handleTabSwitch("signup")}
                   className={cn(
-                    "cursor-pointer rounded-full py-2.5 text-xs font-semibold transition-all",
+                    "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
                     activeTab === "signup"
                       ? "bg-[#7AA2F7] font-bold text-[#15161E] shadow-[0_0_20px_rgba(122,162,247,0.3)]"
                       : "text-[#A9B1D6] hover:text-[#C0CAF5]"
@@ -416,12 +516,32 @@ export function LoginForm({
                 </button>
               </div>
 
+              {/* Thông báo Lỗi hoặc Thông tin (Google Sign-In / Forgot Password) */}
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="mt-3 flex items-start gap-2 rounded-xl border border-[#DB4B4B]/60 bg-[#DB4B4B]/12 px-3 py-2 text-[11px] leading-snug text-[#FF9E64]"
+                >
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-[#DB4B4B]" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
+              {infoMessage && (
+                <div
+                  role="status"
+                  className="mt-3 flex items-start gap-2 rounded-xl border border-[#7AA2F7]/50 bg-[#7AA2F7]/12 px-3 py-2 text-[11px] leading-snug text-[#C0CAF5]"
+                >
+                  <Info className="mt-0.5 size-3.5 shrink-0 text-[#7DCFFF]" />
+                  <span>{infoMessage}</span>
+                </div>
+              )}
+
               {/* Form nhập thông tin */}
               <form
-                className="mt-6 space-y-4"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                }}
+                className="mt-3.5 space-y-2.5"
+                onSubmit={handleSubmit}
+                noValidate
               >
                 {/* Trường Họ tên (Chỉ hiển thị khi chọn tab Sign Up) */}
                 {activeTab === "signup" && (
@@ -432,11 +552,13 @@ export function LoginForm({
                     >
                       Full Name
                     </label>
-                    <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-4 transition-colors focus-within:border-[#7AA2F7]">
+                    <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3.5 transition-colors focus-within:border-[#7AA2F7]">
                       <User className="size-4 shrink-0 text-[#565F89]" />
                       <input
                         id="auth-name"
                         type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
                         placeholder="Your full name"
                         required
                         className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
@@ -453,74 +575,163 @@ export function LoginForm({
                   >
                     Email
                   </label>
-                  <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-4 transition-colors focus-within:border-[#7AA2F7]">
+                  <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3.5 transition-colors focus-within:border-[#7AA2F7]">
                     <Mail className="size-4 shrink-0 text-[#565F89]" />
                     <input
                       id="auth-email"
                       type="email"
-                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="student@algopath.demo"
                       required
                       className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
                     />
                   </div>
                 </div>
 
-                {/* Trường Password */}
-                <div>
-                  <label
-                    htmlFor="auth-password"
-                    className="block text-xs font-semibold text-[#C0CAF5]"
-                  >
-                    Password
-                  </label>
-                  <div className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-4 transition-colors focus-within:border-[#7AA2F7]">
-                    <Lock className="size-4 shrink-0 text-[#565F89]" />
-                    <input
-                      id="auth-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      required
-                      className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
-                      className="cursor-pointer text-[#565F89] transition-colors hover:text-[#A9B1D6]"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Liên kết Forgot password? */}
-                  {activeTab === "login" && (
-                    <div className="mt-2 flex justify-end">
-                      <Link
-                        href={AUTH_LINKS.forgotPassword}
-                        className="text-xs font-medium text-[#7AA2F7] transition-colors hover:text-[#8DB0FF]"
+                {/* Trường Password & Confirm Password */}
+                {activeTab === "login" ? (
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label
+                        htmlFor="auth-password"
+                        className="block text-xs font-semibold text-[#C0CAF5]"
+                      >
+                        Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleForgotPasswordClick}
+                        className="cursor-pointer text-[11px] font-medium text-[#7AA2F7] transition-colors hover:text-[#8DB0FF]"
                       >
                         Forgot password?
-                      </Link>
+                      </button>
                     </div>
-                  )}
-                </div>
+                    <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3.5 transition-colors focus-within:border-[#7AA2F7]">
+                      <Lock className="size-4 shrink-0 text-[#565F89]" />
+                      <input
+                        id="auth-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        required
+                        className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                        className="cursor-pointer text-[#565F89] transition-colors hover:text-[#A9B1D6]"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div>
+                      <label
+                        htmlFor="auth-password"
+                        className="block text-xs font-semibold text-[#C0CAF5]"
+                      >
+                        Password
+                      </label>
+                      <div className="mt-1 flex h-9.5 items-center gap-2 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3 transition-colors focus-within:border-[#7AA2F7]">
+                        <Lock className="size-3.5 shrink-0 text-[#565F89]" />
+                        <input
+                          id="auth-password"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Min. 8 chars"
+                          required
+                          className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                          className="cursor-pointer text-[#565F89] transition-colors hover:text-[#A9B1D6]"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="size-3.5" />
+                          ) : (
+                            <Eye className="size-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="auth-confirm-password"
+                        className="block text-xs font-semibold text-[#C0CAF5]"
+                      >
+                        Confirm Password
+                      </label>
+                      <div className="mt-1 flex h-9.5 items-center gap-2 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3 transition-colors focus-within:border-[#7AA2F7]">
+                        <Lock className="size-3.5 shrink-0 text-[#565F89]" />
+                        <input
+                          id="auth-confirm-password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repeat password"
+                          required
+                          className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword((prev) => !prev)
+                          }
+                          aria-label={
+                            showConfirmPassword
+                              ? "Hide confirm password"
+                              : "Show confirm password"
+                          }
+                          className="cursor-pointer text-[#565F89] transition-colors hover:text-[#A9B1D6]"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="size-3.5" />
+                          ) : (
+                            <Eye className="size-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Nút Submit chính (Log In / Sign Up) */}
                 <button
                   type="submit"
-                  className="mt-2 inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-[#7AA2F7] text-xs font-bold text-[#15161E] shadow-[0_0_25px_rgba(122,162,247,0.25)] transition-all hover:bg-[#8DB0FF] hover:shadow-[0_0_32px_rgba(122,162,247,0.4)]"
+                  disabled={isLoading}
+                  className="mt-1 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#7AA2F7] text-xs font-bold text-[#15161E] shadow-[0_0_25px_rgba(122,162,247,0.25)] transition-all hover:bg-[#8DB0FF] hover:shadow-[0_0_32px_rgba(122,162,247,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {activeTab === "login" ? "Log In" : "Sign Up"}
+                  {isLoading && <Loader2 className="size-4 animate-spin" />}
+                  <span>
+                    {isLoading
+                      ? activeTab === "login"
+                        ? "Logging in..."
+                        : "Creating account..."
+                      : activeTab === "login"
+                        ? "Log In"
+                        : "Sign Up"}
+                  </span>
                 </button>
 
                 {/* Đường kẻ phân cách "or continue with" */}
-                <div className="relative flex items-center py-2">
+                <div className="relative flex items-center py-0.5">
                   <div className="grow border-t border-[#292E42]" />
                   <span className="mx-3 shrink-0 text-[11px] text-[#565F89]">
                     or continue with
@@ -531,7 +742,9 @@ export function LoginForm({
                 {/* Nút Continue with Google */}
                 <button
                   type="button"
-                  className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/85 text-xs font-semibold text-[#C0CAF5] transition-colors hover:border-[#414868] hover:bg-[#15161E]"
+                  disabled={isLoading}
+                  onClick={handleGoogleSignInClick}
+                  className="inline-flex h-9.5 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#292E42] bg-[#15161E]/85 text-xs font-semibold text-[#C0CAF5] transition-colors hover:border-[#414868] hover:bg-[#15161E] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -558,23 +771,25 @@ export function LoginForm({
                   <span>Continue with Google</span>
                 </button>
 
-                {/* Nút Login as Guest (Trải nghiệm nhanh không cần tài khoản) */}
-                <Link
-                  href={AUTH_LINKS.continueAsGuest}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-dashed border-[#414868] bg-transparent text-xs font-semibold text-[#A9B1D6] transition-all hover:border-[#7DCFFF] hover:bg-[#7DCFFF]/8 hover:text-[#C0CAF5]"
+                {/* Nút Continue as Guest (Thông qua Auth Service thống nhất) */}
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={handleGuestLogin}
+                  className="inline-flex h-9.5 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#414868] bg-transparent text-xs font-semibold text-[#A9B1D6] transition-all hover:border-[#7DCFFF] hover:bg-[#7DCFFF]/8 hover:text-[#C0CAF5] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <User className="size-4 shrink-0 text-[#7DCFFF]" />
                   <span>Continue as Guest</span>
-                </Link>
+                </button>
 
                 {/* Dòng chuyển đổi tạo tài khoản / đăng nhập ở dưới cùng */}
-                <p className="pt-2 text-center text-xs text-[#A9B1D6]">
+                <p className="pt-0.5 text-center text-xs text-[#A9B1D6]">
                   {activeTab === "login" ? (
                     <>
                       New to AlgoPath?{" "}
                       <button
                         type="button"
-                        onClick={() => setActiveTab("signup")}
+                        onClick={() => handleTabSwitch("signup")}
                         className="cursor-pointer font-semibold text-[#7AA2F7] underline underline-offset-4 transition-colors hover:text-[#8DB0FF]"
                       >
                         Create an account
@@ -585,7 +800,7 @@ export function LoginForm({
                       Already have an account?{" "}
                       <button
                         type="button"
-                        onClick={() => setActiveTab("login")}
+                        onClick={() => handleTabSwitch("login")}
                         className="cursor-pointer font-semibold text-[#7AA2F7] underline underline-offset-4 transition-colors hover:text-[#8DB0FF]"
                       >
                         Log in
@@ -598,9 +813,6 @@ export function LoginForm({
           </div>
         </div>
       </main>
-
-      {/* Khoảng đệm nhỏ dưới chân trang để cân đối bố cục */}
-      <div className="h-2" />
     </div>
   )
 }
