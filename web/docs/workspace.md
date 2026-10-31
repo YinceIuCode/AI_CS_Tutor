@@ -81,6 +81,6 @@ Các đường dẫn điều hướng sang trang khác được cấu hình tậ
 
 | Thành phần / Nút bấm | Khóa trong `WORKSPACE_LINKS` | Giá trị mặc định | Mô tả điều hướng |
 | :--- | :--- | :---: | :--- |
-| **Logo `AlgoPath` (góc trái Header)** | `WORKSPACE_LINKS.brand` | `"/landing"` | Quay về trang giới thiệu Landing |
+| **Logo `AlgoPath` (góc trái Header)** | `WORKSPACE_LINKS.brand` | `"/"` | Quay về trang chủ Landing (`/`) |
 | **Nút `← Back to Skill Tree` (cột trái)** | `WORKSPACE_LINKS.backToSkillTree` | `"/roadmap"` | Quay lại màn hình sơ đồ cây Roadmap |
 | **Avatar `Duc Vinh Hoang` (góc phải Header)** | `WORKSPACE_LINKS.profile` | `"/auth"` | Chuyển tới trang tài khoản / đăng nhập |

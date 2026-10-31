@@ -6,8 +6,9 @@ Tài liệu này trình bày chi tiết thiết kế trang **Landing Screen (Alg
 
 ## 1. Vị Trí File & Đường Dẫn Truy Cập
 
-- **File mã nguồn Landing Screen:** [`web/app/landing/page.tsx`](file:///d:/HCMUS_Subject/CT/AI_CS_Tutor/web/app/landing/page.tsx)
-- **URL khi chạy server (`npm run dev`):** `http://localhost:3000/landing`
+- **File mã nguồn trang chủ (Root Landing Screen):** [`web/app/page.tsx`](file:///d:/HCMUS_Subject/CT/AI_CS_Tutor/web/app/page.tsx)
+- **File route tương thích (Alias):** [`web/app/landing/page.tsx`](file:///d:/HCMUS_Subject/CT/AI_CS_Tutor/web/app/landing/page.tsx)
+- **URL khi chạy server (`npm run dev`):** `http://localhost:3000/` (hoặc `http://localhost:3000/landing`)
 
 ---
 
@@ -66,11 +67,11 @@ Giao diện sử dụng đúng hệ màu **Tokyo Night Dark** từ bảng màu t
 
 ## 4. Hướng Dẫn Gán `href` Điều Hướng Sang Trang Khác (`LANDING_LINKS`)
 
-Tất cả các nút bấm và thẻ có thể điều hướng đều được quản lý tập trung tại hằng số [`LANDING_LINKS`](file:///d:/HCMUS_Subject/CT/AI_CS_Tutor/web/app/landing/page.tsx#L15-L27) ở đầu file [`web/app/landing/page.tsx`](file:///d:/HCMUS_Subject/CT/AI_CS_Tutor/web/app/landing/page.tsx):
+Tất cả các nút bấm và thẻ có thể điều hướng đều được quản lý tập trung tại hằng số [`LANDING_LINKS`](file:///d:/HCMUS_Subject/CT/AI_CS_Tutor/web/app/page.tsx#L15-L27) ở đầu file [`web/app/page.tsx`](file:///d:/HCMUS_Subject/CT/AI_CS_Tutor/web/app/page.tsx):
 
 | Tên nút / Thành phần | Vị trí trên màn hình | Khóa trong `LANDING_LINKS` | Giá trị `href` mặc định | Mô tả trang đích |
 | :--- | :--- | :--- | :--- | :--- |
-| **Logo + Chữ `AlgoPath`** | Góc trái trên Navbar | `LANDING_LINKS.brand` | `"/landing"` | Trang giới thiệu Landing |
+| **Logo + Chữ `AlgoPath`** | Góc trái trên Navbar | `LANDING_LINKS.brand` | `"/"` | Trang chủ Landing |
 | **Liên kết `Features`** | Giữa Navbar | `LANDING_LINKS.features` | `"#features"` | Cuộn xuống khu vực thẻ tính năng |
 | **Liên kết `How It Works`** | Giữa Navbar | `LANDING_LINKS.howItWorks` | `"#how-it-works"` | Cuộn tới phần hướng dẫn |
 | **Nút `Log In`** | Góc phải trên Navbar | `LANDING_LINKS.login` | `"/auth"` | Trang đăng nhập (mở tab Log In) |
