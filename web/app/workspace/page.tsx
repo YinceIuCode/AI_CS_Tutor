@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
 import Editor, { type OnMount, type BeforeMount } from "@monaco-editor/react"
 import {
   AlertTriangle,
@@ -26,108 +27,22 @@ import {
   Square,
   X,
 } from "lucide-react"
+import { UserProfileMenu } from "@/components/user-profile-menu"
+import { useAuth } from "@/hooks/useAuth"
+import { useUserProgress } from "@/hooks/useUserProgress"
 import { cn } from "@/lib/utils"
+import { resolveWorkspaceSession } from "@/services/roadmapService"
 
 /**
  * Cấu hình các đường dẫn điều hướng (href) trong trang Workspace.
  */
 export const WORKSPACE_LINKS = {
-  brand: "/landing",
+  brand: "/",
   backToSkillTree: "/roadmap",
   profile: "/auth",
 } as const
 
-/**
- * 3 trạng thái hiển thị chính ở khu vực trung tâm (được điều khiển bởi thanh điều hướng bên trái):
- * - "theory": Task 1 - Core Theory & Big-O (Mặc định mở đầu tiên khi vào trang)
- * - "quiz"  : Task 2 - Quiz: Balance Factor (Mặc định chưa chọn đáp án nào)
- * - "code"  : Task 3 - Code: Right Rotation (Hiển thị trọn vẹn Editor + Code Analysis + Visualization trên 1 màn hình)
- */
-export type WorkspaceMode = "theory" | "quiz" | "code"
-
-const INITIAL_CPP_CODE = `#include <iostream>
-using namespace std;
-
-struct Node {
-    int key, height;
-    Node *left, *right;
-    Node(int k) : key(k), height(1), left(nullptr), right(nullptr) {}
-};
-
-int height(Node* n) {
-    return n ? n->height : 0;
-}
-
-int getBalance(Node* n) {
-    return n ? height(n->left) - height(n->right) : 0;
-}
-
-Node* rotateRight(Node* y) {
-    Node* x = y->left;
-    Node* T2 = x->right;
-
-    x->right = y;
-    y->left = T2;
-
-    y->height = max(height(y->left), height(y->right)) + 1;
-    x->height = max(height(x->left), height(x->right)) + 1;
-
-    return x;
-}`
-
-const QUIZ_OPTIONS = [
-  {
-    id: "A",
-    text: "Balance Factor = +2 (Requires Right Rotation)",
-    isCorrect: true,
-  },
-  {
-    id: "B",
-    text: "Balance Factor = +2 (Requires Left Rotation)",
-    isCorrect: false,
-  },
-  {
-    id: "C",
-    text: "Balance Factor = -2 (Requires Right Rotation)",
-    isCorrect: false,
-  },
-  {
-    id: "D",
-    text: "Balance Factor = +1 (Tree is already balanced)",
-    isCorrect: false,
-  },
-] as const
-
-const THEORY_CARDS = [
-  {
-    badge: "01",
-    title: "AVL Balance Factor Invariant",
-    detail:
-      "Balance Factor (BF) = Height(Left Subtree) - Height(Right Subtree). Every node in an AVL tree must strictly satisfy BF ∈ {-1, 0, +1}.",
-    tag: "Invariant",
-  },
-  {
-    badge: "02",
-    title: "Left-Heavy Imbalance (BF = +2 → Right Rotation)",
-    detail:
-      "When inserting into the left-left (LL) subtree causes BF = +2, a single Right Rotation around the unbalanced root restores height balance in O(1) time.",
-    tag: "LL Rotation",
-  },
-  {
-    badge: "03",
-    title: "Right-Heavy Imbalance (BF = -2 → Left Rotation)",
-    detail:
-      "When inserting into the right-right (RR) subtree causes BF = -2, a single Left Rotation pulls the right child up as the new subtree root.",
-    tag: "RR Rotation",
-  },
-  {
-    badge: "04",
-    title: "Guaranteed O(log N) Worst-Case Complexity",
-    detail:
-      "By bounding tree height to ~1.44 log2(N), AVL trees prevent degenerate O(N) skewed chains on sorted inputs for Search, Insert, and Delete.",
-    tag: "Big-O Guaranteed",
-  },
-] as const
+export type WorkspaceMode = "theory" | "quiz" | "coding"
 
 /**
  * Hàm tính tọa độ đoạn thẳng nối tâm 2 đường tròn (luôn thẳng và vuông góc 90° với tiếp tuyến).
@@ -189,28 +104,163 @@ const handleEditorBeforeMount: BeforeMount = (monaco) => {
   })
 }
 
-export default function WorkspacePage() {
-  // 1. Mặc định bắt đầu ở Task 1 ("theory")
-  const [activeMode, setActiveMode] = React.useState<WorkspaceMode>("theory")
+interface WorkspaceViewProps {
+  nodeId?: string
+  taskId?: string
+}
 
-  // 2. Ở Task 2 ("quiz"), ban đầu chưa chọn đáp án nào (null)
+export function WorkspaceView({
+  nodeId: propNodeId,
+  taskId: propTaskId,
+}: WorkspaceViewProps) {
+  const router = useRouter()
+  const params = useParams<{ nodeId?: string; taskId?: string }>()
+  const { isAuthenticated, isInitializing } = useAuth()
+  const {
+    userProgress,
+    isProgressLoaded,
+    saveQuizAnswer,
+    saveCodeDraft,
+    saveHints,
+    completeTask,
+  } = useUserProgress()
+
+  const resolvedNodeId = propNodeId || params?.nodeId || "avl-tree"
+  const resolvedTaskId = propTaskId || params?.taskId || ""
+
+  // Protected Route: Yêu cầu phiên người dùng hoặc Guest
+  React.useEffect(() => {
+    if (!isInitializing && !isAuthenticated) {
+      router.replace("/auth")
+    }
+  }, [isInitializing, isAuthenticated, router])
+
+  const { node, activeTask, taskDetail } = React.useMemo(
+    () => resolveWorkspaceSession(resolvedNodeId, resolvedTaskId, userProgress),
+    [resolvedNodeId, resolvedTaskId, userProgress]
+  )
+
+  const activeMode: WorkspaceMode = (activeTask?.type ||
+    taskDetail?.type ||
+    "theory") as WorkspaceMode
+
+  // Ở Task Quiz, khôi phục đáp án đã chọn từ tiến độ của User (nếu có)
   const [selectedOption, setSelectedOption] = React.useState<string | null>(
     null
   )
 
-  // 3. State cho phần Monaco Code Editor (Task 3)
-  const [code, setCode] = React.useState<string>(INITIAL_CPP_CODE)
+  // State cho phần Monaco Code Editor (khôi phục code đang viết dở hoặc dùng initialCode)
+  const [code, setCode] = React.useState<string>(
+    taskDetail?.initialCode || ""
+  )
+  const [isCodeSavedBadge, setIsCodeSavedBadge] = React.useState<boolean>(false)
   const [cursorPos, setCursorPos] = React.useState<{
     line: number
     col: number
   }>({
-    line: 19,
-    col: 18,
+    line: 18,
+    col: 1,
   })
   const [hintsRemaining, setHintsRemaining] = React.useState<number>(2)
 
+  // Đồng bộ đáp án Quiz, bản nháp Code và số lượt Hint từ bộ nhớ của User khi đổi Task hoặc khi F5
+  React.useEffect(() => {
+    const savedQuiz = userProgress.quizAnswers?.[activeTask.id]
+    setSelectedOption(savedQuiz?.selectedOption ?? null)
+
+    const savedCode = userProgress.codeDrafts?.[activeTask.id]?.code
+    if (typeof savedCode === "string") {
+      setCode(savedCode)
+    } else if (taskDetail?.initialCode) {
+      setCode(taskDetail.initialCode)
+    }
+
+    const savedHintCount = userProgress.hintsRemaining?.[activeTask.id]
+    setHintsRemaining(
+      typeof savedHintCount === "number" ? savedHintCount : 2
+    )
+    setIsCodeSavedBadge(false)
+  }, [
+    node.id,
+    activeTask.id,
+    taskDetail?.initialCode,
+    isProgressLoaded,
+    userProgress.userId,
+  ])
+
+  const handleSelectQuizOption = React.useCallback(
+    (optionId: string, isCorrect: boolean) => {
+      setSelectedOption(optionId)
+      saveQuizAnswer(activeTask.id, {
+        selectedOption: optionId,
+        isSubmitted: isCorrect,
+      })
+      if (isCorrect) {
+        completeTask(activeTask.id)
+      }
+    },
+    [activeTask.id, saveQuizAnswer, completeTask]
+  )
+
+  const handleCodeChange = React.useCallback(
+    (nextValue: string | undefined) => {
+      const nextCode = nextValue ?? ""
+      setCode(nextCode)
+      saveCodeDraft(activeTask.id, {
+        code: nextCode,
+        language: taskDetail?.language || "C++",
+      })
+      setIsCodeSavedBadge(true)
+    },
+    [activeTask.id, saveCodeDraft, taskDetail?.language]
+  )
+
+  const handleCompleteAndAdvance = React.useCallback(
+    (targetTaskId?: string) => {
+      completeTask(activeTask.id)
+      if (targetTaskId) {
+        router.push(
+          `/workspace/${encodeURIComponent(node.id)}/${encodeURIComponent(
+            targetTaskId
+          )}`
+        )
+      }
+    },
+    [completeTask, activeTask.id, router, node.id]
+  )
+
+  const handleSubmitCode = React.useCallback(() => {
+    saveCodeDraft(activeTask.id, {
+      code,
+      language: taskDetail?.language || "C++",
+      isSubmitted: true,
+    })
+    completeTask(activeTask.id)
+    setIsCodeSavedBadge(true)
+  }, [activeTask.id, code, completeTask, saveCodeDraft, taskDetail?.language])
+
+  const handleSelectTask = React.useCallback(
+    (targetTaskId: string) => {
+      router.push(
+        `/workspace/${encodeURIComponent(node.id)}/${encodeURIComponent(
+          targetTaskId
+        )}`
+      )
+    },
+    [router, node.id]
+  )
+
+  // Tìm Task kế tiếp trong cùng Node để điều hướng khi bấm nút "Next: Take Quiz" hoặc "Submit"
+  const nextTask = React.useMemo(() => {
+    const currentIndex = node.tasks.findIndex((t) => t.id === activeTask.id)
+    if (currentIndex >= 0 && currentIndex + 1 < node.tasks.length) {
+      return node.tasks[currentIndex + 1]
+    }
+    return null
+  }, [node.tasks, activeTask.id])
+
   const handleEditorDidMount: OnMount = (editor) => {
-    editor.setPosition({ lineNumber: 19, column: 18 })
+    editor.setPosition({ lineNumber: 18, column: 1 })
     editor.onDidChangeCursorPosition((e) => {
       setCursorPos({
         line: e.position.lineNumber,
@@ -219,10 +269,28 @@ export default function WorkspacePage() {
     })
   }
 
+  const selectedQuizOptionObj = React.useMemo(() => {
+    if (!selectedOption || !Array.isArray(taskDetail?.options)) return null
+    return (
+      taskDetail.options.find(
+        (opt: { id: string; text: string; isCorrect: boolean }) =>
+          opt.id === selectedOption
+      ) || null
+    )
+  }, [selectedOption, taskDetail])
+
+  if (isInitializing || !isAuthenticated) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-[#15161E] font-mono text-xs text-[#7DCFFF]">
+        Verifying session...
+      </div>
+    )
+  }
+
   return (
-    <div className="relative flex min-h-svh flex-col overflow-x-hidden bg-[#15161E] px-4 py-3 font-sans text-[#A9B1D6] selection:bg-[#7AA2F7]/30 selection:text-[#C0CAF5] lg:h-svh lg:max-h-svh lg:overflow-hidden md:px-6">
+    <div className="relative flex min-h-svh flex-col overflow-x-hidden bg-[#15161E] px-4 py-3 font-sans text-[#A9B1D6] selection:bg-[#7AA2F7]/30 selection:text-[#C0CAF5] md:px-6 lg:h-svh lg:max-h-svh lg:overflow-hidden">
       {/* ==================== THANH HEADER TRÊN CÙNG (TOP NAVBAR) ==================== */}
-      <header className="relative z-10 mx-auto w-full max-w-[1480px] shrink-0">
+      <header className="relative z-40 mx-auto w-full max-w-[1480px] shrink-0">
         <nav className="flex items-center justify-between gap-4 rounded-2xl border border-[#292E42] bg-[#1A1B26]/95 px-5 py-2.5 shadow-lg backdrop-blur-md">
           {/* Logo AlgoPath */}
           <Link
@@ -250,25 +318,14 @@ export default function WorkspacePage() {
             </kbd>
           </div>
 
-          {/* User Profile bên phải */}
-          <Link
-            href={WORKSPACE_LINKS.profile}
-            className="flex items-center gap-2.5 rounded-full py-1 pr-2 pl-1 transition-colors hover:bg-[#292E42]/40"
-          >
-            <span className="flex size-7 items-center justify-center rounded-full bg-[#7AA2F7] text-xs font-bold text-[#15161E]">
-              D
-            </span>
-            <span className="hidden text-xs font-bold text-[#C0CAF5] sm:inline">
-              Duc Vinh Hoang
-            </span>
-            <ChevronDown className="size-3.5 text-[#A9B1D6]" />
-          </Link>
+          {/* User Profile bên phải (Đồng bộ từ AuthContext) */}
+          <UserProfileMenu />
         </nav>
       </header>
 
       {/* ==================== KHÔNG GIAN LÀM VIỆC 3 CỘT (MAIN WORKSPACE) ==================== */}
       <main className="relative z-10 mx-auto mt-3 grid min-h-0 w-full max-w-[1480px] flex-1 grid-cols-1 gap-3.5 lg:grid-cols-12">
-        {/* -------------------- CỘT 1 (TRÁI - 2/12): THANH ĐIỀU HƯỚNG 3 TASK -------------------- */}
+        {/* -------------------- CỘT 1 (TRÁI - 2/12): THANH ĐIỀU HƯỚNG TASK THEO NODE -------------------- */}
         <aside className="flex flex-col justify-between rounded-2xl border border-[#292E42] bg-[#16161E] p-3.5 lg:col-span-2">
           <div>
             {/* Nút quay lại Skill Tree */}
@@ -280,194 +337,107 @@ export default function WorkspacePage() {
               <span>Back to Skill Tree</span>
             </Link>
 
-            {/* Tiêu đề chủ đề hiện tại */}
+            {/* Tiêu đề chủ đề hiện tại theo Node được chọn */}
             <div className="mt-4 border-b border-[#292E42] pb-3">
               <h1 className="text-sm font-bold text-[#C0CAF5]">
-                AVL Tree Mastery
+                {node.label} Mastery
               </h1>
               <p className="mt-0.5 text-[11px] leading-snug text-[#545C7E]">
                 Complete all tasks to unlock the next node.
               </p>
             </div>
 
-            {/* Danh sách 3 Task (Bấm để chuyển giữa Task 1, Task 2, Task 3) */}
+            {/* Danh sách các Task của Node hiện tại (Cập nhật URL /workspace/:nodeId/:taskId khi click) */}
             <div className="mt-3.5 space-y-3">
-              {/* TASK 1: Core Theory & Big-O */}
-              <button
-                type="button"
-                onClick={() => setActiveMode("theory")}
-                className={cn(
-                  "w-full cursor-pointer rounded-xl border p-3 text-left transition-all",
-                  activeMode === "theory"
-                    ? "border-[#7AA2F7] bg-[#283457]/40 shadow-[0_0_20px_rgba(122,162,247,0.18)]"
-                    : "border-[#9ECE6A]/55 bg-[#1A1B26]/60 hover:border-[#9ECE6A]"
-                )}
-              >
-                <div className="flex items-start gap-2.5">
-                  {activeMode === "theory" ? (
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-[#7DCFFF] bg-[#7DCFFF]/15 text-[#7DCFFF]">
-                      <Square className="size-2.5 fill-current" />
-                    </span>
-                  ) : (
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#9ECE6A] text-[#15161E]">
-                      <Check className="size-3 stroke-[3]" />
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    <div
-                      className={cn(
-                        "text-[10px]",
-                        activeMode === "theory"
-                          ? "text-[#7DCFFF]"
-                          : "text-[#545C7E]"
-                      )}
-                    >
-                      Task 1
-                    </div>
-                    <div className="mt-0.5 text-xs font-bold text-[#C0CAF5]">
-                      Core Theory &amp; Big-O
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 flex justify-center">
-                  {activeMode === "theory" ? (
-                    <span className="rounded-full bg-[#7AA2F7] px-3 py-0.5 text-[10px] font-bold text-[#15161E]">
-                      In Progress
-                    </span>
-                  ) : (
-                    <span className="rounded-full border border-[#9ECE6A]/50 bg-[#9ECE6A]/15 px-3 py-0.5 text-[10px] font-semibold text-[#9ECE6A]">
-                      Completed
-                    </span>
-                  )}
-                </div>
-              </button>
+              {node.tasks.map((taskItem, idx) => {
+                const isSelected = taskItem.id === activeTask.id
+                const isCompleted = taskItem.status === "completed"
 
-              {/* TASK 2: Quiz: Balance Factor */}
-              <button
-                type="button"
-                onClick={() => setActiveMode("quiz")}
-                className={cn(
-                  "w-full cursor-pointer rounded-xl border p-3 text-left transition-all",
-                  activeMode === "quiz"
-                    ? "border-[#7AA2F7] bg-[#283457]/40 shadow-[0_0_20px_rgba(122,162,247,0.18)]"
-                    : activeMode === "code"
-                      ? "border-[#9ECE6A]/55 bg-[#1A1B26]/60 hover:border-[#9ECE6A]"
-                      : "border-[#292E42] bg-[#1A1B26]/45 hover:border-[#414868]"
-                )}
-              >
-                <div className="flex items-start gap-2.5">
-                  {activeMode === "code" ? (
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#9ECE6A] text-[#15161E]">
-                      <Check className="size-3 stroke-[3]" />
-                    </span>
-                  ) : activeMode === "quiz" ? (
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-[#7DCFFF] bg-[#7DCFFF]/15 text-[#7DCFFF]">
-                      <Square className="size-2.5 fill-current" />
-                    </span>
-                  ) : (
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#292E42] text-[#A9B1D6]">
-                      <Lock className="size-3" />
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    <div
-                      className={cn(
-                        "text-[10px]",
-                        activeMode === "quiz"
-                          ? "text-[#7DCFFF]"
-                          : "text-[#545C7E]"
+                return (
+                  <button
+                    key={taskItem.id}
+                    type="button"
+                    onClick={() => handleSelectTask(taskItem.id)}
+                    className={cn(
+                      "w-full cursor-pointer rounded-xl border p-3 text-left transition-all",
+                      isSelected
+                        ? "border-[#7AA2F7] bg-[#283457]/40 shadow-[0_0_20px_rgba(122,162,247,0.18)]"
+                        : isCompleted
+                          ? "border-[#9ECE6A]/55 bg-[#1A1B26]/60 hover:border-[#9ECE6A]"
+                          : "border-[#292E42] bg-[#1A1B26]/45 hover:border-[#414868]"
+                    )}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      {isSelected ? (
+                        taskItem.type === "coding" ? (
+                          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#7AA2F7] text-[#15161E]">
+                            <Code2 className="size-3 stroke-[2.5]" />
+                          </span>
+                        ) : (
+                          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-[#7DCFFF] bg-[#7DCFFF]/15 text-[#7DCFFF]">
+                            <Square className="size-2.5 fill-current" />
+                          </span>
+                        )
+                      ) : isCompleted ? (
+                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#9ECE6A] text-[#15161E]">
+                          <Check className="size-3 stroke-[3]" />
+                        </span>
+                      ) : (
+                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#292E42] text-[#A9B1D6]">
+                          <Lock className="size-3" />
+                        </span>
                       )}
-                    >
-                      Task 2
-                    </div>
-                    <div className="mt-0.5 text-xs font-bold text-[#C0CAF5]">
-                      Quiz: Balance Factor
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 flex justify-center">
-                  {activeMode === "quiz" ? (
-                    <span className="rounded-full bg-[#7AA2F7] px-3 py-0.5 text-[10px] font-bold text-[#15161E]">
-                      In Progress
-                    </span>
-                  ) : activeMode === "code" ? (
-                    <span className="rounded-full border border-[#9ECE6A]/50 bg-[#9ECE6A]/15 px-3 py-0.5 text-[10px] font-semibold text-[#9ECE6A]">
-                      Completed
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-[#292E42] px-3 py-0.5 text-[10px] font-medium text-[#545C7E]">
-                      Locked
-                    </span>
-                  )}
-                </div>
-              </button>
 
-              {/* TASK 3: Code: Right Rotation */}
-              <button
-                type="button"
-                onClick={() => setActiveMode("code")}
-                className={cn(
-                  "w-full cursor-pointer rounded-xl border p-3 text-left transition-all",
-                  activeMode === "code"
-                    ? "border-[#7AA2F7] bg-[#283457]/40 shadow-[0_0_20px_rgba(122,162,247,0.18)]"
-                    : "border-[#292E42] bg-[#1A1B26]/45 hover:border-[#414868]"
-                )}
-              >
-                <div className="flex items-start gap-2.5">
-                  {activeMode === "code" ? (
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#7AA2F7] text-[#15161E]">
-                      <Code2 className="size-3 stroke-[2.5]" />
-                    </span>
-                  ) : (
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#292E42] text-[#A9B1D6]">
-                      <Lock className="size-3" />
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    <div
-                      className={cn(
-                        "text-[10px]",
-                        activeMode === "code"
-                          ? "text-[#7DCFFF]"
-                          : "text-[#545C7E]"
-                      )}
-                    >
-                      Task 3
+                      <div className="min-w-0">
+                        <div
+                          className={cn(
+                            "text-[10px]",
+                            isSelected ? "text-[#7DCFFF]" : "text-[#545C7E]"
+                          )}
+                        >
+                          Task {idx + 1}
+                        </div>
+                        <div
+                          className={cn(
+                            "mt-0.5 text-xs font-bold",
+                            isSelected || isCompleted
+                              ? "text-[#C0CAF5]"
+                              : "text-[#A9B1D6]"
+                          )}
+                        >
+                          {taskItem.title}
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        "mt-0.5 text-xs font-bold",
-                        activeMode === "code"
-                          ? "text-[#C0CAF5]"
-                          : "text-[#A9B1D6]"
+
+                    <div className="mt-2 flex justify-center">
+                      {isSelected ? (
+                        <span className="rounded-full bg-[#7AA2F7] px-3 py-0.5 text-[10px] font-bold text-[#15161E]">
+                          In Progress
+                        </span>
+                      ) : isCompleted ? (
+                        <span className="rounded-full border border-[#9ECE6A]/50 bg-[#9ECE6A]/15 px-3 py-0.5 text-[10px] font-semibold text-[#9ECE6A]">
+                          Completed
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-[#292E42] px-3 py-0.5 text-[10px] font-medium text-[#545C7E]">
+                          Locked
+                        </span>
                       )}
-                    >
-                      Code: Right Rotation
                     </div>
-                  </div>
-                </div>
-                <div className="mt-2 flex justify-center">
-                  {activeMode === "code" ? (
-                    <span className="rounded-full bg-[#7AA2F7] px-3 py-0.5 text-[10px] font-bold text-[#15161E]">
-                      In Progress
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-[#292E42] px-3 py-0.5 text-[10px] font-medium text-[#545C7E]">
-                      Locked
-                    </span>
-                  )}
-                </div>
-              </button>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
           <div className="mt-3 rounded-xl border border-[#292E42] bg-[#15161E] p-2 text-center text-[10px] text-[#545C7E]">
-            Click Task 1, 2, or 3 to preview each stage.
+            Click Task 1, 2, or 3 to switch stages.
           </div>
         </aside>
 
         {/* ==================== TRẠNG THÁI 1 & 2: THEORY HOẶC QUIZ ==================== */}
-        {activeMode !== "code" ? (
+        {activeMode !== "coding" ? (
           <>
             {/* -------------------- CỘT GIỮA (7/12): KHUNG NỘI DUNG THEORY / QUIZ -------------------- */}
             <section className="flex flex-col rounded-2xl border border-[#292E42] bg-[#16161E] p-6 lg:col-span-7">
@@ -475,31 +445,29 @@ export default function WorkspacePage() {
                 <div className="flex items-center gap-2.5">
                   <BookOpen className="size-4 text-[#C0CAF5]" />
                   <h2 className="text-xs font-bold tracking-wider text-[#C0CAF5] uppercase">
-                    {activeMode === "theory"
-                      ? "CORE THEORY: AVL TREE & BIG-O COMPLEXITY"
-                      : "QUIZ: AVL TREE"}
+                    {taskDetail?.headerTitle}
                   </h2>
                 </div>
 
-                {activeMode === "theory" ? (
+                {activeMode === "theory" && nextTask ? (
                   <button
                     type="button"
-                    onClick={() => setActiveMode("quiz")}
+                    onClick={() => handleCompleteAndAdvance(nextTask.id)}
                     className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-[#7AA2F7] px-4 text-xs font-bold text-[#15161E] transition-colors hover:bg-[#8DB0FF]"
                   >
                     <span>Next: Take Quiz</span>
                     <ArrowRight className="size-3.5" />
                   </button>
-                ) : (
+                ) : activeMode === "quiz" && nextTask ? (
                   <button
                     type="button"
-                    onClick={() => setActiveMode("code")}
+                    onClick={() => handleCompleteAndAdvance(nextTask.id)}
                     className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-[#7AA2F7] px-4 text-xs font-bold text-[#15161E] transition-colors hover:bg-[#8DB0FF]"
                   >
                     <Send className="size-3.5" />
                     <span>Submit</span>
                   </button>
-                )}
+                ) : null}
               </div>
 
               {/* Nội dung Trạng thái 1: THEORY */}
@@ -507,124 +475,128 @@ export default function WorkspacePage() {
                 <div className="mt-6">
                   <p className="text-sm leading-relaxed text-[#C0CAF5]">
                     <span className="font-semibold text-[#7DCFFF]">
-                      Module 1 of 3:
+                      {taskDetail?.moduleLabel || "Module 1 of 3:"}
                     </span>{" "}
-                    An AVL Tree is a self-balancing Binary Search Tree where the
-                    difference between heights of left and right subtrees (the{" "}
-                    <span className="font-semibold text-[#73DACA]">
-                      Balance Factor
-                    </span>
-                    ) cannot exceed{" "}
-                    <span className="font-bold text-[#FF9E64]">1</span> for any
-                    node.
+                    {taskDetail?.summaryLead}
                   </p>
 
                   <div className="mt-6 space-y-3.5">
-                    {THEORY_CARDS.map((card) => (
-                      <div
-                        key={card.badge}
-                        className="flex items-start gap-4 rounded-xl border border-[#292E42] bg-[#15161E]/85 p-4 transition-colors hover:border-[#414868]"
-                      >
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[#283457] font-mono text-xs font-bold text-[#7AA2F7]">
-                          {card.badge}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h3 className="text-xs font-bold text-[#C0CAF5]">
-                              {card.title}
-                            </h3>
-                            <span className="rounded bg-[#7AA2F7]/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-[#7DCFFF]">
-                              {card.tag}
-                            </span>
+                    {(taskDetail?.cards || []).map(
+                      (card: {
+                        badge: string
+                        title: string
+                        detail: string
+                        tag: string
+                      }) => (
+                        <div
+                          key={card.badge}
+                          className="flex items-start gap-4 rounded-xl border border-[#292E42] bg-[#15161E]/85 p-4 transition-colors hover:border-[#414868]"
+                        >
+                          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[#283457] font-mono text-xs font-bold text-[#7AA2F7]">
+                            {card.badge}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <h3 className="text-xs font-bold text-[#C0CAF5]">
+                                {card.title}
+                              </h3>
+                              <span className="rounded bg-[#7AA2F7]/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-[#7DCFFF]">
+                                {card.tag}
+                              </span>
+                            </div>
+                            <p className="mt-1.5 text-xs leading-relaxed text-[#A9B1D6]">
+                              {card.detail}
+                            </p>
                           </div>
-                          <p className="mt-1.5 text-xs leading-relaxed text-[#A9B1D6]">
-                            {card.detail}
-                          </p>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* Nội dung Trạng thái 2: QUIZ (Ban đầu chưa chọn đáp án nào) */}
+              {/* Nội dung Trạng thái 2: QUIZ */}
               {activeMode === "quiz" && (
                 <div className="mt-6">
                   <p className="text-sm leading-relaxed text-[#C0CAF5]">
                     <span className="font-semibold text-[#7DCFFF]">
-                      Question 2 of 3:
+                      {taskDetail?.questionLabel || "Question 2 of 3:"}
                     </span>{" "}
-                    Given an AVL Tree node N with Left Subtree Height ={" "}
-                    <span className="font-bold text-[#FF9E64]">3</span> and
-                    Right Subtree Height ={" "}
-                    <span className="font-bold text-[#FF9E64]">1</span>.
-                    <br />
-                    What is the{" "}
-                    <span className="font-semibold text-[#73DACA]">
-                      Balance Factor
-                    </span>{" "}
-                    of node N, and does it require a rotation?
+                    {taskDetail?.questionPrompt}
                   </p>
 
                   <div className="mt-7 space-y-3.5">
-                    {QUIZ_OPTIONS.map((option) => {
-                      const isSelected = selectedOption === option.id
-                      const isWrongSelection = isSelected && !option.isCorrect
-                      const isRightSelection = isSelected && option.isCorrect
+                    {(taskDetail?.options || []).map(
+                      (option: {
+                        id: string
+                        text: string
+                        isCorrect: boolean
+                      }) => {
+                        const isSelected = selectedOption === option.id
+                        const isWrongSelection = isSelected && !option.isCorrect
+                        const isRightSelection = isSelected && option.isCorrect
 
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => setSelectedOption(option.id)}
-                          className={cn(
-                            "relative flex w-full cursor-pointer items-center rounded-xl border px-4 py-4 text-left transition-all",
-                            isWrongSelection &&
-                              "border-[#DB4B4B] bg-[#DB4B4B]/6",
-                            isRightSelection &&
-                              "border-[#9ECE6A] bg-[#9ECE6A]/8",
-                            !isSelected &&
-                              "border-[#292E42] bg-[#15161E]/70 hover:border-[#414868]"
-                          )}
-                        >
-                          <span
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() =>
+                              handleSelectQuizOption(
+                                option.id,
+                                option.isCorrect
+                              )
+                            }
                             className={cn(
-                              "flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold",
+                              "relative flex w-full cursor-pointer items-center rounded-xl border px-4 py-4 text-left transition-all",
                               isWrongSelection &&
-                                "bg-[#DB4B4B] text-[#15161E]",
+                                "border-[#DB4B4B] bg-[#DB4B4B]/6",
                               isRightSelection &&
-                                "bg-[#9ECE6A] text-[#15161E]",
-                              !isSelected && "bg-[#283457] text-[#7AA2F7]"
+                                "border-[#9ECE6A] bg-[#9ECE6A]/8",
+                              !isSelected &&
+                                "border-[#292E42] bg-[#15161E]/70 hover:border-[#414868]"
                             )}
                           >
-                            {option.id}
-                          </span>
+                            <span
+                              className={cn(
+                                "flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold",
+                                isWrongSelection &&
+                                  "bg-[#DB4B4B] text-[#15161E]",
+                                isRightSelection &&
+                                  "bg-[#9ECE6A] text-[#15161E]",
+                                !isSelected && "bg-[#283457] text-[#7AA2F7]"
+                              )}
+                            >
+                              {option.id}
+                            </span>
 
-                          <span
-                            className={cn(
-                              "flex-1 text-center text-xs font-medium sm:text-[13px]",
-                              isSelected ? "text-[#C0CAF5]" : "text-[#A9B1D6]"
+                            <span
+                              className={cn(
+                                "flex-1 text-center text-xs font-medium sm:text-[13px]",
+                                isSelected
+                                  ? "text-[#C0CAF5]"
+                                  : "text-[#A9B1D6]"
+                              )}
+                            >
+                              {option.text}
+                            </span>
+
+                            {isWrongSelection && (
+                              <span className="absolute right-3 bottom-1.5 inline-flex items-center gap-1 rounded bg-[#DB4B4B] px-2 py-0.5 text-[10px] font-bold text-[#15161E]">
+                                <X className="size-2.5 stroke-[3]" />
+                                <span>Incorrect Selection</span>
+                              </span>
                             )}
-                          >
-                            {option.text}
-                          </span>
 
-                          {isWrongSelection && (
-                            <span className="absolute right-3 bottom-1.5 inline-flex items-center gap-1 rounded bg-[#DB4B4B] px-2 py-0.5 text-[10px] font-bold text-[#15161E]">
-                              <X className="size-2.5 stroke-[3]" />
-                              <span>Incorrect Selection</span>
-                            </span>
-                          )}
-
-                          {isRightSelection && (
-                            <span className="absolute right-3 bottom-1.5 inline-flex items-center gap-1 rounded bg-[#9ECE6A] px-2 py-0.5 text-[10px] font-bold text-[#15161E]">
-                              <Check className="size-2.5 stroke-[3]" />
-                              <span>Correct Answer</span>
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })}
+                            {isRightSelection && (
+                              <span className="absolute right-3 bottom-1.5 inline-flex items-center gap-1 rounded bg-[#9ECE6A] px-2 py-0.5 text-[10px] font-bold text-[#15161E]">
+                                <Check className="size-2.5 stroke-[3]" />
+                                <span>Correct Answer</span>
+                              </span>
+                            )}
+                          </button>
+                        )
+                      }
+                    )}
                   </div>
                 </div>
               )}
@@ -663,59 +635,15 @@ export default function WorkspacePage() {
                   </span>
                 </div>
 
-                {activeMode === "theory" ? (
-                  <p className="mt-3 text-xs leading-relaxed text-[#A9B1D6]">
-                    Notice how the{" "}
-                    <span className="font-semibold text-[#73DACA]">
-                      Balance Factor
-                    </span>{" "}
-                    only depends on the height of direct child subtrees. Why do
-                    we only need{" "}
-                    <span className="font-semibold text-[#FF9E64]">O(1)</span>{" "}
-                    local pointer updates during a rotation instead of
-                    rebuilding the entire tree?
-                  </p>
-                ) : !selectedOption ? (
-                  <p className="mt-3 text-xs leading-relaxed text-[#A9B1D6]">
-                    Select one of the options (<span className="font-bold text-[#7AA2F7]">A</span>,{" "}
-                    <span className="font-bold text-[#7AA2F7]">B</span>,{" "}
-                    <span className="font-bold text-[#7AA2F7]">C</span>, or{" "}
-                    <span className="font-bold text-[#7AA2F7]">D</span>) on the
-                    left. If your choice has a logical flaw, Socratic AI will
-                    guide your reasoning without spoiling the answer.
-                  </p>
-                ) : selectedOption === "A" ? (
-                  <p className="mt-3 text-xs leading-relaxed text-[#A9B1D6]">
-                    Spot on! The{" "}
-                    <span className="font-semibold text-[#73DACA]">
-                      Balance Factor
-                    </span>{" "}
-                    is{" "}
-                    <span className="font-semibold text-[#9ECE6A]">
-                      +2 (3 - 1 = 2)
-                    </span>
-                    . Because the Left Subtree is heavier, rotating the tree to
-                    the <span className="font-bold text-[#9ECE6A]">Right</span>{" "}
-                    restores balance in O(1) time.
-                  </p>
-                ) : (
-                  <p className="mt-3 text-xs leading-relaxed text-[#A9B1D6]">
-                    You correctly calculated the{" "}
-                    <span className="font-semibold text-[#73DACA]">
-                      Balance Factor
-                    </span>{" "}
-                    as{" "}
-                    <span className="font-semibold text-[#FF9E64]">
-                      +2 (3 - 1 = 2)
-                    </span>
-                    . However, since the Left Subtree is taller (
-                    <span className="font-semibold text-[#FF9E64]">
-                      height 3 &gt; height 1
-                    </span>
-                    ), which direction should the heavy left side rotate towards
-                    to restore balance?
-                  </p>
-                )}
+                <p className="mt-3 text-xs leading-relaxed text-[#A9B1D6]">
+                  {activeMode === "theory"
+                    ? taskDetail?.socraticCheck
+                    : !selectedOption
+                      ? taskDetail?.hints?.awaiting
+                      : selectedQuizOptionObj?.isCorrect
+                        ? taskDetail?.hints?.correct
+                        : taskDetail?.hints?.incorrect}
+                </p>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2.5">
@@ -724,7 +652,7 @@ export default function WorkspacePage() {
                   className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#292E42] bg-[#1A1B26] px-2.5 text-[11px] font-medium text-[#A9B1D6] transition-colors hover:border-[#414868] hover:text-[#C0CAF5]"
                 >
                   <FileText className="size-3.5 text-[#7AA2F7]" />
-                  <span>Open Slide 14 (PDF)</span>
+                  <span>{taskDetail?.slideLabel || "Open Slide 14 (PDF)"}</span>
                 </button>
                 <button
                   type="button"
@@ -737,9 +665,11 @@ export default function WorkspacePage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setHintsRemaining((prev) => (prev > 0 ? prev - 1 : 3))
-                }
+                onClick={() => {
+                  const nextHints = hintsRemaining > 0 ? hintsRemaining - 1 : 3
+                  setHintsRemaining(nextHints)
+                  saveHints(activeTask.id, nextHints)
+                }}
                 className="mt-2.5 inline-flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-[#7AA2F7]/40 bg-[#283457]/45 text-[11px] font-semibold text-[#7AA2F7] transition-colors hover:bg-[#283457]/70"
               >
                 <MessageSquare className="size-3.5" />
@@ -750,20 +680,20 @@ export default function WorkspacePage() {
             </aside>
           </>
         ) : (
-          /* ==================== TRẠNG THÁI 3: CODE WORKSPACE (HIỂN THỊ TRỌN VẸN TRÊN 1 MÀN HÌNH KHÔNG CẦN CUỘN) ==================== */
+          /* ==================== TRẠNG THÁI 3: CODE WORKSPACE ==================== */
           <>
-            {/* -------------------- CỘT GIỮA (7/12): VSCODE/MONACO CODE EDITOR + CODE ANALYSIS -------------------- */}
+            {/* -------------------- CỘT GIỮA (7/12): MONACO CODE EDITOR + CODE ANALYSIS -------------------- */}
             <section className="flex min-h-0 flex-col justify-between gap-3 lg:col-span-7">
-              {/* 1. KHUNG TRÊN: VSCODE / MONACO-STYLE CODE EDITOR VỚI TÔ MÀU CÚ PHÁP TỪNG BIẾN & HÀM */}
+              {/* 1. KHUNG TRÊN: MONACO CODE EDITOR */}
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#292E42] bg-[#16161E]">
                 {/* Thanh Tab & Nút điều khiển Editor */}
                 <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#292E42] bg-[#1A1B26] px-3.5 py-2">
                   <div className="flex items-center gap-2.5">
                     <div className="inline-flex items-center gap-2 rounded-lg border border-[#292E42] bg-[#15161E] px-3 py-1 text-xs font-medium text-[#C0CAF5]">
                       <span className="font-mono text-[11px] font-bold text-[#7DCFFF]">
-                        C++
+                        {taskDetail?.language || "C++"}
                       </span>
-                      <span>solution.cpp</span>
+                      <span>{taskDetail?.fileName || "solution.cpp"}</span>
                       <X className="size-3 text-[#545C7E]" />
                     </div>
                   </div>
@@ -773,7 +703,7 @@ export default function WorkspacePage() {
                       type="button"
                       className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#292E42] bg-[#15161E] px-2.5 font-mono text-[11px] text-[#C0CAF5]"
                     >
-                      <span>C++</span>
+                      <span>{taskDetail?.language || "C++"}</span>
                       <ChevronDown className="size-3 text-[#545C7E]" />
                     </button>
 
@@ -787,6 +717,7 @@ export default function WorkspacePage() {
 
                     <button
                       type="button"
+                      onClick={handleSubmitCode}
                       className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg bg-[#7AA2F7] px-3.5 text-[11px] font-bold text-[#15161E] transition-colors hover:bg-[#8DB0FF]"
                     >
                       <Send className="size-3" />
@@ -795,14 +726,14 @@ export default function WorkspacePage() {
                   </div>
                 </div>
 
-                {/* Vùng soạn thảo Monaco Editor thực tế (1 thanh cuộn duy nhất, tắt Minimap ở góc phải) */}
+                {/* Vùng soạn thảo Monaco Editor */}
                 <div className="relative min-h-[300px] flex-1 bg-[#15161E]">
                   <Editor
                     height="100%"
                     defaultLanguage="cpp"
                     theme="tokyo-night"
                     value={code}
-                    onChange={(val) => setCode(val ?? "")}
+                    onChange={handleCodeChange}
                     beforeMount={handleEditorBeforeMount}
                     onMount={handleEditorDidMount}
                     options={{
@@ -817,7 +748,7 @@ export default function WorkspacePage() {
                       overviewRulerLanes: 0,
                       hideCursorInOverviewRuler: true,
                       overviewRulerBorder: false,
-                       automaticLayout: true,
+                      automaticLayout: true,
                       scrollbar: {
                         verticalScrollbarSize: 8,
                         horizontalScrollbarSize: 8,
@@ -831,16 +762,16 @@ export default function WorkspacePage() {
                   <span>
                     Ln {cursorPos.line}, Col {cursorPos.col}
                   </span>
-                  <span>C++</span>
+                  <span>{taskDetail?.language || "C++"}</span>
                   <span>UTF-8</span>
                   <span className="inline-flex items-center gap-1.5 text-[#9ECE6A]">
                     <span className="size-1.5 rounded-full bg-[#9ECE6A]" />
-                    Ready
+                    {isCodeSavedBadge ? "Draft Saved" : "Ready"}
                   </span>
                 </div>
               </div>
 
-              {/* 2. KHUNG DƯỚI: CODE ANALYSIS & TEST RESULTS (Thu gọn vừa vặn không cần cuộn trang) */}
+              {/* 2. KHUNG DƯỚI: CODE ANALYSIS & TEST RESULTS */}
               <div className="shrink-0 rounded-2xl border border-[#292E42] bg-[#16161E] p-3.5">
                 <div className="flex items-center gap-2 border-b border-[#292E42] pb-2.5">
                   <Settings className="size-4 text-[#7DCFFF]" />
@@ -870,7 +801,7 @@ export default function WorkspacePage() {
                             Time Complexity
                           </span>
                           <span className="font-mono font-bold text-[#9ECE6A]">
-                            O(1)
+                            {taskDetail?.analysis?.timeComplexity || "O(1)"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2.5">
@@ -878,7 +809,7 @@ export default function WorkspacePage() {
                             Space Complexity
                           </span>
                           <span className="font-mono font-bold text-[#9ECE6A]">
-                            O(1)
+                            {taskDetail?.analysis?.spaceComplexity || "O(1)"}
                           </span>
                         </div>
                       </div>
@@ -886,7 +817,10 @@ export default function WorkspacePage() {
 
                     <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-[#292E42] bg-[#1A1B26] px-2.5 py-1.5 text-[11px] text-[#A9B1D6]">
                       <CheckCircle2 className="size-3.5 shrink-0 text-[#9ECE6A]" />
-                      <span>Meets optimal bounds for AVL operations.</span>
+                      <span>
+                        {taskDetail?.analysis?.optimalNote ||
+                          "Meets optimal bounds."}
+                      </span>
                     </div>
                   </div>
 
@@ -899,38 +833,33 @@ export default function WorkspacePage() {
                           <span>Edge Case Warning</span>
                         </div>
                         <span className="rounded-md border border-[#DB4B4B]/40 bg-[#DB4B4B]/15 px-2 py-0.5 text-[10px] font-semibold text-[#DB4B4B]">
-                          Failed (Test Case #5)
+                          {taskDetail?.analysis?.failedTestLabel ||
+                            "Failed (Test Case #5)"}
                         </span>
                       </div>
 
                       <div className="mt-2 text-[11px] leading-relaxed text-[#A9B1D6]">
                         <div className="font-medium text-[#C0CAF5]">
-                          Segmentation fault (SIGSEGV) on Test Case #5.
+                          {taskDetail?.analysis?.errorTitle}
                         </div>
                         <div className="mt-0.5 text-[#A9B1D6]">
-                          • Possible cause: dereferencing a null pointer (
-                          <span className="font-mono text-[#C0CAF5]">
-                            y-&gt;left
-                          </span>
-                          ).
+                          • {taskDetail?.analysis?.errorCause}
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-[#DB4B4B]/40 bg-[#DB4B4B]/10 px-2.5 py-1.5 text-[11px] font-medium text-[#FF9E64]">
                       <ArrowRight className="size-3.5 shrink-0 text-[#DB4B4B]" />
-                      <span>
-                        Check for null pointers before accessing y-&gt;left.
-                      </span>
+                      <span>{taskDetail?.analysis?.errorAction}</span>
                     </div>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* -------------------- CỘT PHẢI (3/12): VISUALIZATION (BEFORE/AFTER RIGHT ROTATION) + SOCRATIC AI TUTOR -------------------- */}
+            {/* -------------------- CỘT PHẢI (3/12): VISUALIZATION + SOCRATIC AI TUTOR -------------------- */}
             <aside className="flex min-h-0 flex-col justify-between gap-3 lg:col-span-3">
-              {/* 1. KHUNG TRÊN: VISUALIZATION (Sơ đồ cây Before / After Right Rotation giống hệt ảnh mẫu) */}
+              {/* 1. KHUNG TRÊN: VISUALIZATION */}
               <div className="shrink-0 rounded-2xl border border-[#292E42] bg-[#16161E] p-4">
                 <div className="flex items-center justify-between border-b border-[#292E42] pb-2.5">
                   <div className="flex items-center gap-2">
@@ -940,18 +869,17 @@ export default function WorkspacePage() {
                     </h2>
                   </div>
                   <span className="rounded-md border border-[#292E42] bg-[#1A1B26] px-2 py-0.5 text-[10px] font-semibold text-[#A9B1D6]">
-                    AVL Tree
+                    {taskDetail?.visualization?.badge || node.label}
                   </span>
                 </div>
 
-                {/* Sơ đồ Before (Right Rotation) -> After (Mọi cạnh nối đều dùng getCircleEdge thẳng & vuông góc 90° với tiếp tuyến) */}
+                {/* Sơ đồ Before -> After */}
                 <div className="mt-2.5 rounded-xl border border-[#292E42] bg-[#15161E] p-2">
                   <svg
                     viewBox="0 0 310 155"
                     className="h-[145px] w-full select-none"
-                    aria-label="AVL Tree Right Rotation Visualization"
+                    aria-label="Algorithm Visualization"
                   >
-                    {/* Tiêu đề 2 nhánh */}
                     <text
                       x="72"
                       y="15"
@@ -960,7 +888,8 @@ export default function WorkspacePage() {
                       fontSize="9.5"
                       fontWeight="600"
                     >
-                      Before (Right Rotation)
+                      {taskDetail?.visualization?.beforeTitle ||
+                        "Before (Right Rotation)"}
                     </text>
                     <text
                       x="238"
@@ -970,10 +899,9 @@ export default function WorkspacePage() {
                       fontSize="9.5"
                       fontWeight="600"
                     >
-                      After
+                      {taskDetail?.visualization?.afterTitle || "After"}
                     </text>
 
-                    {/* Cạnh nối cây BEFORE: y(88,42) -> x(52,85), y(88,42) -> T3(118,85), x(52,85) -> T1(26,130), x(52,85) -> T2(76,130) */}
                     {[
                       {
                         x1: 88,
@@ -1011,7 +939,6 @@ export default function WorkspacePage() {
                         r2: 13,
                         color: "#7DCFFF",
                       },
-                      /* Cạnh nối cây AFTER: x(222,42) -> T1(192,85), x(222,42) -> y(258,85), y(258,85) -> T2(234,130), y(258,85) -> T3(284,130) */
                       {
                         x1: 222,
                         y1: 42,
@@ -1071,7 +998,6 @@ export default function WorkspacePage() {
                       )
                     })}
 
-                    {/* Mũi tên chuyển đổi ở giữa (→) */}
                     <g
                       transform="translate(146, 75)"
                       stroke="#7AA2F7"
@@ -1084,9 +1010,7 @@ export default function WorkspacePage() {
                       <polyline points="11,-4 16,0 11,4" />
                     </g>
 
-                    {/* Các Node của cả 2 cây Before và After */}
                     {[
-                      // BEFORE TREE
                       {
                         id: "b-y",
                         label: "y",
@@ -1137,7 +1061,6 @@ export default function WorkspacePage() {
                         stroke: "#414868",
                         text: "#A9B1D6",
                       },
-                      // AFTER TREE
                       {
                         id: "a-x",
                         label: "x",
@@ -1188,25 +1111,25 @@ export default function WorkspacePage() {
                         stroke: "#414868",
                         text: "#A9B1D6",
                       },
-                    ].map((node) => (
+                    ].map((visNode) => (
                       <g
-                        key={node.id}
-                        transform={`translate(${node.x}, ${node.y})`}
+                        key={visNode.id}
+                        transform={`translate(${visNode.x}, ${visNode.y})`}
                       >
                         <circle
-                          r={node.r}
-                          fill={node.fill}
-                          stroke={node.stroke}
+                          r={visNode.r}
+                          fill={visNode.fill}
+                          stroke={visNode.stroke}
                           strokeWidth="1.75"
                         />
                         <text
                           y="3.5"
                           textAnchor="middle"
-                          fill={node.text}
+                          fill={visNode.text}
                           fontSize="10"
                           fontWeight="700"
                         >
-                          {node.label}
+                          {visNode.label}
                         </text>
                       </g>
                     ))}
@@ -1214,7 +1137,7 @@ export default function WorkspacePage() {
                 </div>
               </div>
 
-              {/* 2. KHUNG DƯỚI: SOCRATIC AI TUTOR (Theo mẫu mới nhất) */}
+              {/* 2. KHUNG DƯỚI: SOCRATIC AI TUTOR */}
               <div className="flex min-h-0 flex-1 flex-col justify-between rounded-2xl border border-[#292E42] bg-[#16161E] p-4">
                 <div>
                   <div className="flex items-start justify-between gap-2 border-b border-[#292E42] pb-3">
@@ -1239,29 +1162,18 @@ export default function WorkspacePage() {
                   <div className="mt-3 rounded-xl border border-[#7AA2F7]/50 bg-[#1A1B26] p-3.5">
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#C7A9FF]">
                       <Lightbulb className="size-3.5 shrink-0 text-[#C7A9FF]" />
-                      <span>Socratic Hint (Triggered by Option B):</span>
+                      <span>
+                        {taskDetail?.socraticHint?.triggerLabel ||
+                          "Socratic Hint:"}
+                      </span>
                     </div>
 
                     <p className="mt-2 text-[11px] leading-relaxed text-[#A9B1D6]">
-                      Before accessing{" "}
-                      <span className="font-mono font-semibold text-[#C0CAF5]">
-                        y-&gt;left
-                      </span>
-                      , make sure that{" "}
-                      <span className="font-mono font-semibold text-[#C0CAF5]">
-                        y
-                      </span>{" "}
-                      is not a null pointer. In some test cases, the node can be
-                      empty, which leads to a segmentation fault when you try to
-                      dereference it.
+                      {taskDetail?.socraticHint?.paragraph1}
                     </p>
 
                     <p className="mt-2.5 text-[11px] leading-relaxed text-[#A9B1D6]">
-                      Can you add a null check at the beginning of the{" "}
-                      <span className="font-mono text-[#C0CAF5]">
-                        rotateRight
-                      </span>{" "}
-                      function?
+                      {taskDetail?.socraticHint?.paragraph2}
                     </p>
                   </div>
                 </div>
@@ -1273,7 +1185,9 @@ export default function WorkspacePage() {
                       className="inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-[#292E42] bg-[#1A1B26] px-2 text-[10.5px] font-medium text-[#A9B1D6] transition-colors hover:border-[#414868] hover:text-[#C0CAF5]"
                     >
                       <FileText className="size-3.5 text-[#7AA2F7]" />
-                      <span>Open Slide 14 (PDF)</span>
+                      <span>
+                        {taskDetail?.slideLabel || "Open Slide 14 (PDF)"}
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -1304,4 +1218,8 @@ export default function WorkspacePage() {
       </main>
     </div>
   )
+}
+
+export default function WorkspacePage() {
+  return <WorkspaceView />
 }
