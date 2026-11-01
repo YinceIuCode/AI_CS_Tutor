@@ -127,3 +127,36 @@
     @apply font-sans;
     }
 }
+
+
+/* Monaco Editor Faulty Line Highlight & Translucent Pointer Decorations */
+.monaco-editor .algopath-faulty-line-bg {
+  background: linear-gradient(
+    90deg,
+    rgba(219, 75, 75, 0.24) 0%,
+    rgba(255, 158, 100, 0.12) 55%,
+    rgba(219, 75, 75, 0.04) 100%
+  ) !important;
+  border-left: 3px solid #db4b4b !important;
+  box-shadow: inset 0 0 14px rgba(219, 75, 75, 0.16);
+}
+
+.monaco-editor .algopath-faulty-line-gutter {
+  background-color: rgba(219, 75, 75, 0.28) !important;
+  border-radius: 3px;
+}
+
+.monaco-editor .algopath-faulty-inline-pointer {
+  margin-left: 16px;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  background: rgba(219, 75, 75, 0.16);
+  border: 1px solid rgba(219, 75, 75, 0.45);
+  color: #ff9e64 !important;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px !important;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  opacity: 0.92;
+  pointer-events: none;
+}
