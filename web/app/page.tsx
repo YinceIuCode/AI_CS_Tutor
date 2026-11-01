@@ -304,9 +304,10 @@ export default function LandingPage() {
       </header>
 
       {/* ==================== 2. HERO SECTION (EXPANSIVE & SPACIOUS) ==================== */}
-      <section className="relative z-10 mx-auto grid w-full max-w-[1340px] grid-cols-1 items-center gap-10 px-5 pt-8 pb-12 md:px-9 lg:grid-cols-12 lg:gap-12 lg:pt-14 lg:pb-16">
-        {/* LEFT COLUMN (6/12): Clear typography, relaxed spacing, balanced hierarchy */}
-        <div className="flex flex-col justify-center lg:col-span-6">
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-5.5rem)] w-full max-w-[1340px] flex-col justify-between px-5 pt-4 pb-6 md:px-9 lg:min-h-[calc(100vh-5.5rem)] lg:pt-6 lg:pb-8">
+        <div className="my-auto grid w-full grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
+        {/* LEFT COLUMN (7/12): Clear typography, relaxed spacing, balanced hierarchy */}
+        <div className="flex flex-col justify-center lg:col-span-7">
           <div>
             {/* Pill Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[#7AA2F7]/40 bg-[#1A1B26] px-4 py-1.5 text-xs font-medium text-[#A9B1D6]">
@@ -315,13 +316,13 @@ export default function LandingPage() {
             </div>
 
             {/* Headline */}
-            <h1 className="relative z-20 mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[50px] leading-[1.15]">
-              <span className="block">
+            <h1 className="relative z-20 mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl lg:text-[42px] xl:text-[48px] leading-[1.14]">
+              <span className="block lg:whitespace-nowrap">
                 <span className="text-[#7DCFFF]">Master </span>
                 <span className="text-[#7AA2F7]">Data </span>
                 <span className="text-[#FF9E64]">Structures</span>
               </span>
-              <span className="mt-1.5 block">
+              <span className="mt-1.5 block lg:whitespace-nowrap">
                 <span className="text-[#7DCFFF]">Through </span>
                 <span className="text-[#7AA2F7]">Computational </span>
                 <span className="text-[#FF9E64]">Thinking</span>
@@ -409,8 +410,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (6/12): Hero Interactive Learning Showcase */}
-        <div className="relative select-none lg:col-span-6">
+        {/* RIGHT COLUMN (5/12): Hero Interactive Learning Showcase */}
+        <div className="relative select-none lg:col-span-5">
           {/* Subtle Ambient Glow behind preview */}
           <div
             aria-hidden="true"
@@ -714,9 +715,10 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
+        </div>
 
         {/* Scroll cue smoothly bridging Hero to Features */}
-        <div className="col-span-1 lg:col-span-12 flex justify-center pt-4">
+        <div className="flex justify-center pt-4 pb-2">
           <a
             href={LANDING_LINKS.features}
             className="group inline-flex items-center gap-2 rounded-full border border-[#292E42] bg-[#1A1B26]/60 px-4 py-1.5 text-xs text-[#565F89] backdrop-blur-sm transition-all hover:border-[#7AA2F7]/50 hover:text-[#C0CAF5]"
