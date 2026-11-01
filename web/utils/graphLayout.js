@@ -1,8 +1,8 @@
 import dagre from "@dagrejs/dagre"
 import { Position } from "@xyflow/react"
 
-const NODE_WIDTH = 224
-const NODE_HEIGHT = 138
+const NODE_WIDTH = 184
+const NODE_HEIGHT = 132
 
 /**
  * Determine edge visual state ("completed" | "active" | "locked") based on source and target node statuses.
@@ -38,8 +38,8 @@ export function buildLayoutedRoadmapGraph(roadmapNodes = [], options = {}) {
   dagreGraph.setGraph({
     rankdir: direction,
     align: "UL",
-    nodesep: isHorizontal ? 38 : 56,
-    ranksep: isHorizontal ? 86 : 64,
+    nodesep: isHorizontal ? 44 : 60,
+    ranksep: isHorizontal ? 88 : 64,
     marginx: 28,
     marginy: 24,
   })
