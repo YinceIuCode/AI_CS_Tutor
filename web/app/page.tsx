@@ -11,6 +11,9 @@ import {
 } from "lucide-react"
 import { UserProfileMenu } from "@/components/user-profile-menu"
 import { useAuth } from "@/hooks/useAuth"
+import { BRAND } from "@/config/brand"
+import { BrandLogo } from "@/components/brand-logo"
+import { PwaInstallButton } from "@/components/pwa-install-button"
 
 /**
  * Cấu hình đường dẫn (href) cho các nút và liên kết trên trang chủ Landing (`/`).
@@ -38,32 +41,32 @@ const FEATURE_HIGHLIGHTS = [
   },
   {
     icon: Shield,
-    line1: "Zero-Hallucination",
-    line2: "RAG",
+    line1: "RAG-Grounded",
+    line2: "Guidance",
   },
 ] as const
 
 const FEATURE_CARDS = [
   {
-    title: "Automated Skill Tree",
+    title: "Dynamic Learning Roadmap",
     description:
-      "Extracts core topics directly from your PDF syllabus to build a structured, prerequisite-based learning roadmap.",
+      "Extracts core topics directly from your PDF syllabus and organizes them into a structured, prerequisite-based learning roadmap.",
     icon: GitFork,
     iconColor: "text-[#7AA2F7]",
     href: LANDING_LINKS.cards.skillTree,
   },
   {
-    title: "Code Sandbox & Theory Quiz",
+    title: "Code Sandbox & Practice",
     description:
-      "Practice implementation in an integrated code editor alongside static quizzes on Big-O complexity and algorithm tracing.",
+      "Practice algorithm implementation in an integrated coding environment, test your solutions, and strengthen your understanding of Big-O complexity.",
     icon: Eye,
     iconColor: "text-[#8DB0FF]",
     href: LANDING_LINKS.cards.sandbox,
   },
   {
-    title: "Socratic AI Feedback",
+    title: "Socratic AI Guidance",
     description:
-      "No direct answers. When tests fail, context-aware RAG prompts guide you to find the logical flaw yourself.",
+      "No direct answers. Context-aware AI hints help you identify logical flaws, understand mistakes, and discover solutions through your own reasoning.",
     icon: User,
     iconColor: "text-[#C7A9FF]",
     href: LANDING_LINKS.cards.socraticAi,
@@ -88,23 +91,20 @@ export default function LandingPage() {
           <div className="flex items-center">
             <Link
               href={LANDING_LINKS.brand}
-              className="flex items-center gap-3 transition-opacity hover:opacity-90"
+              className="group flex items-center transition-opacity hover:opacity-95"
             >
-              <span className="size-8 shrink-0 rounded-full bg-[#7AA2F7]" />
-              <span className="text-lg font-bold tracking-tight text-[#C0CAF5]">
-                AlgoPath
-              </span>
+              <BrandLogo size="md" priority />
             </Link>
 
             <div className="mx-4 hidden h-5 w-px bg-[#3B4261] md:block" />
 
             <p className="hidden text-xs text-[#A9B1D6] lg:block">
-              Smarter DSA mastery, one node at a time
+              {BRAND.slogan}
             </p>
           </div>
 
-          {/* Liên kết giữa Navbar */}
-          <div className="hidden items-center gap-8 md:flex">
+          {/* Liên kết giữa Navbar: Cố định vị trí tuyệt đối chính giữa Navbar, không bị ảnh hưởng khi các nút bên phải co giãn */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-8 md:flex pointer-events-auto">
             <Link
               href={LANDING_LINKS.features}
               className="text-xs font-medium text-[#A9B1D6] transition-colors hover:text-[#C0CAF5]"
@@ -121,6 +121,7 @@ export default function LandingPage() {
 
           {/* Cụm nút hành động bên phải (Log In / Get Started hoặc User Profile khi đã đăng nhập) */}
           <div className="flex items-center gap-3">
+            <PwaInstallButton />
             {isAuthenticated ? (
               <UserProfileMenu />
             ) : (
@@ -152,10 +153,10 @@ export default function LandingPage() {
             {/* Nhãn Pill Badge (Ngang hàng với nhãn Syllabus bên cột phải) */}
             <div className="inline-flex items-center gap-1.5 rounded-full border border-[#7AA2F7]/40 bg-[#1A1B26] px-3.5 py-1 text-[11px] font-medium text-[#A9B1D6]">
               <span className="font-mono text-[#7AA2F7]">&lt;/&gt;</span>
-              <span>AI-Powered • DSA Learning Platform</span>
+              <span>{BRAND.description}</span>
             </div>
 
-            {/* Tiêu đề chính: Chữ Thinking nằm trên hàng 2, vươn tự nhiên vào khoảng trống phía trên nhánh cây */}
+            {/* Tiêu đề chính */}
             <h1 className="relative z-20 mt-3.5 text-3xl leading-[1.14] font-extrabold tracking-tight sm:text-4xl lg:text-[42px] xl:text-[48px]">
               <span className="block whitespace-nowrap">
                 <span className="text-[#7DCFFF]">Master </span>
@@ -170,11 +171,8 @@ export default function LandingPage() {
             </h1>
 
             {/* Đoạn mô tả phụ */}
-            <p className="mt-3.5 max-w-[510px] text-xs leading-[1.65] text-[#A9B1D6] sm:text-sm">
-              Automatically transform your course syllabus into an interactive
-              Skill Tree. Debug code and master Big-O complexity with stateless
-              Socratic AI hints—designed to guide your logic, never to spoil the
-              solution.
+            <p className="mt-3.5 max-w-[530px] text-xs leading-[1.65] text-[#A9B1D6] sm:text-sm">
+              {BRAND.heroDescription}
             </p>
           </div>
 
@@ -190,7 +188,7 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* 3 chỉ số / điểm nổi bật nhỏ bên dưới nút CTA (Ngang hàng đáy với 2 thẻ Code & Hint bên phải) */}
+            {/* 3 chỉ số / điểm nổi bật nhỏ bên dưới nút CTA */}
             <div className="mt-4 flex flex-wrap items-center gap-5 text-xs text-[#A9B1D6]">
               {FEATURE_HIGHLIGHTS.map((item) => {
                 const Icon = item.icon
@@ -247,9 +245,9 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* CỘT PHẢI (5/12): Bố cục hình tháp (trên thu gọn tránh chữ Thinking, dưới mở rộng 2 thẻ Code & Hint căn thẳng mép phải với Thẻ 3) */}
+        {/* CỘT PHẢI (5/12): Bố cục hình tháp */}
         <div className="flex flex-col justify-between select-none lg:col-span-5">
-          {/* Hàng trên cùng: Nhãn trạng thái Syllabus căn phải, ngang hàng với Pill Badge bên trái */}
+          {/* Hàng trên cùng: Nhãn trạng thái Syllabus căn phải */}
           <div className="flex items-center justify-end">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-[#292E42] bg-[#1A1B26] px-3.5 py-1.5 text-[11px]">
               <span className="size-2 rounded-full bg-[#7DCFFF]" />
@@ -263,14 +261,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Phần giữa: Sơ đồ Cây Đường Tròn (Mọi cạnh nối đều là đường thẳng nối tâm, vuông góc 90° với tiếp tuyến 2 đường tròn) */}
+          {/* Phần giữa: Sơ đồ Cây Đường Tròn */}
           <div className="my-1 flex items-center justify-end">
             <svg
               viewBox="0 0 460 210"
               className="h-[152px] w-full max-w-[460px] overflow-visible xl:h-[172px]"
               aria-label="DSA Skill Tree Roadmap"
             >
-              {/* Các đoạn thẳng nối tâm chuẩn hình học (vuông góc tiếp tuyến đường tròn tại điểm tiếp xúc) */}
+              {/* Các đoạn thẳng nối tâm */}
               {[
                 {
                   x1: 255,
@@ -472,7 +470,7 @@ export default function LandingPage() {
             </svg>
           </div>
 
-          {/* Hàng dưới cùng: 2 thẻ Code Sandbox & Socratic Hint nằm ngang hàng với nút CTA và căn thẳng mép phải với Thẻ 3 */}
+          {/* Hàng dưới cùng: 2 thẻ Code Sandbox & Socratic Hint */}
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {/* Thẻ 1: Code Sandbox + Big-O */}
             <div className="rounded-xl border border-[#292E42] bg-[#1A1B26] p-3 font-mono text-[11px]">
@@ -576,12 +574,8 @@ export default function LandingPage() {
           <div className="size-1 rounded-full bg-[#414868]" />
         </div>
 
-        <p className="tracking-wide">
-          <span className="font-semibold text-[#7AA2F7]">AlgoPath</span>
-          <span className="mx-1.5 text-[#3B4261]">—</span>
-          <span className="text-[#565F89]">
-            Build Better Algorithmic Thinkers
-          </span>
+        <p className="tracking-wide text-center text-[#565F89]">
+          {BRAND.tagline}
         </p>
 
         <div className="flex items-center">

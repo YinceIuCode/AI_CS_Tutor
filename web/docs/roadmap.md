@@ -71,7 +71,7 @@ Khi click vào một Node trên React Flow Canvas:
 
 | Thành phần / Nút bấm | Khóa trong `ROADMAP_LINKS` | Giá trị mặc định | Mô tả điều hướng |
 | :--- | :--- | :---: | :--- |
-| **Logo `AlgoPath` (góc trái Header)** | `ROADMAP_LINKS.brand` | `"/"` | Quay về trang chủ Landing (`/`) |
+| **Logo `OffByOne` (góc trái Header)** | `ROADMAP_LINKS.brand` | `"/"` | Quay về trang chủ Landing (`/`) |
 | **Avatar `Duc Vinh Hoang` (góc phải Header)** | `ROADMAP_LINKS.profile` | `"/auth"` | Chuyển tới trang tài khoản / đăng nhập |
 | **Nút `→ Enter Workspace` (trong Pop-up Screen)** | `ROADMAP_LINKS.workspace` | `"/workspace"` | Chuyển vào không gian học tập của Node vừa chọn |
 | **Đường dẫn Code Sandbox** | `ROADMAP_LINKS.codeSandbox` | `"/sandbox"` | Đường dẫn dự phòng tới trang Code Editor |

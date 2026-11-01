@@ -4,7 +4,7 @@ import * as React from "react"
 import { AuthContext } from "@/contexts/AuthContext"
 
 /**
- * Custom hook to access AlgoPath authentication state and actions.
+ * Custom hook to access OffByOne authentication state and actions.
  * @returns {import("@/contexts/AuthContext").AuthContextValue}
  */
 export function useAuth() {

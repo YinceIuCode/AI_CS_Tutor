@@ -34,6 +34,9 @@ import { SocraticTutorPanel } from "@/components/workspace/SocraticTutorPanel"
 import { useAuth } from "@/hooks/useAuth"
 import { useUserProgress } from "@/hooks/useUserProgress"
 import { cn } from "@/lib/utils"
+import { BRAND } from "@/config/brand"
+import { BrandLogo } from "@/components/brand-logo"
+import { PwaInstallButton } from "@/components/pwa-install-button"
 import { getSocraticTutorProfile } from "@/mocks/socraticTutorData"
 import { resolveWorkspaceSession } from "@/services/roadmapService"
 
@@ -454,15 +457,12 @@ export function WorkspaceView({
       {/* ==================== THANH HEADER TRÊN CÙNG (TOP NAVBAR) ==================== */}
       <header className="relative z-40 mx-auto w-full max-w-[1480px] shrink-0">
         <nav className="flex items-center justify-between gap-4 rounded-2xl border border-[#292E42] bg-[#1A1B26]/95 px-5 py-2.5 shadow-lg backdrop-blur-md">
-          {/* Logo AlgoPath */}
+          {/* Logo OffByOne */}
           <Link
             href={WORKSPACE_LINKS.brand}
-            className="flex shrink-0 items-center gap-3 transition-opacity hover:opacity-90"
+            className="group flex shrink-0 items-center transition-opacity hover:opacity-95"
           >
-            <span className="size-7 shrink-0 rounded-full bg-[#7AA2F7]" />
-            <span className="text-base font-bold tracking-tight text-[#C0CAF5]">
-              AlgoPath
-            </span>
+            <BrandLogo size="sm" priority />
           </Link>
 
           {/* Thanh Search ở giữa */}
@@ -480,8 +480,11 @@ export function WorkspaceView({
             </kbd>
           </div>
 
-          {/* User Profile bên phải (Đồng bộ từ AuthContext) */}
-          <UserProfileMenu />
+          {/* User Profile & PWA Download Button */}
+          <div className="flex items-center gap-3">
+            <PwaInstallButton />
+            <UserProfileMenu />
+          </div>
         </nav>
       </header>
 

@@ -1,6 +1,6 @@
-# 🎓 AlgoPath Web — AI CS Tutor Frontend
+# 🎓 OffByOne Web — AI CS Tutor Frontend
 
-Frontend application for **AlgoPath (AI CS Tutor)**, an AI-powered Data Structures & Algorithms (DSA) learning platform built with **Next.js (App Router)**, **React 19**, **Tailwind CSS v4**, **shadcn/ui**, and **Monaco Editor**.
+Frontend application for **OffByOne (AI CS Tutor)**, an AI-powered Data Structures & Algorithms (DSA) learning platform built with **Next.js (App Router)**, **React 19**, **Tailwind CSS v4**, **shadcn/ui**, and **Monaco Editor**.
 
 ---
 

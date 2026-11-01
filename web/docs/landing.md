@@ -1,6 +1,6 @@
 # Tài Liệu Giao Diện Landing Screen (`landing.md`)
 
-Tài liệu này trình bày chi tiết thiết kế trang **Landing Screen (AlgoPath)** từ bản thiết kế Figma, bao gồm bảng mã màu, bố cục thành phần và hướng dẫn gán đường dẫn (`href`) cho từng nút bấm / thẻ điều hướng.
+Tài liệu này trình bày chi tiết thiết kế trang **Landing Screen (OffByOne)** từ bản thiết kế Figma, bao gồm bảng mã màu, bố cục thành phần và hướng dẫn gán đường dẫn (`href`) cho từng nút bấm / thẻ điều hướng.
 
 ---
 
@@ -22,9 +22,9 @@ Giao diện sử dụng đúng hệ màu **Tokyo Night Dark** từ bảng màu t
 | `#1A1B26` | `100%` | Nền của thanh Navbar, Pill Badge, nút `Log In`, và 3 thẻ tính năng (Feature Cards) |
 | `#292E42` | `100%` | Viền (Border) của thanh Navbar, 3 thẻ tính năng và thanh ngăn cách dọc dưới nút CTA |
 | `#414868` | `100%` | Viền nút `Log In`, viền thẻ khi rê chuột (hover) và dấu chấm tròn ở thanh chân trang |
-| `#3B4261` | `100%` | Vạch ngăn cách dọc cạnh logo `AlgoPath` trên Navbar và dấu gạch ngang ở Footer |
-| `#283457` | `100%` | Đường kẻ ngang hai bên dòng chữ chân trang (`AlgoPath — Build Better Algorithmic Thinkers`) |
-| `#C0CAF5` | `100%` | Chữ tiêu đề nổi bật: Tên thương hiệu `AlgoPath`, chữ nút `Log In`, tiêu đề 3 thẻ tính năng |
+| `#3B4261` | `100%` | Vạch ngăn cách dọc cạnh logo `OffByOne` trên Navbar và dấu gạch ngang ở Footer |
+| `#283457` | `100%` | Đường kẻ ngang hai bên dòng chữ chân trang (`OffByOne — Almost Right. Think Again.`) |
+| `#C0CAF5` | `100%` | Chữ tiêu đề nổi bật: Tên thương hiệu `OffByOne`, chữ nút `Log In`, tiêu đề 3 thẻ tính năng |
 | `#A9B1D6` | `100%` | Chữ văn bản chính: Slogan trên Navbar, liên kết điều hướng, đoạn mô tả Hero, chữ trong Pill Badge |
 | `#565F89` | `100%` | Chữ mô tả phụ: Nội dung chi tiết bên trong 3 thẻ tính năng và phần chữ phụ ở Footer |
 | `#7AA2F7` | `100%` | Màu xanh chủ đạo: Logo tròn, chữ `Data` & `Computational`, nền nút `Get Started`, nút `Explore Skill Tree →`, các icon chính |
@@ -40,7 +40,7 @@ Giao diện sử dụng đúng hệ màu **Tokyo Night Dark** từ bảng màu t
 ## 3. Các Thành Phần Giao Diện Đã Xây Dựng
 
 1. **Thanh điều hướng (Navbar):**
-   - Cụm thương hiệu bên trái: Biểu tượng hình tròn xanh `#7AA2F7`, chữ **AlgoPath**, vạch ngăn cách dọc và câu khẩu hiệu *"Smarter DSA mastery, one node at a time"*.
+   - Cụm thương hiệu bên trái: Biểu tượng hình tròn xanh `#7AA2F7`, chữ **OffByOne**, vạch ngăn cách dọc và câu khẩu hiệu *"Almost Right. Think Again."*.
    - Cụm liên kết giữa: `Features` và `How It Works`.
    - Cụm nút bên phải: Nút viền tối `Log In` và nút nền xanh `Get Started`.
 2. **Khu vực Hero (Hero Section):**
@@ -61,7 +61,7 @@ Giao diện sử dụng đúng hệ màu **Tokyo Night Dark** từ bảng màu t
    - **Code Sandbox & Theory Quiz** (kèm icon quan sát / trực quan).
    - **Socratic AI Feedback** (kèm icon trợ giảng cá nhân).
 4. **Chân trang (Footer):**
-   - Thanh kẻ ngang đối xứng hai bên kèm chấm tròn ở đầu mút và dòng chữ `AlgoPath — Build Better Algorithmic Thinkers`.
+   - Thanh kẻ ngang đối xứng hai bên kèm chấm tròn ở đầu mút và dòng chữ `OffByOne — Almost Right. Think Again.`.
 
 ---
 
@@ -71,7 +71,7 @@ Tất cả các nút bấm và thẻ có thể điều hướng đều được 
 
 | Tên nút / Thành phần | Vị trí trên màn hình | Khóa trong `LANDING_LINKS` | Giá trị `href` mặc định | Mô tả trang đích |
 | :--- | :--- | :--- | :--- | :--- |
-| **Logo + Chữ `AlgoPath`** | Góc trái trên Navbar | `LANDING_LINKS.brand` | `"/"` | Trang chủ Landing |
+| **Logo + Chữ `OffByOne`** | Góc trái trên Navbar | `LANDING_LINKS.brand` | `"/"` | Trang chủ Landing |
 | **Liên kết `Features`** | Giữa Navbar | `LANDING_LINKS.features` | `"#features"` | Cuộn xuống khu vực thẻ tính năng |
 | **Liên kết `How It Works`** | Giữa Navbar | `LANDING_LINKS.howItWorks` | `"#how-it-works"` | Cuộn tới phần hướng dẫn |
 | **Nút `Log In`** | Góc phải trên Navbar | `LANDING_LINKS.login` | `"/auth"` | Trang đăng nhập (mở tab Log In) |

@@ -52,7 +52,7 @@ function getKnownUsers() {
     role: u.role,
     accountType: u.accountType,
     passwordDigest: hashPassword(
-      u.passwordHash.replace("algopath_demo_hash::", "")
+      u.passwordHash.replace(/^(?:algopath|offbyone)_demo_hash::/, "")
     ),
   }))
 
@@ -140,7 +140,7 @@ export async function login(email, password) {
 
   if (!matchedUser || matchedUser.passwordDigest !== inputDigest) {
     throw new Error(
-      "Invalid email or password. Try demo account: student@algopath.demo / Demo1234"
+      "Invalid email or password. Try demo account: student@offbyone.demo / Demo1234"
     )
   }
 
@@ -210,7 +210,7 @@ export async function loginAsGuest() {
   const guestUser = {
     id: generateUniqueId("guest"),
     fullName: "Guest Student",
-    email: "guest@algopath.demo",
+    email: "guest@offbyone.demo",
     role: "student",
     accountType: "guest",
   }

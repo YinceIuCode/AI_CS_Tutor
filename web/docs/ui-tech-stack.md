@@ -1,12 +1,12 @@
 # Tài Liệu Công Nghệ & Thư Viện Giao Diện (`ui-tech-stack.md`)
 
-Tài liệu này tổng hợp toàn bộ **ngăn xếp công nghệ (Tech Stack)**, **thư viện chuyên dụng** và **kỹ thuật dựng giao diện (UI Engineering)** được sử dụng trong phân hệ Frontend (`web/`) của dự án **AlgoPath — AI-Powered DSA Learning Platform**.
+Tài liệu này tổng hợp toàn bộ **ngăn xếp công nghệ (Tech Stack)**, **thư viện chuyên dụng** và **kỹ thuật dựng giao diện (UI Engineering)** được sử dụng trong phân hệ Frontend (`web/`) của dự án **OffByOne — AI-Powered DSA Learning Platform**.
 
 ---
 
 ## 1. Bảng Tổng Hợp Công Nghệ Cốt Lõi (Core Frontend Stack)
 
-| Nhóm công nghệ | Thư viện / Công cụ | Phiên bản | Vai trò trong dự án AlgoPath |
+| Nhóm công nghệ | Thư viện / Công cụ | Phiên bản | Vai trò trong dự án OffByOne |
 | :--- | :--- | :---: | :--- |
 | **Framework & Routing** | **Next.js (App Router)** | `16.4.0` | Định tuyến trang (`/`, `/auth`, `/roadmap`, `/workspace/:nodeId/:taskId`), tối ưu tải trang và tách biệt Client/Server Components. |
 | **UI Runtime** | **React & React DOM** | `19.3.0` | Quản lý trạng thái giao diện tương tác, Custom Hooks và Context API. |

@@ -20,6 +20,8 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
+import { BRAND } from "@/config/brand"
+import { BrandLogo } from "@/components/brand-logo"
 
 /**
  * Cấu hình đường dẫn điều hướng cho trang Đăng nhập / Đăng ký (Auth).
@@ -161,12 +163,9 @@ export function LoginForm({
               <div className="mb-5 flex items-center justify-between">
                 <Link
                   href={AUTH_LINKS.backToHome}
-                  className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-90"
+                  className="group inline-flex items-center transition-opacity hover:opacity-95"
                 >
-                  <span className="size-7 shrink-0 rounded-full bg-gradient-to-tr from-[#7AA2F7] to-[#7DCFFF] shadow-[0_0_14px_rgba(122,162,247,0.45)]" />
-                  <span className="text-base font-bold tracking-tight text-[#C0CAF5]">
-                    AlgoPath
-                  </span>
+                  <BrandLogo size="md" priority />
                 </Link>
 
                 <span className="rounded-full border border-[#292E42] bg-[#1A1B26] px-3 py-1 font-mono text-[10px] text-[#7AA2F7]">
@@ -458,7 +457,7 @@ export function LoginForm({
                   <button
                     type="button"
                     onClick={() => {
-                      setEmail("student@algopath.demo")
+                      setEmail(BRAND.demoEmail)
                       setPassword("Demo1234")
                       setErrorMessage(null)
                       setInfoMessage(null)
@@ -472,11 +471,11 @@ export function LoginForm({
 
               {/* Tiêu đề chào mừng */}
               <h2 className="text-2xl font-bold tracking-tight text-[#C0CAF5]">
-                Welcome to AlgoPath
+                Welcome to <span className="text-[#C0CAF5]">OffBy</span><span className="bg-gradient-to-r from-[#7DCFFF] via-[#7AA2F7] to-[#BB9AF7] bg-clip-text text-transparent">One</span>
               </h2>
               <p className="mt-1 text-xs text-[#A9B1D6]">
                 {activeTab === "login"
-                  ? "Your next step in mastering DSA starts here."
+                  ? BRAND.slogan
                   : "Create an account to build your personalized DSA Skill Tree."}
               </p>
 
@@ -582,7 +581,7 @@ export function LoginForm({
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="student@algopath.demo"
+                      placeholder={BRAND.demoEmail}
                       required
                       className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
                     />
@@ -786,7 +785,7 @@ export function LoginForm({
                 <p className="pt-0.5 text-center text-xs text-[#A9B1D6]">
                   {activeTab === "login" ? (
                     <>
-                      New to AlgoPath?{" "}
+                      New to {BRAND.name}?{" "}
                       <button
                         type="button"
                         onClick={() => handleTabSwitch("signup")}

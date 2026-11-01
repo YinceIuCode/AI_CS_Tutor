@@ -6,7 +6,7 @@ import { fetchRoadmapData } from "@/services/roadmapService"
 export const ROADMAP_QUERY_KEY = ["roadmap", "skill-tree"]
 
 /**
- * Custom TanStack Query hook to fetch and manage the AlgoPath DSA Skill Tree Roadmap.
+ * Custom TanStack Query hook to fetch and manage the OffByOne DSA Skill Tree Roadmap.
  *
  * @param {Object} options
  * @param {boolean} [options.enabled=true] - Whether the query should execute automatically.

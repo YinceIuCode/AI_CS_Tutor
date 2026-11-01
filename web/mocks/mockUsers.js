@@ -1,14 +1,23 @@
 /**
- * Mock Users for AlgoPath Frontend Authentication Demo.
+ * Mock Users for OffByOne Frontend Authentication Demo.
  * Demo credentials only — never use real personal credentials.
  */
 
 export const DEMO_USERS = [
   {
     id: "user-demo-student-01",
-    email: "student@algopath.demo",
+    email: "student@offbyone.demo",
     // Used only for in-memory mock verification; never persisted to sessionStorage/localStorage
-    passwordHash: "algopath_demo_hash::Demo1234",
+    passwordHash: "offbyone_demo_hash::Demo1234",
+    fullName: "Demo Student",
+    role: "student",
+    accountType: "registered",
+  },
+  {
+    // Legacy alias to ensure backwards compatibility with previous sessions / test scripts
+    id: "user-demo-student-legacy",
+    email: "student@algopath.demo",
+    passwordHash: "offbyone_demo_hash::Demo1234",
     fullName: "Demo Student",
     role: "student",
     accountType: "registered",
@@ -20,5 +29,5 @@ export const DEMO_USERS = [
  * Prevents storing plaintext passwords in memory or browser storage.
  */
 export function computeMockPasswordDigest(rawPassword = "") {
-  return `algopath_demo_hash::${String(rawPassword)}`
+  return `offbyone_demo_hash::${String(rawPassword)}`
 }

@@ -1,5 +1,5 @@
 /**
- * Detailed Task Content for the AlgoPath Learning Workspace.
+ * Detailed Task Content for the OffByOne Learning Workspace.
  * Linked to `MOCK_ROADMAP_NODES` in `roadmapData.js` via `nodeId` and `taskId`.
  * All displayed content is in English.
  */

@@ -1,5 +1,5 @@
 /**
- * Mock Data for the AlgoPath DSA Skill Tree Roadmap.
+ * Mock Data for the OffByOne DSA Skill Tree Roadmap.
  * Designed to match the Backend API contract so it can be replaced by a real Fetch API call without UI changes.
  */
 

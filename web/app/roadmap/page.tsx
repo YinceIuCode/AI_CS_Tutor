@@ -22,6 +22,9 @@ import {
 } from "lucide-react"
 import RoadmapCanvas from "@/components/roadmap/RoadmapCanvas"
 import { UserProfileMenu } from "@/components/user-profile-menu"
+import { BRAND } from "@/config/brand"
+import { BrandLogo } from "@/components/brand-logo"
+import { PwaInstallButton } from "@/components/pwa-install-button"
 import { useAuth } from "@/hooks/useAuth"
 import { useRoadmap } from "@/hooks/useRoadmap"
 import { useUserProgress } from "@/hooks/useUserProgress"
@@ -310,12 +313,9 @@ export default function RoadmapPage() {
         <nav className="flex items-center justify-between gap-4 rounded-2xl border border-[#292E42] bg-[#1A1B26]/95 px-5 py-2.5 shadow-lg backdrop-blur-md">
           <Link
             href={ROADMAP_LINKS.brand}
-            className="flex shrink-0 items-center gap-3 transition-opacity hover:opacity-90"
+            className="group flex shrink-0 items-center transition-opacity hover:opacity-95"
           >
-            <span className="size-8 shrink-0 rounded-full bg-[#7AA2F7]" />
-            <span className="text-lg font-bold tracking-tight text-[#C0CAF5]">
-              AlgoPath
-            </span>
+            <BrandLogo size="sm" priority />
           </Link>
 
           <div className="hidden max-w-[460px] flex-1 items-center justify-between rounded-full border border-[#292E42] bg-[#15161E]/90 px-4 py-2 text-xs text-[#565F89] transition-colors focus-within:border-[#414868] md:flex">
@@ -333,6 +333,7 @@ export default function RoadmapPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <PwaInstallButton />
             <UserProfileMenu />
           </div>
         </nav>
