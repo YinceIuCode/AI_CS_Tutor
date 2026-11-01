@@ -77,17 +77,31 @@ const NODE_RADIUS = 30
 const LOADING_STEPS = [
   "Parsing PDF layout & course syllabus sections...",
   "Extracting DSA topics & prerequisite dependencies...",
-  "Indexing 48 vector chunks into Active Knowledge Base (RAG)...",
+  "Indexing vector chunks into Active Knowledge Base (RAG)...",
+  "Synthesizing prerequisite Skill Tree with AI Tutor...",
 ] as const
+
+function formatPdfFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "2.4 MB"
+  const mb = bytes / (1024 * 1024)
+  if (mb >= 0.1) return `${mb.toFixed(1)} MB`
+  const kb = Math.max(1, Math.round(bytes / 1024))
+  return `${kb} KB`
+}
 
 export default function RoadmapPage() {
   const router = useRouter()
   const { currentUser, isAuthenticated, isInitializing } = useAuth()
   const { userProgress, isProgressLoaded, saveRoadmapState } = useUserProgress()
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [flowState, setFlowState] = React.useState<FlowState>("empty")
-  const [progress, setProgress] = React.useState(0)
   const [loadingStepIndex, setLoadingStepIndex] = React.useState(0)
+  const [isSubtitleFading, setIsSubtitleFading] = React.useState(false)
+  const [showLoadingOverlay, setShowLoadingOverlay] = React.useState(false)
+  const [isOverlayFadingOut, setIsOverlayFadingOut] = React.useState(false)
+  const [isDraggingFile, setIsDraggingFile] = React.useState(false)
+  const [uploadError, setUploadError] = React.useState<string | null>(null)
   const [simulatedFileMeta, setSimulatedFileMeta] = React.useState({
     fileName: "CS101_DSA_Syllabus_HCMUS.pdf",
     fileSize: "2.4 MB",
@@ -149,6 +163,40 @@ export default function RoadmapPage() {
   const isProcessingOrFetching =
     flowState === "loading" || (flowState === "ready" && isQueryLoading)
 
+  // Chạy lặp lại dòng Subtitle (kèm hiệu ứng mờ chuyển câu) cho tới khi LLM / Upload hoàn tất
+  React.useEffect(() => {
+    if (!isProcessingOrFetching) return
+    setIsSubtitleFading(false)
+
+    const stepInterval = window.setInterval(() => {
+      setIsSubtitleFading(true)
+      window.setTimeout(() => {
+        setLoadingStepIndex((prev) => (prev + 1) % LOADING_STEPS.length)
+        setIsSubtitleFading(false)
+      }, 220)
+    }, 1150)
+
+    return () => window.clearInterval(stepInterval)
+  }, [isProcessingOrFetching])
+
+  // Quản lý hiệu ứng mờ dần (Fade-out) của hộp Loading khi file đã xử lý xong
+  React.useEffect(() => {
+    if (isProcessingOrFetching) {
+      setShowLoadingOverlay(true)
+      setIsOverlayFadingOut(false)
+      return
+    }
+
+    if (showLoadingOverlay) {
+      setIsOverlayFadingOut(true)
+      const fadeTimer = window.setTimeout(() => {
+        setShowLoadingOverlay(false)
+        setIsOverlayFadingOut(false)
+      }, 450)
+      return () => window.clearTimeout(fadeTimer)
+    }
+  }, [isProcessingOrFetching, showLoadingOverlay])
+
   // Truy xuất dữ liệu chi tiết của Node đang mở trong Pop-up theo ID
   const popupNode = React.useMemo(() => {
     if (!isGeneratedReady || !selectedNodeId || !roadmapData?.nodes) {
@@ -159,48 +207,73 @@ export default function RoadmapPage() {
 
   const triggerSimulation = React.useCallback(
     (fileName = "CS101_DSA_Syllabus_HCMUS.pdf", fileSize = "2.4 MB") => {
+      setUploadError(null)
       setSimulatedFileMeta({ fileName, fileSize })
       setFlowState("loading")
-      setProgress(0)
       setLoadingStepIndex(0)
       setSelectedNodeId(null)
 
-      const startTime = Date.now()
-      const durationMs = 2200
+      // Thời gian chờ phản hồi từ pipeline phân tích PDF (sẵn sàng thay bằng await uploadSyllabusPdf(file))
+      const timer = window.setTimeout(() => {
+        setFlowState("ready")
+        saveRoadmapState({
+          roadmapFlowState: "ready",
+          fileName,
+          fileSize,
+        })
+      }, 2800)
 
-      const interval = window.setInterval(() => {
-        const elapsed = Date.now() - startTime
-        const nextProgress = Math.min(
-          100,
-          Math.round((elapsed / durationMs) * 100)
-        )
-        setProgress(nextProgress)
-
-        if (nextProgress < 38) {
-          setLoadingStepIndex(0)
-        } else if (nextProgress < 75) {
-          setLoadingStepIndex(1)
-        } else {
-          setLoadingStepIndex(2)
-        }
-
-        if (elapsed >= durationMs) {
-          window.clearInterval(interval)
-          setFlowState("ready")
-          saveRoadmapState({
-            roadmapFlowState: "ready",
-            fileName,
-            fileSize,
-          })
-        }
-      }, 45)
+      return () => window.clearTimeout(timer)
     },
     [saveRoadmapState]
   )
 
+  const processSelectedPdfFile = React.useCallback(
+    (file: File | null | undefined) => {
+      if (!file) return
+      const isPdf =
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf")
+      if (!isPdf) {
+        setUploadError("Please select a valid PDF file (.pdf).")
+        return
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setUploadError("File size exceeds the 10MB limit.")
+        return
+      }
+      const formattedSize = formatPdfFileSize(file.size)
+      triggerSimulation(file.name, formattedSize)
+    },
+    [triggerSimulation]
+  )
+
+  const handleOpenFileDialog = () => {
+    if (isProcessingOrFetching) return
+    fileInputRef.current?.click()
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      processSelectedPdfFile(file)
+    }
+    e.target.value = ""
+  }
+
+  const handleDropPdf = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDraggingFile(false)
+    if (isProcessingOrFetching) return
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      processSelectedPdfFile(file)
+    }
+  }
+
   const handleReset = () => {
     setFlowState("empty")
-    setProgress(0)
+    setUploadError(null)
     setSelectedNodeId(null)
     saveRoadmapState({
       roadmapFlowState: "empty",
@@ -425,32 +498,50 @@ export default function RoadmapPage() {
               </div>
             )}
 
-            {/* HỘP THANH LOADING KHI BACKEND ĐANG XỬ LÝ HOẶC TANSTACK QUERY ĐANG TẢI DỮ LIỆU */}
-            {isProcessingOrFetching && (
-              <div className="absolute top-1/2 left-1/2 z-20 w-[90%] max-w-[410px] -translate-x-1/2 -translate-y-1/2">
-                <div className="flex flex-col items-center rounded-2xl border border-[#7AA2F7]/50 bg-[#1A1B26]/98 px-7 py-7 text-center shadow-[0_0_40px_rgba(122,162,247,0.2)]">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-[#7AA2F7]/16 text-[#7DCFFF]">
+            {/* HỘP LOADING AI KHI BACKEND ĐANG PHÂN TÍCH PDF (LẶP SUBTITLE & MỜ DẦN KHI XONG) */}
+            {showLoadingOverlay && (
+              <div
+                className={` absolute top-1/2 left-1/2 z-30 w-[90%] max-w-[420px] -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ${
+                  isOverlayFadingOut
+                    ? "pointer-events-none scale-95 opacity-0"
+                    : "scale-100 opacity-100"
+                }`}
+              >
+                <div className="flex flex-col items-center rounded-2xl border border-[#7AA2F7]/50 bg-[#1A1B26]/98 px-7 py-7 text-center shadow-[0_0_45px_rgba(122,162,247,0.24)] backdrop-blur-md">
+                  <div className="relative flex size-12 items-center justify-center rounded-2xl border border-[#7AA2F7]/35 bg-[#7AA2F7]/15 text-[#7DCFFF]">
                     <Sparkles className="size-5 animate-spin" />
-                  </div>
-                  <h2 className="mt-3.5 text-sm font-bold text-[#C0CAF5]">
-                    Generating Your DSA Skill Tree...
-                  </h2>
-                  <p className="mt-1 font-mono text-[11px] text-[#7DCFFF]">
-                    {flowState === "ready" && isQueryLoading
-                      ? "Fetching roadmap graph from service..."
-                      : LOADING_STEPS[loadingStepIndex]}
-                  </p>
-
-                  <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[#15161E] p-0.5">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#7AA2F7] to-[#7DCFFF] transition-all duration-100"
-                      style={{ width: `${progress}%` }}
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -inset-1 rounded-2xl border border-[#7DCFFF]/30 animate-ping"
                     />
                   </div>
-                  <div className="mt-2 flex w-full items-center justify-between font-mono text-[10px] text-[#565F89]">
-                    <span>Backend RAG Pipeline</span>
-                    <span className="font-bold text-[#C0CAF5]">
-                      {progress}%
+
+                  <h2 className="mt-4 text-sm font-bold text-[#C0CAF5]">
+                    Generating Your DSA Skill Tree...
+                  </h2>
+
+                  {/* Subtitle chạy lặp lại kèm hiệu ứng chuyển mờ (fade) giữa các câu */}
+                  <div className="mt-2 flex min-h-[36px] items-center justify-center">
+                    <p
+                      className={`font-mono text-[11px] leading-relaxed text-[#7DCFFF] transition-opacity duration-200 ${
+                        isSubtitleFading ? "opacity-0" : "opacity-100"
+                      }`}
+                    >
+                      {isOverlayFadingOut
+                        ? "Skill tree ready! Rendering interactive nodes..."
+                        : LOADING_STEPS[loadingStepIndex]}
+                    </p>
+                  </div>
+
+                  {/* Nhịp sóng trạng thái AI (thay cho thanh % thời gian cố định) */}
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#292E42] bg-[#15161E] px-3.5 py-1 font-mono text-[10px] text-[#A9B1D6]">
+                    <span className="flex items-center gap-1">
+                      <span className="size-1.5 animate-bounce rounded-full bg-[#7DCFFF] [animation-delay:-0.3s]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-[#7AA2F7] [animation-delay:-0.15s]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-[#BB9AF7]" />
+                    </span>
+                    <span className="truncate max-w-[230px]">
+                      Analyzing {simulatedFileMeta.fileName}
                     </span>
                   </div>
                 </div>
@@ -528,7 +619,28 @@ export default function RoadmapPage() {
         <aside className="flex min-h-0 flex-col gap-4 lg:col-span-4 xl:col-span-3">
           {/* KHUNG TRÊN: Upload your study material (PDF/Syllabus) */}
           <div className="rounded-2xl border border-[#292E42] bg-[#15161E]/90 p-4 shadow-xl">
-            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#414868] bg-[#1A1B26]/60 px-6 py-7 text-center transition-colors hover:border-[#7AA2F7]/60">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                if (!isProcessingOrFetching) setIsDraggingFile(true)
+              }}
+              onDragLeave={() => setIsDraggingFile(false)}
+              onDrop={handleDropPdf}
+              onClick={handleOpenFileDialog}
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-6 text-center transition-colors ${
+                isDraggingFile
+                  ? "border-[#7DCFFF] bg-[#7AA2F7]/12"
+                  : "border-[#414868] bg-[#1A1B26]/60 hover:border-[#7AA2F7]/60"
+              }`}
+            >
               <CloudUpload className="size-11 stroke-[1.75] text-[#3DB5E6]" />
 
               <p className="mt-3 text-xs font-medium text-[#C0CAF5]">
@@ -538,21 +650,40 @@ export default function RoadmapPage() {
               <button
                 type="button"
                 disabled={isProcessingOrFetching}
-                onClick={() =>
-                  triggerSimulation("CS101_DSA_Syllabus_HCMUS.pdf", "2.4 MB")
-                }
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleOpenFileDialog()
+                }}
                 className="mt-3.5 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#7AA2F7] px-6 text-xs font-bold text-[#15161E] shadow-[0_0_20px_rgba(122,162,247,0.25)] transition-all hover:bg-[#8DB0FF] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FileText className="size-4 stroke-[2.2]" />
                 <span>
-                  {isProcessingOrFetching ? "Processing PDF..." : "Choose File"}
+                  {isProcessingOrFetching ? "Analyzing PDF..." : "Choose File"}
                 </span>
               </button>
 
-              <p className="mt-3 text-[11px] text-[#565F89]">
+              <button
+                type="button"
+                disabled={isProcessingOrFetching}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  triggerSimulation("CS101_DSA_Syllabus_HCMUS.pdf", "2.4 MB")
+                }}
+                className="mt-2 cursor-pointer font-mono text-[11px] font-medium text-[#7DCFFF] underline decoration-[#7DCFFF]/40 underline-offset-4 transition-colors hover:text-[#C0CAF5] disabled:pointer-events-none disabled:opacity-50"
+              >
+                Or use sample CS101_DSA_Syllabus_HCMUS.pdf
+              </button>
+
+              {uploadError && (
+                <p className="mt-2.5 text-[11px] font-medium text-[#DB4B4B]">
+                  {uploadError}
+                </p>
+              )}
+
+              <p className="mt-2.5 text-[11px] text-[#565F89]">
                 {currentUser?.accountType === "guest"
-                  ? "Guest Mode: Loads sample CS101 Syllabus (Sign in to save custom PDFs)"
-                  : "Supported format: PDF (Max 10MB)"}
+                  ? "Select any PDF from your device or drag & drop here"
+                  : "Supported format: PDF (Max 10MB) • Drag & drop supported"}
               </p>
             </div>
           </div>
@@ -602,7 +733,7 @@ export default function RoadmapPage() {
                         {simulatedFileMeta.fileName}
                       </div>
                       <p className="mt-0.5 text-[11px] text-[#7DCFFF]">
-                        Chunking &amp; embedding PDF ({progress}%)...
+                        Chunking &amp; embedding PDF into vector store...
                       </p>
                     </div>
                   </div>

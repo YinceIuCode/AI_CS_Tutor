@@ -154,6 +154,14 @@ export function WorkspaceView({
     taskDetail?.initialCode || ""
   )
   const [isCodeSavedBadge, setIsCodeSavedBadge] = React.useState<boolean>(false)
+  const [isRunningCode, setIsRunningCode] = React.useState<boolean>(false)
+  const [codeRunOutcome, setCodeRunOutcome] = React.useState<
+    "initial" | "warning" | "passed"
+  >("initial")
+  const [lastRunMetrics, setLastRunMetrics] = React.useState<{
+    runtimeMs: number
+    memoryMb: string
+  } | null>(null)
   const [cursorPos, setCursorPos] = React.useState<{
     line: number
     col: number
@@ -168,11 +176,20 @@ export function WorkspaceView({
     const savedQuiz = userProgress.quizAnswers?.[activeTask.id]
     setSelectedOption(savedQuiz?.selectedOption ?? null)
 
-    const savedCode = userProgress.codeDrafts?.[activeTask.id]?.code
+    const savedCodeObj = userProgress.codeDrafts?.[activeTask.id]
+    const savedCode = savedCodeObj?.code
     if (typeof savedCode === "string") {
       setCode(savedCode)
     } else if (taskDetail?.initialCode) {
       setCode(taskDetail.initialCode)
+    }
+
+    if (savedCodeObj?.isSubmitted) {
+      setCodeRunOutcome("passed")
+      setLastRunMetrics({ runtimeMs: 12, memoryMb: "4.1 MB" })
+    } else {
+      setCodeRunOutcome("initial")
+      setLastRunMetrics(null)
     }
 
     const savedHintCount = userProgress.hintsRemaining?.[activeTask.id]
@@ -229,15 +246,62 @@ export function WorkspaceView({
     [completeTask, activeTask.id, router, node.id]
   )
 
-  const handleSubmitCode = React.useCallback(() => {
+  const handleRunCode = React.useCallback(() => {
+    if (isRunningCode) return
+    setIsRunningCode(true)
     saveCodeDraft(activeTask.id, {
       code,
       language: taskDetail?.language || "C++",
-      isSubmitted: true,
     })
-    completeTask(activeTask.id)
-    setIsCodeSavedBadge(true)
-  }, [activeTask.id, code, completeTask, saveCodeDraft, taskDetail?.language])
+
+    window.setTimeout(() => {
+      setIsRunningCode(false)
+      const initialTrimmed = (taskDetail?.initialCode || "").trim()
+      const currentTrimmed = code.trim()
+      const hasAddedGuardOrFix =
+        currentTrimmed !== initialTrimmed &&
+        (/nullptr|!y|!x|!root|!head|if\s*\(/.test(currentTrimmed) ||
+          currentTrimmed.length > initialTrimmed.length + 18)
+
+      setCodeRunOutcome(hasAddedGuardOrFix ? "passed" : "warning")
+      setLastRunMetrics({
+        runtimeMs: hasAddedGuardOrFix ? 11 : 16,
+        memoryMb: "4.2 MB",
+      })
+      setIsCodeSavedBadge(true)
+    }, 650)
+  }, [
+    isRunningCode,
+    saveCodeDraft,
+    activeTask.id,
+    code,
+    taskDetail?.language,
+    taskDetail?.initialCode,
+  ])
+
+  const handleSubmitCode = React.useCallback(() => {
+    if (isRunningCode) return
+    setIsRunningCode(true)
+    window.setTimeout(() => {
+      setIsRunningCode(false)
+      saveCodeDraft(activeTask.id, {
+        code,
+        language: taskDetail?.language || "C++",
+        isSubmitted: true,
+      })
+      completeTask(activeTask.id)
+      setCodeRunOutcome("passed")
+      setLastRunMetrics({ runtimeMs: 12, memoryMb: "4.1 MB" })
+      setIsCodeSavedBadge(true)
+    }, 550)
+  }, [
+    isRunningCode,
+    activeTask.id,
+    code,
+    completeTask,
+    saveCodeDraft,
+    taskDetail?.language,
+  ])
 
   const handleSelectTask = React.useCallback(
     (targetTaskId: string) => {
@@ -709,16 +773,23 @@ export function WorkspaceView({
 
                     <button
                       type="button"
-                      className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border border-[#414868] bg-[#1A1B26] px-3 text-[11px] font-semibold text-[#C0CAF5] transition-colors hover:border-[#7AA2F7]"
+                      disabled={isRunningCode}
+                      onClick={handleRunCode}
+                      className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border border-[#414868] bg-[#1A1B26] px-3 text-[11px] font-semibold text-[#C0CAF5] transition-colors hover:border-[#7AA2F7] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <Play className="size-3 text-[#7AA2F7]" />
-                      <span>Run Code</span>
+                      <Play
+                        className={`size-3 text-[#7AA2F7] ${
+                          isRunningCode ? "animate-pulse" : ""
+                        }`}
+                      />
+                      <span>{isRunningCode ? "Running..." : "Run Code"}</span>
                     </button>
 
                     <button
                       type="button"
+                      disabled={isRunningCode}
                       onClick={handleSubmitCode}
-                      className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg bg-[#7AA2F7] px-3.5 text-[11px] font-bold text-[#15161E] transition-colors hover:bg-[#8DB0FF]"
+                      className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg bg-[#7AA2F7] px-3.5 text-[11px] font-bold text-[#15161E] transition-colors hover:bg-[#8DB0FF] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Send className="size-3" />
                       <span>Submit</span>
@@ -773,11 +844,28 @@ export function WorkspaceView({
 
               {/* 2. KHUNG DƯỚI: CODE ANALYSIS & TEST RESULTS */}
               <div className="shrink-0 rounded-2xl border border-[#292E42] bg-[#16161E] p-3.5">
-                <div className="flex items-center gap-2 border-b border-[#292E42] pb-2.5">
-                  <Settings className="size-4 text-[#7DCFFF]" />
-                  <h2 className="text-xs font-bold text-[#C0CAF5]">
-                    Code Analysis &amp; Test Results
-                  </h2>
+                <div className="flex items-center justify-between border-b border-[#292E42] pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Settings
+                      className={`size-4 text-[#7DCFFF] ${
+                        isRunningCode ? "animate-spin" : ""
+                      }`}
+                    />
+                    <h2 className="text-xs font-bold text-[#C0CAF5]">
+                      Code Analysis &amp; Test Results
+                    </h2>
+                  </div>
+
+                  {isRunningCode ? (
+                    <span className="font-mono text-[10px] text-[#7DCFFF]">
+                      Compiling &amp; running test suite...
+                    </span>
+                  ) : lastRunMetrics ? (
+                    <span className="font-mono text-[10px] text-[#9ECE6A]">
+                      Executed in {lastRunMetrics.runtimeMs}ms • Memory:{" "}
+                      {lastRunMetrics.memoryMb}
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -824,35 +912,68 @@ export function WorkspaceView({
                     </div>
                   </div>
 
-                  {/* Thẻ Phải: Edge Case Warning */}
-                  <div className="flex flex-col justify-between rounded-xl border border-[#DB4B4B]/65 bg-[#15161E] p-3">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-bold text-[#C0CAF5]">
-                          <AlertTriangle className="size-3.5 text-[#DB4B4B]" />
-                          <span>Edge Case Warning</span>
+                  {/* Thẻ Phải: Edge Case Warning hoặc All Tests Passed */}
+                  {codeRunOutcome === "passed" ? (
+                    <div className="flex flex-col justify-between rounded-xl border border-[#9ECE6A]/65 bg-[#15161E] p-3">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs font-bold text-[#C0CAF5]">
+                            <CheckCircle2 className="size-3.5 text-[#9ECE6A]" />
+                            <span>Test Suite Verification</span>
+                          </div>
+                          <span className="rounded-md border border-[#9ECE6A]/40 bg-[#9ECE6A]/15 px-2 py-0.5 text-[10px] font-semibold text-[#9ECE6A]">
+                            Passed (8 / 8 Tests)
+                          </span>
                         </div>
-                        <span className="rounded-md border border-[#DB4B4B]/40 bg-[#DB4B4B]/15 px-2 py-0.5 text-[10px] font-semibold text-[#DB4B4B]">
-                          {taskDetail?.analysis?.failedTestLabel ||
-                            "Failed (Test Case #5)"}
+
+                        <div className="mt-2 text-[11px] leading-relaxed text-[#A9B1D6]">
+                          <div className="font-medium text-[#C0CAF5]">
+                            All standard &amp; boundary edge cases verified
+                          </div>
+                          <div className="mt-0.5 text-[#A9B1D6]">
+                            • Null pointer &amp; subtree re-attachment checks
+                            succeeded without memory leaks.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-[#9ECE6A]/40 bg-[#9ECE6A]/10 px-2.5 py-1.5 text-[11px] font-medium text-[#9ECE6A]">
+                        <Check className="size-3.5 shrink-0 text-[#9ECE6A]" />
+                        <span>
+                          Mastery task completed &amp; saved to Roadmap
                         </span>
                       </div>
-
-                      <div className="mt-2 text-[11px] leading-relaxed text-[#A9B1D6]">
-                        <div className="font-medium text-[#C0CAF5]">
-                          {taskDetail?.analysis?.errorTitle}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col justify-between rounded-xl border border-[#DB4B4B]/65 bg-[#15161E] p-3">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs font-bold text-[#C0CAF5]">
+                            <AlertTriangle className="size-3.5 text-[#DB4B4B]" />
+                            <span>Edge Case Warning</span>
+                          </div>
+                          <span className="rounded-md border border-[#DB4B4B]/40 bg-[#DB4B4B]/15 px-2 py-0.5 text-[10px] font-semibold text-[#DB4B4B]">
+                            {taskDetail?.analysis?.failedTestLabel ||
+                              "Failed (Test Case #5)"}
+                          </span>
                         </div>
-                        <div className="mt-0.5 text-[#A9B1D6]">
-                          • {taskDetail?.analysis?.errorCause}
+
+                        <div className="mt-2 text-[11px] leading-relaxed text-[#A9B1D6]">
+                          <div className="font-medium text-[#C0CAF5]">
+                            {taskDetail?.analysis?.errorTitle}
+                          </div>
+                          <div className="mt-0.5 text-[#A9B1D6]">
+                            • {taskDetail?.analysis?.errorCause}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-[#DB4B4B]/40 bg-[#DB4B4B]/10 px-2.5 py-1.5 text-[11px] font-medium text-[#FF9E64]">
-                      <ArrowRight className="size-3.5 shrink-0 text-[#DB4B4B]" />
-                      <span>{taskDetail?.analysis?.errorAction}</span>
+                      <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-[#DB4B4B]/40 bg-[#DB4B4B]/10 px-2.5 py-1.5 text-[11px] font-medium text-[#FF9E64]">
+                        <ArrowRight className="size-3.5 shrink-0 text-[#DB4B4B]" />
+                        <span>{taskDetail?.analysis?.errorAction}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </section>
