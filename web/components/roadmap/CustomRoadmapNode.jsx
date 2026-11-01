@@ -2,14 +2,14 @@
 
 import * as React from "react"
 import { Handle, Position } from "@xyflow/react"
-import { Check, Lock } from "lucide-react"
+import { Check, Lock, Sparkles } from "lucide-react"
 
 /**
- * Custom React Flow Node — Tokyo Night "Skill Orb / Medallion" Design:
- * - Preserves the true Skill Tree / Constellation feel (circular multi-ring orb, not a rectangular card)
- *   so clicking a node to open the Detail Pop-up remains meaningful and rewarding.
- * - Features an SVG radial mastery ring around the orb, 3 mini task pips (Theory • Quiz • Code)
- *   on the bottom rim, and left/right orb-rim connection ports so curves never cross the label pill.
+ * Custom React Flow Node — Tokyo Night "Skill Orb / Medallion" Design with 450ms Delayed Hover Preview:
+ * - Preserves the true Skill Tree / Constellation feel (circular multi-ring orb).
+ * - Hovering for 450ms reveals a compact side preview card showing ONLY:
+ *   Topic Name, Status Badge, Progress %, and Task Count (no Enter Workspace button).
+ * - Clicking the node opens the full Detail Pop-up Modal.
  */
 function CustomRoadmapNode({ data }) {
   const status = data?.status || "locked"
@@ -21,6 +21,42 @@ function CustomRoadmapNode({ data }) {
     (totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0)
   const tasks = Array.isArray(data?.tasks) ? data.tasks : []
 
+  // Delayed Hover Preview state (450ms delay)
+  const [showHoverPreview, setShowHoverPreview] = React.useState(false)
+  const hoverTimerRef = React.useRef(null)
+
+  const handleMouseEnter = React.useCallback(() => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current)
+    }
+    hoverTimerRef.current = window.setTimeout(() => {
+      setShowHoverPreview(true)
+    }, 450)
+  }, [])
+
+  const handleMouseLeave = React.useCallback(() => {
+    if (hoverTimerRef.current) {
+      window.clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+    setShowHoverPreview(false)
+  }, [])
+
+  // Hide hover preview immediately if the full Pop-up Modal is opened for this node
+  React.useEffect(() => {
+    if (isSelected) {
+      setShowHoverPreview(false)
+    }
+  }, [isSelected])
+
+  React.useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        window.clearTimeout(hoverTimerRef.current)
+      }
+    }
+  }, [])
+
   // SVG Radial Progress Ring geometry (76x76 viewBox, r = 33)
   const radius = 33
   const circumference = 2 * Math.PI * radius
@@ -29,7 +65,7 @@ function CustomRoadmapNode({ data }) {
       ? 0
       : status === "locked"
         ? circumference
-        : circumference - ( Math.max(progress, 18) / 100 ) * circumference
+        : circumference - (Math.max(progress, 18) / 100) * circumference
 
   const ringStroke =
     status === "completed"
@@ -66,25 +102,102 @@ function CustomRoadmapNode({ data }) {
         ? "text-[#7DCFFF]"
         : "text-[#565F89]"
 
+  const statusLabel =
+    status === "completed"
+      ? "Completed"
+      : status === "current"
+        ? "In Progress"
+        : "Locked"
+
+  const statusBadgeClass =
+    status === "completed"
+      ? "border-[#9ECE6A]/40 bg-[#9ECE6A]/15 text-[#9ECE6A]"
+      : status === "current"
+        ? "border-[#3DB5E6]/40 bg-[#3DB5E6]/15 text-[#7DCFFF]"
+        : "border-[#414868] bg-[#15161E] text-[#565F89]"
+
   return (
-    <div className="group flex w-[184px] cursor-pointer flex-col items-center select-none">
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="group relative flex w-[184px] cursor-pointer flex-col items-center select-none"
+    >
+      {/* ==================== HOVER PREVIEW CARD (450ms DELAY, COMPACT SUMMARY ONLY) ==================== */}
+      {showHoverPreview && !isSelected && (
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 z-50 w-[215px] -translate-x-1/2 animate-in fade-in zoom-in-95 duration-150"
+        >
+          <div className="rounded-xl border border-[#414868] bg-[#1A1B26]/98 p-3 shadow-[0_16px_38px_rgba(0,0,0,0.75)] backdrop-blur-md">
+            {/* 1. Tên chủ đề & Trạng thái */}
+            <div className="flex items-start justify-between gap-2">
+              <span className="line-clamp-1 text-xs font-bold text-[#C0CAF5]">
+                {data?.label}
+              </span>
+              <span
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase ${statusBadgeClass}`}
+              >
+                {status === "current" && <Sparkles className="size-2.5" />}
+                {statusLabel}
+              </span>
+            </div>
+
+            {/* 2. Tiến trình & Số lượng nhiệm vụ */}
+            <div className="mt-2.5">
+              <div className="flex items-center justify-between text-[10.5px]">
+                <span className="font-medium text-[#A9B1D6]">
+                  Tasks:{" "}
+                  <strong className="font-mono text-[#C0CAF5]">
+                    {completedTasks}/{totalTasks}
+                  </strong>
+                </span>
+                <span className={`font-mono font-bold ${complexityColor}`}>
+                  {progress}%
+                </span>
+              </div>
+
+              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#15161E]">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    status === "completed"
+                      ? "bg-[#9ECE6A]"
+                      : status === "current"
+                        ? "bg-gradient-to-r from-[#7AA2F7] to-[#7DCFFF]"
+                        : "bg-[#414868]"
+                  }`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 3. Gợi ý click (Không có nút Enter Workspace) */}
+            <div className="mt-2 border-t border-[#292E42]/80 pt-1.5 text-center font-mono text-[9.5px] text-[#565F89]">
+              Click node to view task details
+            </div>
+          </div>
+
+          {/* Mũi tên trỏ xuống viên ngọc */}
+          <div className="mx-auto -mt-1.5 size-2.5 rotate-45 border-r border-b border-[#414868] bg-[#1A1B26]" />
+        </div>
+      )}
+
       {/* ==================== 1. MULTI-RING SKILL ORB (76x76px) ==================== */}
       <div className="relative flex size-[76px] items-center justify-center">
-        {/* Left Target Port anchored directly to the Left Rim of the Orb */}
+        {/* Left Target Port anchored cleanly outside the Left Rim of the Orb */}
         <Handle
           type="target"
           position={Position.Left}
           isConnectable={false}
-          style={{ top: "50%", left: "2px" }}
+          style={{ top: "50%", left: "-3px" }}
           className={`!size-2.5 !rounded-full !border-2 ${portColor}`}
         />
 
-        {/* Right Source Port anchored directly to the Right Rim of the Orb */}
+        {/* Right Source Port anchored cleanly outside the Right Rim of the Orb */}
         <Handle
           type="source"
           position={Position.Right}
           isConnectable={false}
-          style={{ top: "50%", right: "2px" }}
+          style={{ top: "50%", right: "-3px" }}
           className={`!size-2.5 !rounded-full !border-2 ${portColor}`}
         />
 

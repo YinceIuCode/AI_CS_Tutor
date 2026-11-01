@@ -72,6 +72,23 @@ function RoadmapFlowInner({
     [onSelectNode]
   )
 
+  const handleNodeMouseEnter = React.useCallback(
+    (_event, hoveredNode) => {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === hoveredNode.id ? { ...n, zIndex: 1000 } : { ...n, zIndex: 0 }
+        )
+      )
+    },
+    [setNodes]
+  )
+
+  const handleNodeMouseLeave = React.useCallback(() => {
+    setNodes((nds) =>
+      nds.map((n) => (n.zIndex ? { ...n, zIndex: 0 } : n))
+    )
+  }, [setNodes])
+
   return (
     <div
       className="relative h-full min-h-[470px] w-full flex-1 cursor-grab overflow-hidden active:cursor-grabbing"
@@ -90,6 +107,8 @@ function RoadmapFlowInner({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
+        onNodeMouseEnter={handleNodeMouseEnter}
+        onNodeMouseLeave={handleNodeMouseLeave}
         fitView
         fitViewOptions={{
           padding: 0.08,

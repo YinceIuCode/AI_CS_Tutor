@@ -36,10 +36,11 @@ web/
 │   │   └── RoadmapCanvas.jsx
 │   ├── ui/               # Reusable shadcn/ui primitives
 │   └── login-form.tsx    # Centered split-card Tokyo Night authentication component
-├── docs/                 # Detailed screen & component documentation
+├── docs/                 # Detailed screen, architecture & UI tech stack documentation
 │   ├── auth.md
 │   ├── landing.md
 │   ├── roadmap.md
+│   ├── ui-tech-stack.md
 │   └── workspace.md
 ├── hooks/
 │   └── useRoadmap.js     # TanStack Query hook for Roadmap data

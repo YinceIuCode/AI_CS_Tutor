@@ -25,8 +25,8 @@
  * @property {string} updatedAt
  */
 
-const REGISTERED_PROGRESS_PREFIX = "algopath_progress_"
-const GUEST_PROGRESS_PREFIX = "algopath_guest_progress_"
+const REGISTERED_PROGRESS_PREFIX = "algopath_progress_v2_"
+const GUEST_PROGRESS_PREFIX = "algopath_guest_progress_v2_"
 const PROGRESS_BROADCAST_CHANNEL = "algopath_progress_sync"
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
 
@@ -148,17 +148,30 @@ export function updateUserProgress(user, updater) {
 
 /**
  * Save Roadmap upload/generation state for the current user.
+ * When resetting to "empty", also reset completedTasks/quizAnswers/codeDrafts so the tree starts fresh.
  *
  * @param { { id?: string; accountType?: "registered" | "guest" } | null | undefined } user
  * @param { { roadmapFlowState: "empty" | "ready"; fileName?: string; fileSize?: string } } payload
  */
 export function saveRoadmapFlowState(user, payload) {
-  return updateUserProgress(user, (prev) => ({
-    ...prev,
-    roadmapFlowState: payload.roadmapFlowState,
-    fileName: payload.fileName ?? prev.fileName,
-    fileSize: payload.fileSize ?? prev.fileSize,
-  }))
+  return updateUserProgress(user, (prev) => {
+    if (payload.roadmapFlowState === "empty") {
+      return {
+        ...prev,
+        roadmapFlowState: "empty",
+        completedTasks: {},
+        quizAnswers: {},
+        codeDrafts: {},
+        hintsRemaining: {},
+      }
+    }
+    return {
+      ...prev,
+      roadmapFlowState: payload.roadmapFlowState,
+      fileName: payload.fileName ?? prev.fileName,
+      fileSize: payload.fileSize ?? prev.fileSize,
+    }
+  })
 }
 
 /**
@@ -319,35 +332,49 @@ export function applyUserProgressToNodes(baseNodes = [], userProgress = null) {
     }
   })
 
-  // Pass 2: Unlock locked nodes if all their prerequisites are now completed
+  // Pass 2: Enforce the strict prerequisite rule across the entire DAG:
+  // - If all tasks in the node are completed -> "completed" (Green)
+  // - Else if ALL prerequisite nodes on the left are "completed" (Green) -> "current" (Blue)
+  // - Else (at least 1 prerequisite node is NOT "completed", i.e. "current" or "locked") -> "locked"
   const nodeById = new Map(updatedNodes.map((n) => [n.id, n]))
 
   return updatedNodes.map((node) => {
-    if (node.status !== "locked") return node
     const prereqs = Array.isArray(node.prerequisites) ? node.prerequisites : []
-    if (prereqs.length === 0) return node
+    const allPrereqsCompleted =
+      prereqs.length === 0 ||
+      prereqs.every(
+        (prereqId) => nodeById.get(prereqId)?.status === "completed"
+      )
 
-    const allPrereqsCompleted = prereqs.every(
-      (prereqId) => nodeById.get(prereqId)?.status === "completed"
-    )
+    if (node.completedTasks >= node.totalTasks && node.totalTasks > 0) {
+      return { ...node, status: "completed" }
+    }
 
-    if (!allPrereqsCompleted) return node
-
-    // Unlock the node and set its first non-completed task to "current"
-    let assignedCurrent = false
-    const unlockedTasks = (node.tasks || []).map((t) => {
-      if (t.status === "completed") return t
-      if (!assignedCurrent) {
-        assignedCurrent = true
-        return { ...t, status: "current" }
+    if (allPrereqsCompleted) {
+      let assignedCurrent = false
+      const unlockedTasks = (node.tasks || []).map((t) => {
+        if (t.status === "completed") return t
+        if (!assignedCurrent) {
+          assignedCurrent = true
+          return { ...t, status: "current" }
+        }
+        return { ...t, status: "locked" }
+      })
+      return {
+        ...node,
+        status: "current",
+        tasks: unlockedTasks,
       }
-      return { ...t, status: "locked" }
-    })
+    }
 
+    // At least 1 prerequisite is not completed -> lock this node
+    const lockedTasks = (node.tasks || []).map((t) =>
+      t.status === "completed" ? t : { ...t, status: "locked" }
+    )
     return {
       ...node,
-      status: "current",
-      tasks: unlockedTasks,
+      status: "locked",
+      tasks: lockedTasks,
     }
   })
 }

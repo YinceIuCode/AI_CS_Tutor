@@ -63,12 +63,12 @@ export const MOCK_ROADMAP_NODES = [
     label: "Complexity Analysis",
     description:
       "Asymptotic notation (Big-O, Big-Omega, Big-Theta), time-space trade-offs, and recurrence relations using the Master Theorem.",
-    status: "completed",
+    status: "current",
     complexity: "O(1) to O(N²)",
     prerequisites: ["dsa-foundations"],
-    progress: 100,
+    progress: 67,
     totalTasks: 3,
-    completedTasks: 3,
+    completedTasks: 2,
     tasks: [
       {
         id: "complexity-analysis-task-1",
@@ -91,7 +91,7 @@ export const MOCK_ROADMAP_NODES = [
         title: "Code: Optimize O(N²) to O(N)",
         description:
           "Refactor a brute-force prefix sum solution into an optimal linear-time algorithm.",
-        status: "completed",
+        status: "current",
         type: "coding",
       },
     ],
@@ -338,7 +338,7 @@ export const MOCK_ROADMAP_NODES = [
       "Comparison and non-comparison sorting: Merge Sort, Quick Sort partitioning, Heap Sort, stability analysis, and lower bounds.",
     status: "locked",
     complexity: "O(N log N)",
-    prerequisites: ["complexity-analysis", "arrays-strings"],
+    prerequisites: ["arrays-strings", "complexity-analysis"],
     progress: 0,
     totalTasks: 3,
     completedTasks: 0,
@@ -377,7 +377,7 @@ export const MOCK_ROADMAP_NODES = [
       "Adjacency list/matrix representations, BFS shortest path, DFS cycle detection, topological sorting, and Dijkstra's algorithm.",
     status: "locked",
     complexity: "O(V + E)",
-    prerequisites: ["stack-queue", "trees"],
+    prerequisites: ["trees", "stack-queue"],
     progress: 0,
     totalTasks: 3,
     completedTasks: 0,
