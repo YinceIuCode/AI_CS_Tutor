@@ -412,8 +412,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (6/12): Hero Interactive Learning Showcase */}
-        <div className="relative select-none lg:col-span-6">
+        {/* RIGHT COLUMN (5/12): Hero Interactive Learning Showcase */}
+        <div className="relative select-none lg:col-span-5">
           {/* Subtle Ambient Glow behind preview */}
           <div
             aria-hidden="true"
@@ -716,6 +716,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         </div>
