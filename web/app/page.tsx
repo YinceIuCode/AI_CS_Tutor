@@ -412,15 +412,15 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (5/12): Hero Interactive Learning Showcase */}
-        <div className="relative select-none lg:col-span-5">
+        {/* RIGHT COLUMN (6/12): Hero Interactive Learning Showcase */}
+        <div className="relative select-none lg:col-span-6">
           {/* Subtle Ambient Glow behind preview */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -inset-2 rounded-3xl bg-gradient-to-r from-primary/15 to-cyan/10 opacity-70 blur-2xl"
           />
 
-          <div className="relative rounded-3xl border border-border-subtle bg-surface/90 p-5 sm:p-6 shadow-[0_24px_64px_var(--color-shadow)] backdrop-blur-md flex flex-col justify-between">
+          <div className="relative rounded-3xl border border-border-subtle bg-surface/90 p-5 sm:p-6 lg:p-7 shadow-[0_24px_64px_var(--color-shadow)] backdrop-blur-md flex flex-col justify-between">
             {/* Top Bar of the Showcase Terminal */}
             <div className="flex items-center justify-between border-b border-border-subtle/80 pb-3">
               <div className="flex items-center gap-1.5">
@@ -449,7 +449,7 @@ export default function LandingPage() {
             <div className="my-4 flex items-center justify-center">
               <svg
                 viewBox="0 0 460 210"
-                className="h-[185px] w-full max-w-[480px] overflow-visible sm:h-[205px] xl:h-[220px]"
+                className="h-[195px] w-full max-w-[520px] overflow-visible sm:h-[215px] xl:h-[235px]"
                 aria-label="DSA Skill Tree Roadmap"
               >
                 {[
@@ -653,7 +653,7 @@ export default function LandingPage() {
             </div>
 
             {/* Bottom 2 Live Preview Cards */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-3 border-t border-border-subtle/80">
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 pt-3.5 border-t border-border-subtle/80">
               {/* Card 1: Code Sandbox */}
               <div className="rounded-xl border border-border-subtle bg-background p-3.5 font-mono text-[11px]">
                 <div className="mb-2 flex items-center justify-between border-b border-border-subtle pb-1.5">
@@ -717,9 +717,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        </div>
-
-        </div>
+      </div>
 
         {/* Scroll cue smoothly bridging Hero to Features */}
         <div className="flex justify-center pt-4 pb-2">
