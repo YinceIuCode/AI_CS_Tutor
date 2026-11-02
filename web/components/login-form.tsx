@@ -139,7 +139,7 @@ export function LoginForm({
   return (
     <div
       className={cn(
-        "relative flex min-h-svh w-full items-center justify-center overflow-x-hidden bg-[#15161E] px-4 py-4 font-sans text-[#A9B1D6] selection:bg-[#7AA2F7]/30 selection:text-[#C0CAF5] sm:px-6 lg:h-svh lg:overflow-hidden lg:py-6",
+        "relative flex min-h-svh w-full items-center justify-center overflow-x-hidden bg-surface-secondary px-4 py-4 font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary sm:px-6 lg:h-svh lg:overflow-hidden lg:py-6",
         className
       )}
       {...props}
@@ -147,18 +147,18 @@ export function LoginForm({
       {/* Hiệu ứng quầng sáng nền Tokyo Night */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-[15%] left-[8%] h-[400px] w-[400px] rounded-full bg-[#7AA2F7]/12 blur-[130px]"
+        className="pointer-events-none absolute top-[15%] left-[8%] h-[400px] w-[400px] rounded-full bg-primary/12 blur-[130px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-[10%] bottom-[12%] h-[420px] w-[420px] rounded-full bg-[#7DCFFF]/10 blur-[140px]"
+        className="pointer-events-none absolute right-[10%] bottom-[12%] h-[420px] w-[420px] rounded-full bg-cyan/10 blur-[140px]"
       />
 
       {/* ==================== KHUNG THẺ CHÍNH 2 CỘT CĂN GIỮA MÀN HÌNH ==================== */}
       <main className="relative z-10 mx-auto flex w-full max-w-[1100px] items-center justify-center">
-        <div className="grid w-full grid-cols-1 overflow-hidden rounded-2xl border border-[#292E42] bg-[#1A1B26]/90 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md lg:grid-cols-12">
+        <div className="grid w-full grid-cols-1 overflow-hidden rounded-2xl border border-border-subtle bg-surface/90 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md lg:grid-cols-12">
           {/* -------------------- CỘT TRÁI: THƯƠNG HIỆU, THÔNG ĐIỆP & CÂY NHỊ PHÂN -------------------- */}
-          <div className="flex flex-col justify-between border-b border-[#292E42] bg-[#15161E]/45 p-6 sm:p-8 lg:col-span-6 lg:border-r lg:border-b-0 lg:px-10 lg:py-8">
+          <div className="flex flex-col justify-between border-b border-border-subtle bg-surface-secondary/45 p-6 sm:p-8 lg:col-span-6 lg:border-r lg:border-b-0 lg:px-10 lg:py-8">
             <div>
               <div className="mb-5 flex items-center justify-between">
                 <Link
@@ -168,18 +168,18 @@ export function LoginForm({
                   <BrandLogo size="md" priority />
                 </Link>
 
-                <span className="rounded-full border border-[#292E42] bg-[#1A1B26] px-3 py-1 font-mono text-[10px] text-[#7AA2F7]">
+                <span className="rounded-full border border-border-subtle bg-surface px-3 py-1 font-mono text-[10px] text-primary">
                   DSA Learning Platform
                 </span>
               </div>
 
               <h1 className="text-2xl leading-[1.2] font-extrabold tracking-tight sm:text-3xl lg:text-[36px]">
-                <span className="block text-[#C0CAF5]">
-                  Learn DSA by <span className="text-[#7DCFFF]">thinking,</span>
+                <span className="block text-text-primary">
+                  Learn DSA by <span className="text-cyan">thinking,</span>
                 </span>
-                <span className="mt-1 block text-[#7AA2F7]">not copying.</span>
+                <span className="mt-1 block text-primary">not copying.</span>
               </h1>
-              <p className="mt-3 max-w-[390px] text-xs leading-relaxed text-[#A9B1D6] sm:text-sm">
+              <p className="mt-3 max-w-[390px] text-xs leading-relaxed text-text-secondary sm:text-sm">
                 Build algorithmic confidence with guided practice and Socratic
                 AI hints.
               </p>
@@ -213,14 +213,14 @@ export function LoginForm({
                   cx="95"
                   cy="45"
                   r="1.5"
-                  fill="#7DCFFF"
+                  fill="var(--color-cyan)"
                   fillOpacity="0.45"
                 />
                 <circle
                   cx="285"
                   cy="42"
                   r="1.5"
-                  fill="#7AA2F7"
+                  fill="var(--color-primary)"
                   fillOpacity="0.5"
                 />
                 <rect
@@ -229,7 +229,7 @@ export function LoginForm({
                   width="4"
                   height="4"
                   rx="0.5"
-                  stroke="#7DCFFF"
+                  stroke="var(--color-cyan)"
                   strokeOpacity="0.5"
                   fill="none"
                 />
@@ -237,21 +237,21 @@ export function LoginForm({
                   cx="62"
                   cy="125"
                   r="1.5"
-                  fill="#7DCFFF"
+                  fill="var(--color-cyan)"
                   fillOpacity="0.35"
                 />
                 <circle
                   cx="320"
                   cy="120"
                   r="1.5"
-                  fill="#C7A9FF"
+                  fill="var(--color-purple)"
                   fillOpacity="0.4"
                 />
                 <circle
                   cx="190"
                   cy="195"
                   r="1.5"
-                  fill="#7AA2F7"
+                  fill="var(--color-primary)"
                   fillOpacity="0.4"
                 />
 
@@ -264,7 +264,7 @@ export function LoginForm({
                       x2: 122,
                       y2: 108,
                       r2: 21,
-                      color: "#7DCFFF",
+                      color: "var(--color-cyan)",
                     },
                     {
                       x1: 190,
@@ -273,7 +273,7 @@ export function LoginForm({
                       x2: 258,
                       y2: 108,
                       r2: 21,
-                      color: "#7AA2F7",
+                      color: "var(--color-primary)",
                     },
                     {
                       x1: 122,
@@ -282,7 +282,7 @@ export function LoginForm({
                       x2: 78,
                       y2: 174,
                       r2: 19,
-                      color: "#7DCFFF",
+                      color: "var(--color-cyan)",
                     },
                     {
                       x1: 122,
@@ -291,7 +291,7 @@ export function LoginForm({
                       x2: 162,
                       y2: 174,
                       r2: 19,
-                      color: "#7DCFFF",
+                      color: "var(--color-cyan)",
                     },
                     {
                       x1: 258,
@@ -300,7 +300,7 @@ export function LoginForm({
                       x2: 218,
                       y2: 174,
                       r2: 19,
-                      color: "#7AA2F7",
+                      color: "var(--color-primary)",
                     },
                     {
                       x1: 258,
@@ -309,7 +309,7 @@ export function LoginForm({
                       x2: 302,
                       y2: 174,
                       r2: 19,
-                      color: "#7AA2F7",
+                      color: "var(--color-primary)",
                     },
                   ].map((edge, idx) => {
                     const dx = edge.x2 - edge.x1
@@ -336,16 +336,16 @@ export function LoginForm({
                     x: 190,
                     y: 42,
                     r: 21,
-                    stroke: "#7DCFFF",
-                    glow: "#7DCFFF",
+                    stroke: "var(--color-cyan)",
+                    glow: "var(--color-cyan)",
                   },
                   {
                     val: "4",
                     x: 122,
                     y: 108,
                     r: 20,
-                    stroke: "#7DCFFF",
-                    glow: "#7DCFFF",
+                    stroke: "var(--color-cyan)",
+                    glow: "var(--color-cyan)",
                   },
                   {
                     val: "12",
@@ -353,39 +353,39 @@ export function LoginForm({
                     y: 108,
                     r: 20,
                     stroke: "#7AA2F7",
-                    glow: "#7AA2F7",
+                    glow: "var(--color-primary)",
                   },
                   {
                     val: "2",
                     x: 78,
                     y: 174,
                     r: 18,
-                    stroke: "#7DCFFF",
-                    glow: "#7DCFFF",
+                    stroke: "var(--color-cyan)",
+                    glow: "var(--color-cyan)",
                   },
                   {
                     val: "6",
                     x: 162,
                     y: 174,
                     r: 18,
-                    stroke: "#7DCFFF",
-                    glow: "#7DCFFF",
+                    stroke: "var(--color-cyan)",
+                    glow: "var(--color-cyan)",
                   },
                   {
                     val: "10",
                     x: 218,
                     y: 174,
                     r: 18,
-                    stroke: "#7DCFFF",
-                    glow: "#7DCFFF",
+                    stroke: "var(--color-cyan)",
+                    glow: "var(--color-cyan)",
                   },
                   {
                     val: "14",
                     x: 302,
                     y: 174,
                     r: 18,
-                    stroke: "#C7A9FF",
-                    glow: "#7AA2F7",
+                    stroke: "var(--color-purple)",
+                    glow: "var(--color-primary)",
                   },
                 ].map((node) => (
                   <g
@@ -402,14 +402,14 @@ export function LoginForm({
                     />
                     <circle
                       r={node.r}
-                      fill="#1A1B26"
+                      fill="var(--color-surface)"
                       stroke={node.stroke}
                       strokeWidth="2"
                     />
                     <text
                       y="5"
                       textAnchor="middle"
-                      fill="#C0CAF5"
+                      fill="var(--color-text-primary)"
                       fontSize="13.5"
                       fontWeight="700"
                     >
@@ -421,19 +421,19 @@ export function LoginForm({
             </div>
 
             {/* Dòng 3 điểm nổi bật dưới cùng của cột trái */}
-            <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-[#A9B1D6] sm:justify-start sm:gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-text-secondary sm:justify-start sm:gap-4">
               <div className="inline-flex items-center gap-2">
-                <Brain className="size-4 text-[#7DCFFF]" />
+                <Brain className="size-4 text-cyan" />
                 <span>Socratic AI</span>
               </div>
-              <span className="text-[#414868]">•</span>
+              <span className="text-border">•</span>
               <div className="inline-flex items-center gap-2">
-                <GitFork className="size-4 text-[#7AA2F7]" />
+                <GitFork className="size-4 text-primary" />
                 <span>Skill Tree</span>
               </div>
-              <span className="text-[#414868]">•</span>
+              <span className="text-border">•</span>
               <div className="inline-flex items-center gap-2">
-                <Code2 className="size-4 text-[#7AA2F7]" />
+                <Code2 className="size-4 text-primary" />
                 <span>Code Sandbox</span>
               </div>
             </div>
@@ -446,10 +446,10 @@ export function LoginForm({
               <div className="mb-3 flex items-center justify-between">
                 <Link
                   href={AUTH_LINKS.backToHome}
-                  className="group inline-flex items-center gap-2 rounded-lg border border-[#292E42] bg-[#15161E]/80 px-3 py-1.5 text-xs font-medium text-[#A9B1D6] transition-all hover:border-[#7AA2F7]/60 hover:bg-[#283457]/40 hover:text-[#C0CAF5]"
+                  className="group inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-secondary/80 px-3 py-1.5 text-xs font-medium text-text-secondary transition-all hover:border-primary/60 hover:bg-primary/20 hover:text-text-primary"
                 >
-                  <ArrowLeft className="size-3.5 text-[#7AA2F7] transition-transform group-hover:-translate-x-0.5" />
-                  <Home className="size-3.5 text-[#7AA2F7]" />
+                  <ArrowLeft className="size-3.5 text-primary transition-transform group-hover:-translate-x-0.5" />
+                  <Home className="size-3.5 text-primary" />
                   <span>Back to Home</span>
                 </Link>
 
@@ -462,7 +462,7 @@ export function LoginForm({
                       setErrorMessage(null)
                       setInfoMessage(null)
                     }}
-                    className="cursor-pointer rounded-md border border-[#292E42] bg-[#15161E]/80 px-2.5 py-1 font-mono text-[10px] text-[#7DCFFF] transition-colors hover:border-[#7AA2F7]/60"
+                    className="cursor-pointer rounded-md border border-border-subtle bg-surface-secondary/80 px-2.5 py-1 font-mono text-[10px] text-cyan transition-colors hover:border-primary/60"
                   >
                     Fill Demo Account
                   </button>
@@ -470,10 +470,10 @@ export function LoginForm({
               </div>
 
               {/* Tiêu đề chào mừng */}
-              <h2 className="text-2xl font-bold tracking-tight text-[#C0CAF5]">
-                Welcome to <span className="text-[#C0CAF5]">OffBy</span><span className="bg-gradient-to-r from-[#7DCFFF] via-[#7AA2F7] to-[#BB9AF7] bg-clip-text text-transparent">One</span>
+              <h2 className="text-2xl font-bold tracking-tight text-text-primary">
+                Welcome to <span className="text-text-primary">OffBy</span><span className="bg-gradient-to-r from-[#7DCFFF] via-[#7AA2F7] to-[#BB9AF7] bg-clip-text text-transparent">One</span>
               </h2>
-              <p className="mt-1 text-xs text-[#A9B1D6]">
+              <p className="mt-1 text-xs text-text-secondary">
                 {activeTab === "login"
                   ? BRAND.slogan
                   : "Create an account to build your personalized DSA Skill Tree."}
@@ -483,7 +483,7 @@ export function LoginForm({
               <div
                 role="tablist"
                 aria-label="Authentication mode"
-                className="mt-3.5 grid grid-cols-2 rounded-full border border-[#292E42] bg-[#15161E] p-1"
+                className="mt-3.5 grid grid-cols-2 rounded-full border border-border-subtle bg-surface-secondary p-1"
               >
                 <button
                   type="button"
@@ -493,8 +493,8 @@ export function LoginForm({
                   className={cn(
                     "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
                     activeTab === "login"
-                      ? "bg-[#7AA2F7] font-bold text-[#15161E] shadow-[0_0_20px_rgba(122,162,247,0.3)]"
-                      : "text-[#A9B1D6] hover:text-[#C0CAF5]"
+                      ? "bg-primary font-bold text-surface-secondary shadow-[0_0_20px_rgba(122,162,247,0.3)]"
+                      : "text-text-secondary hover:text-text-primary"
                   )}
                 >
                   Log In
@@ -507,8 +507,8 @@ export function LoginForm({
                   className={cn(
                     "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
                     activeTab === "signup"
-                      ? "bg-[#7AA2F7] font-bold text-[#15161E] shadow-[0_0_20px_rgba(122,162,247,0.3)]"
-                      : "text-[#A9B1D6] hover:text-[#C0CAF5]"
+                      ? "bg-primary font-bold text-surface-secondary shadow-[0_0_20px_rgba(122,162,247,0.3)]"
+                      : "text-text-secondary hover:text-text-primary"
                   )}
                 >
                   Sign Up
@@ -519,9 +519,9 @@ export function LoginForm({
               {errorMessage && (
                 <div
                   role="alert"
-                  className="mt-3 flex items-start gap-2 rounded-xl border border-[#DB4B4B]/60 bg-[#DB4B4B]/12 px-3 py-2 text-[11px] leading-snug text-[#FF9E64]"
+                  className="mt-3 flex items-start gap-2 rounded-xl border border-danger/60 bg-danger/12 px-3 py-2 text-[11px] leading-snug text-warning"
                 >
-                  <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-[#DB4B4B]" />
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-danger" />
                   <span>{errorMessage}</span>
                 </div>
               )}
@@ -529,9 +529,9 @@ export function LoginForm({
               {infoMessage && (
                 <div
                   role="status"
-                  className="mt-3 flex items-start gap-2 rounded-xl border border-[#7AA2F7]/50 bg-[#7AA2F7]/12 px-3 py-2 text-[11px] leading-snug text-[#C0CAF5]"
+                  className="mt-3 flex items-start gap-2 rounded-xl border border-primary/50 bg-primary/12 px-3 py-2 text-[11px] leading-snug text-text-primary"
                 >
-                  <Info className="mt-0.5 size-3.5 shrink-0 text-[#7DCFFF]" />
+                  <Info className="mt-0.5 size-3.5 shrink-0 text-cyan" />
                   <span>{infoMessage}</span>
                 </div>
               )}
@@ -547,12 +547,12 @@ export function LoginForm({
                   <div>
                     <label
                       htmlFor="auth-name"
-                      className="block text-xs font-semibold text-[#C0CAF5]"
+                      className="block text-xs font-semibold text-text-primary"
                     >
                       Full Name
                     </label>
-                    <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3.5 transition-colors focus-within:border-[#7AA2F7]">
-                      <User className="size-4 shrink-0 text-[#565F89]" />
+                    <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-border-subtle bg-surface-secondary/80 px-3.5 transition-colors focus-within:border-primary">
+                      <User className="size-4 shrink-0 text-text-muted" />
                       <input
                         id="auth-name"
                         type="text"
@@ -560,7 +560,7 @@ export function LoginForm({
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Your full name"
                         required
-                        className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                        className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
                       />
                     </div>
                   </div>
@@ -570,12 +570,12 @@ export function LoginForm({
                 <div>
                   <label
                     htmlFor="auth-email"
-                    className="block text-xs font-semibold text-[#C0CAF5]"
+                    className="block text-xs font-semibold text-text-primary"
                   >
                     Email
                   </label>
-                  <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3.5 transition-colors focus-within:border-[#7AA2F7]">
-                    <Mail className="size-4 shrink-0 text-[#565F89]" />
+                  <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-border-subtle bg-surface-secondary/80 px-3.5 transition-colors focus-within:border-primary">
+                    <Mail className="size-4 shrink-0 text-text-muted" />
                     <input
                       id="auth-email"
                       type="email"
@@ -583,7 +583,7 @@ export function LoginForm({
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={BRAND.demoEmail}
                       required
-                      className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                      className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
                     />
                   </div>
                 </div>
@@ -594,20 +594,20 @@ export function LoginForm({
                     <div className="flex items-center justify-between">
                       <label
                         htmlFor="auth-password"
-                        className="block text-xs font-semibold text-[#C0CAF5]"
+                        className="block text-xs font-semibold text-text-primary"
                       >
                         Password
                       </label>
                       <button
                         type="button"
                         onClick={handleForgotPasswordClick}
-                        className="cursor-pointer text-[11px] font-medium text-[#7AA2F7] transition-colors hover:text-[#8DB0FF]"
+                        className="cursor-pointer text-[11px] font-medium text-primary transition-colors hover:text-primary-hover"
                       >
                         Forgot password?
                       </button>
                     </div>
-                    <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3.5 transition-colors focus-within:border-[#7AA2F7]">
-                      <Lock className="size-4 shrink-0 text-[#565F89]" />
+                    <div className="mt-1 flex h-9.5 items-center gap-3 rounded-xl border border-border-subtle bg-surface-secondary/80 px-3.5 transition-colors focus-within:border-primary">
+                      <Lock className="size-4 shrink-0 text-text-muted" />
                       <input
                         id="auth-password"
                         type={showPassword ? "text" : "password"}
@@ -615,7 +615,7 @@ export function LoginForm({
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"
                         required
-                        className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                        className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
                       />
                       <button
                         type="button"
@@ -623,7 +623,7 @@ export function LoginForm({
                         aria-label={
                           showPassword ? "Hide password" : "Show password"
                         }
-                        className="cursor-pointer text-[#565F89] transition-colors hover:text-[#A9B1D6]"
+                        className="cursor-pointer text-text-muted transition-colors hover:text-text-secondary"
                       >
                         {showPassword ? (
                           <EyeOff className="size-4" />
@@ -638,12 +638,12 @@ export function LoginForm({
                     <div>
                       <label
                         htmlFor="auth-password"
-                        className="block text-xs font-semibold text-[#C0CAF5]"
+                        className="block text-xs font-semibold text-text-primary"
                       >
                         Password
                       </label>
-                      <div className="mt-1 flex h-9.5 items-center gap-2 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3 transition-colors focus-within:border-[#7AA2F7]">
-                        <Lock className="size-3.5 shrink-0 text-[#565F89]" />
+                      <div className="mt-1 flex h-9.5 items-center gap-2 rounded-xl border border-border-subtle bg-surface-secondary/80 px-3 transition-colors focus-within:border-primary">
+                        <Lock className="size-3.5 shrink-0 text-text-muted" />
                         <input
                           id="auth-password"
                           type={showPassword ? "text" : "password"}
@@ -651,7 +651,7 @@ export function LoginForm({
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Min. 8 chars"
                           required
-                          className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                          className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
                         />
                         <button
                           type="button"
@@ -659,7 +659,7 @@ export function LoginForm({
                           aria-label={
                             showPassword ? "Hide password" : "Show password"
                           }
-                          className="cursor-pointer text-[#565F89] transition-colors hover:text-[#A9B1D6]"
+                          className="cursor-pointer text-text-muted transition-colors hover:text-text-secondary"
                         >
                           {showPassword ? (
                             <EyeOff className="size-3.5" />
@@ -673,12 +673,12 @@ export function LoginForm({
                     <div>
                       <label
                         htmlFor="auth-confirm-password"
-                        className="block text-xs font-semibold text-[#C0CAF5]"
+                        className="block text-xs font-semibold text-text-primary"
                       >
                         Confirm Password
                       </label>
-                      <div className="mt-1 flex h-9.5 items-center gap-2 rounded-xl border border-[#292E42] bg-[#15161E]/80 px-3 transition-colors focus-within:border-[#7AA2F7]">
-                        <Lock className="size-3.5 shrink-0 text-[#565F89]" />
+                      <div className="mt-1 flex h-9.5 items-center gap-2 rounded-xl border border-border-subtle bg-surface-secondary/80 px-3 transition-colors focus-within:border-primary">
+                        <Lock className="size-3.5 shrink-0 text-text-muted" />
                         <input
                           id="auth-confirm-password"
                           type={showConfirmPassword ? "text" : "password"}
@@ -686,7 +686,7 @@ export function LoginForm({
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Repeat password"
                           required
-                          className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                          className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
                         />
                         <button
                           type="button"
@@ -698,7 +698,7 @@ export function LoginForm({
                               ? "Hide confirm password"
                               : "Show confirm password"
                           }
-                          className="cursor-pointer text-[#565F89] transition-colors hover:text-[#A9B1D6]"
+                          className="cursor-pointer text-text-muted transition-colors hover:text-text-secondary"
                         >
                           {showConfirmPassword ? (
                             <EyeOff className="size-3.5" />
@@ -715,7 +715,7 @@ export function LoginForm({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="mt-1 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#7AA2F7] text-xs font-bold text-[#15161E] shadow-[0_0_25px_rgba(122,162,247,0.25)] transition-all hover:bg-[#8DB0FF] hover:shadow-[0_0_32px_rgba(122,162,247,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="mt-1 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-surface-secondary shadow-[0_0_25px_rgba(122,162,247,0.25)] transition-all hover:bg-primary-hover hover:shadow-[0_0_32px_rgba(122,162,247,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isLoading && <Loader2 className="size-4 animate-spin" />}
                   <span>
@@ -731,11 +731,11 @@ export function LoginForm({
 
                 {/* Đường kẻ phân cách "or continue with" */}
                 <div className="relative flex items-center py-0.5">
-                  <div className="grow border-t border-[#292E42]" />
-                  <span className="mx-3 shrink-0 text-[11px] text-[#565F89]">
+                  <div className="grow border-t border-border-subtle" />
+                  <span className="mx-3 shrink-0 text-[11px] text-text-muted">
                     or continue with
                   </span>
-                  <div className="grow border-t border-[#292E42]" />
+                  <div className="grow border-t border-border-subtle" />
                 </div>
 
                 {/* Nút Continue with Google */}
@@ -743,7 +743,7 @@ export function LoginForm({
                   type="button"
                   disabled={isLoading}
                   onClick={handleGoogleSignInClick}
-                  className="inline-flex h-9.5 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-[#292E42] bg-[#15161E]/85 text-xs font-semibold text-[#C0CAF5] transition-colors hover:border-[#414868] hover:bg-[#15161E] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9.5 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-border-subtle bg-surface-secondary/85 text-xs font-semibold text-text-primary transition-colors hover:border-border hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -775,21 +775,21 @@ export function LoginForm({
                   type="button"
                   disabled={isLoading}
                   onClick={handleGuestLogin}
-                  className="inline-flex h-9.5 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#414868] bg-transparent text-xs font-semibold text-[#A9B1D6] transition-all hover:border-[#7DCFFF] hover:bg-[#7DCFFF]/8 hover:text-[#C0CAF5] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-9.5 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-transparent text-xs font-semibold text-text-secondary transition-all hover:border-cyan hover:bg-cyan/8 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <User className="size-4 shrink-0 text-[#7DCFFF]" />
+                  <User className="size-4 shrink-0 text-cyan" />
                   <span>Continue as Guest</span>
                 </button>
 
                 {/* Dòng chuyển đổi tạo tài khoản / đăng nhập ở dưới cùng */}
-                <p className="pt-0.5 text-center text-xs text-[#A9B1D6]">
+                <p className="pt-0.5 text-center text-xs text-text-secondary">
                   {activeTab === "login" ? (
                     <>
                       New to {BRAND.name}?{" "}
                       <button
                         type="button"
                         onClick={() => handleTabSwitch("signup")}
-                        className="cursor-pointer font-semibold text-[#7AA2F7] underline underline-offset-4 transition-colors hover:text-[#8DB0FF]"
+                        className="cursor-pointer font-semibold text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
                       >
                         Create an account
                       </button>
@@ -800,7 +800,7 @@ export function LoginForm({
                       <button
                         type="button"
                         onClick={() => handleTabSwitch("login")}
-                        className="cursor-pointer font-semibold text-[#7AA2F7] underline underline-offset-4 transition-colors hover:text-[#8DB0FF]"
+                        className="cursor-pointer font-semibold text-primary underline underline-offset-4 transition-colors hover:text-primary-hover"
                       >
                         Log in
                       </button>

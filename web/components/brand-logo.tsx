@@ -74,7 +74,7 @@ export function BrandLogo({
             textClassName
           )}
         >
-          <span className="text-[#C0CAF5]">OffBy</span>
+          <span className="text-text-primary">OffBy</span>
           <span className="bg-gradient-to-r from-[#7DCFFF] via-[#7AA2F7] to-[#BB9AF7] bg-clip-text text-transparent">
             One
           </span>

@@ -59,46 +59,46 @@ export function UserProfileMenu() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 transition-colors hover:bg-[#292E42]/40"
+        className="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 transition-colors hover:bg-surface/40"
       >
         <span
-          className={`flex size-8 items-center justify-center rounded-full text-xs font-bold text-[#15161E] ${
-            isGuest ? "bg-[#FF9E64]" : "bg-[#3DB5E6]"
+          className={`flex size-8 items-center justify-center rounded-full text-xs font-bold text-surface-secondary ${
+            isGuest ? "bg-warning" : "bg-cyan"
           }`}
         >
           {avatarInitial}
         </span>
         <div className="hidden text-left sm:block">
-          <div className="text-xs leading-tight font-semibold text-[#C0CAF5]">
+          <div className="text-xs leading-tight font-semibold text-text-primary">
             {displayName}
           </div>
           <div
             className={`text-[10px] leading-tight font-medium ${
-              isGuest ? "text-[#FF9E64]" : "text-[#7DCFFF]"
+              isGuest ? "text-warning" : "text-cyan"
             }`}
           >
             {statusBadge}
           </div>
         </div>
         <ChevronDown
-          className={`size-3.5 text-[#A9B1D6] transition-transform duration-150 ${
+          className={`size-3.5 text-text-secondary transition-transform duration-150 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-[100] mt-2 w-60 overflow-hidden rounded-xl border border-[#292E42] bg-[#1A1B26] p-2 shadow-[0_16px_40px_rgba(0,0,0,0.65)] backdrop-blur-md">
-          <div className="border-b border-[#292E42] px-3 py-2.5">
+        <div className="absolute right-0 z-[100] mt-2 w-60 overflow-hidden rounded-xl border border-border-subtle bg-surface-elevated p-2 shadow-2xl backdrop-blur-md">
+          <div className="border-b border-border-subtle px-3 py-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-xs font-bold text-[#C0CAF5]">
+              <span className="truncate text-xs font-bold text-text-primary">
                 {displayName}
               </span>
               <span
                 className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
                   isGuest
-                    ? "bg-[#FF9E64]/15 text-[#FF9E64]"
-                    : "bg-[#9ECE6A]/15 text-[#9ECE6A]"
+                    ? "bg-warning/15 text-warning"
+                    : "bg-success/15 text-success"
                 }`}
               >
                 {isGuest ? (
@@ -110,7 +110,7 @@ export function UserProfileMenu() {
               </span>
             </div>
             {currentUser?.email && (
-              <p className="mt-0.5 truncate font-mono text-[10px] text-[#565F89]">
+              <p className="mt-0.5 truncate font-mono text-[10px] text-text-muted">
                 {currentUser.email}
               </p>
             )}
@@ -120,7 +120,7 @@ export function UserProfileMenu() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-[#DB4B4B] transition-colors hover:bg-[#DB4B4B]/12"
+              className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-danger transition-colors hover:bg-danger/12"
             >
               <LogOut className="size-3.5" />
               <span>Log Out</span>

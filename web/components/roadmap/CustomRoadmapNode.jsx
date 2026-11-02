@@ -69,38 +69,38 @@ function CustomRoadmapNode({ data }) {
 
   const ringStroke =
     status === "completed"
-      ? "#9ECE6A"
+      ? "var(--color-success, #9ECE6A)"
       : status === "current"
-        ? "#3DB5E6"
-        : "#292E42"
+        ? "var(--color-cyan, #7DCFFF)"
+        : "var(--color-border-subtle, #292E42)"
 
   const coreStyle =
     status === "completed"
-      ? "border-[#9ECE6A]/80 bg-radial from-[#9ECE6A]/22 via-[#1A1B26] to-[#15161E] text-[#9ECE6A] shadow-[0_0_28px_rgba(158,206,106,0.28)]"
+      ? "border-success/80 bg-radial from-success/22 via-background to-surface-secondary text-success shadow-[0_0_28px_rgba(158,206,106,0.28)]"
       : status === "current"
-        ? "border-[#3DB5E6] bg-radial from-[#3DB5E6]/26 via-[#1A1B26] to-[#15161E] text-[#7DCFFF] shadow-[0_0_32px_rgba(61,181,230,0.36)]"
-        : "border-[#414868]/80 bg-[#161722] text-[#565F89] shadow-[0_6px_18px_rgba(0,0,0,0.5)]"
+        ? "border-cyan bg-radial from-cyan/26 via-background to-surface-secondary text-cyan shadow-[0_0_32px_rgba(61,181,230,0.36)]"
+        : "border-border/80 bg-surface-secondary text-text-muted shadow-md"
 
   const portColor =
     status === "completed"
-      ? "!border-[#9ECE6A] !bg-[#15161E]"
+      ? "!border-success !bg-surface-secondary"
       : status === "current"
-        ? "!border-[#3DB5E6] !bg-[#15161E]"
-        : "!border-[#414868] !bg-[#15161E]"
+        ? "!border-cyan !bg-surface-secondary"
+        : "!border-border !bg-surface-secondary"
 
   const pillBorder =
     status === "completed"
-      ? "border-[#9ECE6A]/45 group-hover:border-[#9ECE6A]"
+      ? "border-success/45 group-hover:border-success"
       : status === "current"
-        ? "border-[#3DB5E6]/60 group-hover:border-[#7DCFFF]"
-        : "border-[#292E42] group-hover:border-[#414868]"
+        ? "border-cyan/60 group-hover:border-cyan"
+        : "border-border-subtle group-hover:border-border"
 
   const complexityColor =
     status === "completed"
-      ? "text-[#9ECE6A]"
+      ? "text-success"
       : status === "current"
-        ? "text-[#7DCFFF]"
-        : "text-[#565F89]"
+        ? "text-cyan"
+        : "text-text-muted"
 
   const statusLabel =
     status === "completed"
@@ -111,10 +111,10 @@ function CustomRoadmapNode({ data }) {
 
   const statusBadgeClass =
     status === "completed"
-      ? "border-[#9ECE6A]/40 bg-[#9ECE6A]/15 text-[#9ECE6A]"
+      ? "border-success/40 bg-success/15 text-success"
       : status === "current"
-        ? "border-[#3DB5E6]/40 bg-[#3DB5E6]/15 text-[#7DCFFF]"
-        : "border-[#414868] bg-[#15161E] text-[#565F89]"
+        ? "border-cyan/40 bg-cyan/15 text-cyan"
+        : "border-border bg-surface-secondary text-text-muted"
 
   return (
     <div
@@ -128,10 +128,10 @@ function CustomRoadmapNode({ data }) {
           role="tooltip"
           className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 z-50 w-[215px] -translate-x-1/2 animate-in fade-in zoom-in-95 duration-150"
         >
-          <div className="rounded-xl border border-[#414868] bg-[#1A1B26]/98 p-3 shadow-[0_16px_38px_rgba(0,0,0,0.75)] backdrop-blur-md">
+          <div className="rounded-xl border border-border bg-surface-elevated/98 p-3 shadow-2xl backdrop-blur-md">
             {/* 1. Tên chủ đề & Trạng thái */}
             <div className="flex items-start justify-between gap-2">
-              <span className="line-clamp-1 text-xs font-bold text-[#C0CAF5]">
+              <span className="line-clamp-1 text-xs font-bold text-text-primary">
                 {data?.label}
               </span>
               <span
@@ -145,9 +145,9 @@ function CustomRoadmapNode({ data }) {
             {/* 2. Tiến trình & Số lượng nhiệm vụ */}
             <div className="mt-2.5">
               <div className="flex items-center justify-between text-[10.5px]">
-                <span className="font-medium text-[#A9B1D6]">
+                <span className="font-medium text-text-secondary">
                   Tasks:{" "}
-                  <strong className="font-mono text-[#C0CAF5]">
+                  <strong className="font-mono text-text-primary">
                     {completedTasks}/{totalTasks}
                   </strong>
                 </span>
@@ -156,14 +156,14 @@ function CustomRoadmapNode({ data }) {
                 </span>
               </div>
 
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#15161E]">
+              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-secondary">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${
                     status === "completed"
-                      ? "bg-[#9ECE6A]"
+                      ? "bg-success"
                       : status === "current"
-                        ? "bg-gradient-to-r from-[#7AA2F7] to-[#7DCFFF]"
-                        : "bg-[#414868]"
+                        ? "bg-gradient-to-r from-primary to-cyan"
+                        : "bg-border"
                   }`}
                   style={{ width: `${progress}%` }}
                 />
@@ -171,13 +171,13 @@ function CustomRoadmapNode({ data }) {
             </div>
 
             {/* 3. Gợi ý click (Không có nút Enter Workspace) */}
-            <div className="mt-2 border-t border-[#292E42]/80 pt-1.5 text-center font-mono text-[9.5px] text-[#565F89]">
+            <div className="mt-2 border-t border-border-subtle/80 pt-1.5 text-center font-mono text-[9.5px] text-text-muted">
               Click node to view task details
             </div>
           </div>
 
           {/* Mũi tên trỏ xuống viên ngọc */}
-          <div className="mx-auto -mt-1.5 size-2.5 rotate-45 border-r border-b border-[#414868] bg-[#1A1B26]" />
+          <div className="mx-auto -mt-1.5 size-2.5 rotate-45 border-r border-b border-border bg-surface-elevated" />
         </div>
       )}
 
@@ -206,7 +206,7 @@ function CustomRoadmapNode({ data }) {
           <span
             aria-hidden="true"
             className={`pointer-events-none absolute -inset-1.5 rounded-full opacity-60 blur-md transition-opacity duration-200 group-hover:opacity-95 ${
-              status === "completed" ? "bg-[#9ECE6A]/25" : "bg-[#3DB5E6]/30"
+              status === "completed" ? "bg-success/25" : "bg-cyan/30"
             }`}
           />
         )}
@@ -215,7 +215,7 @@ function CustomRoadmapNode({ data }) {
         {isSelected && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -inset-2 rounded-full border-2 border-[#7AA2F7] shadow-[0_0_24px_rgba(122,162,247,0.65)]"
+            className="pointer-events-none absolute -inset-2 rounded-full border-2 border-primary shadow-[0_0_24px_var(--color-primary-glow)]"
           />
         )}
 
@@ -231,7 +231,7 @@ function CustomRoadmapNode({ data }) {
             cy="38"
             r={radius}
             fill="none"
-            stroke="#292E42"
+            stroke="var(--color-border-subtle, #292E42)"
             strokeWidth="3"
             strokeDasharray={status === "locked" ? "4 4" : undefined}
           />
@@ -257,20 +257,20 @@ function CustomRoadmapNode({ data }) {
           className={`relative z-10 flex size-[56px] items-center justify-center rounded-full border-[2px] transition-transform duration-200 group-hover:scale-108 ${coreStyle}`}
         >
           {status === "completed" && (
-            <Check className="size-6 stroke-[2.75] text-[#9ECE6A]" />
+            <Check className="size-6 stroke-[2.75] text-success" />
           )}
           {status === "current" && (
-            <span className="font-mono text-[15px] font-extrabold tracking-tight text-[#7DCFFF]">
+            <span className="font-mono text-[15px] font-extrabold tracking-tight text-cyan">
               {data?.shortCode || "01"}
             </span>
           )}
           {status === "locked" && (
-            <Lock className="size-4.5 stroke-[2] text-[#565F89]" />
+            <Lock className="size-4.5 stroke-[2] text-text-muted" />
           )}
         </div>
 
         {/* 3 Mini Task Mastery Pips (Theory • Quiz • Code) perched on the bottom rim of the Orb */}
-        <div className="absolute -bottom-1 z-20 flex items-center gap-1 rounded-full border border-[#292E42] bg-[#15161E] px-2 py-0.5 shadow-md">
+        <div className="absolute -bottom-1 z-20 flex items-center gap-1 rounded-full border border-border-subtle bg-surface-secondary px-2 py-0.5 shadow-md">
           {[0, 1, 2].map((idx) => {
             const taskStatus = tasks[idx]?.status
             const isPipDone =
@@ -285,10 +285,10 @@ function CustomRoadmapNode({ data }) {
                 key={idx}
                 className={`size-1.5 rounded-full transition-colors ${
                   isPipDone
-                    ? "bg-[#9ECE6A] shadow-[0_0_5px_#9ECE6A]"
+                    ? "bg-success shadow-[0_0_5px_var(--color-success)]"
                     : isPipCurrent
-                      ? "bg-[#7DCFFF] shadow-[0_0_5px_#7DCFFF]"
-                      : "bg-[#414868]"
+                      ? "bg-cyan shadow-[0_0_5px_var(--color-cyan)]"
+                      : "bg-border"
                 }`}
               />
             )
@@ -298,11 +298,11 @@ function CustomRoadmapNode({ data }) {
 
       {/* ==================== 2. FLOATING GLASS NAMEPLATE PILL ==================== */}
       <div
-        className={`relative z-10 mt-2.5 flex flex-col items-center rounded-xl border bg-[#1A1B26]/95 px-3 py-1.5 text-center shadow-[0_8px_20px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-colors ${pillBorder}`}
+        className={`relative z-10 mt-2.5 flex flex-col items-center rounded-xl border bg-surface-elevated/95 px-3 py-1.5 text-center shadow-lg backdrop-blur-sm transition-colors ${pillBorder}`}
       >
         <span
           className={`line-clamp-1 text-[12.5px] leading-tight font-bold ${
-            status === "locked" ? "text-[#A9B1D6]/80" : "text-[#C0CAF5]"
+            status === "locked" ? "text-text-muted" : "text-text-primary"
           }`}
         >
           {data?.label}
