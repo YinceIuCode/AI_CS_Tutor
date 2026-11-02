@@ -169,18 +169,18 @@ export function LoginForm({
                 </Link>
 
                 <span className="rounded-full border border-border-subtle bg-surface px-3 py-1 font-mono text-[10px] text-primary">
-                  DSA Learning Platform
+                  AI-Powered Learning Platform
                 </span>
               </div>
 
               <h1 className="text-2xl leading-[1.2] font-extrabold tracking-tight sm:text-3xl lg:text-[36px]">
                 <span className="block text-text-primary">
-                  Learn DSA by <span className="text-cyan">thinking,</span>
+                  Learn by <span className="text-cyan">thinking,</span>
                 </span>
                 <span className="mt-1 block text-primary">not copying.</span>
               </h1>
               <p className="mt-3 max-w-[390px] text-xs leading-relaxed text-text-secondary sm:text-sm">
-                Build algorithmic confidence with guided practice and Socratic
+                Build deeper understanding with guided practice and Socratic
                 AI hints.
               </p>
             </div>
@@ -476,7 +476,7 @@ export function LoginForm({
               <p className="mt-1 text-xs text-text-secondary">
                 {activeTab === "login"
                   ? BRAND.slogan
-                  : "Create an account to build your personalized DSA Skill Tree."}
+                  : "Create an account to build your personalized learning roadmap."}
               </p>
 
               {/* Thanh chuyển đổi chế độ: Log In | Sign Up */}

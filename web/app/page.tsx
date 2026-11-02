@@ -54,13 +54,13 @@ const FEATURE_HIGHLIGHTS = [
 const FEATURES_DATA = [
   {
     id: "01",
-    title: "Dynamic Learning Roadmap",
+    title: "Personalized Learning Roadmap",
     description:
-      "Upload your course syllabus and let AI identify key topics, prerequisites and learning dependencies to generate a personalized, interactive Skill Tree.",
+      "Turn course syllabi and learning materials into structured roadmaps with organized topics, learning objectives, and meaningful learning progression.",
     keyPoints: [
       "Syllabus-Based Topic Extraction",
-      "Prerequisite Mapping",
-      "Interactive Skill Tree",
+      "Prerequisite & Dependency Mapping",
+      "Interactive Learning Tree",
     ],
     icon: GitBranch,
     iconColor: "text-cyan",
@@ -70,14 +70,14 @@ const FEATURES_DATA = [
   },
   {
     id: "02",
-    title: "Integrated DSA Workspace",
+    title: "Interactive Learning Workspace",
     description:
-      "Learn theory, challenge your understanding through quizzes, and implement algorithms in an integrated coding environment with execution and complexity analysis.",
+      "Explore concepts, review learning materials, and complete interactive learning activities in an integrated environment designed to strengthen your understanding.",
     keyPoints: [
-      "Interactive Theory & Quizzes",
-      "C++ / Python Code Editor",
-      "Code Execution & Test Cases",
-      "Complexity Analysis",
+      "Concept Theory & Interactive Quizzes",
+      "Hands-On Practice Environment",
+      "Execution & Instant Feedback",
+      "Comprehension Tracking",
     ],
     icon: Code2,
     iconColor: "text-primary",
@@ -89,11 +89,11 @@ const FEATURES_DATA = [
     id: "03",
     title: "Context-Aware Socratic AI",
     description:
-      "Powered by Retrieval-Augmented Generation, Socratic AI retrieves relevant learning materials and generates contextual hints to help you discover mistakes and develop your own reasoning.",
+      "Receive personalized, progressive hints grounded in learning materials and task context. Develop your reasoning skills instead of relying on ready-made answers.",
     keyPoints: [
       "RAG-Grounded Guidance",
       "Progressive Socratic Hints",
-      "Context-Aware Code Debugging",
+      "Independent Problem Solving",
     ],
     icon: BrainCircuit,
     iconColor: "text-purple",
@@ -106,9 +106,9 @@ const FEATURES_DATA = [
 const HOW_IT_WORKS_STEPS = [
   {
     step: "01",
-    title: "Upload Your Materials",
+    title: "Upload Your Learning Materials",
     description:
-      "Upload your course syllabus or lecture slides in PDF format to get started.",
+      "Provide your course syllabus and relevant learning resources in PDF format to get started.",
     icon: FileUp,
     badgeColor: "text-cyan border-cyan/30 bg-cyan/10",
     visual: (
@@ -138,7 +138,7 @@ const HOW_IT_WORKS_STEPS = [
     step: "02",
     title: "Generate Your Learning Roadmap",
     description:
-      "AI analyzes your learning materials, extracts DSA topics and identifies prerequisite relationships to build an interactive Skill Tree.",
+      "Transform learning materials into an organized roadmap that helps you navigate topics, prerequisites, and learning objectives.",
     icon: GitFork,
     badgeColor: "text-primary border-primary/30 bg-primary/10",
     visual: (
@@ -168,9 +168,9 @@ const HOW_IT_WORKS_STEPS = [
   },
   {
     step: "03",
-    title: "Learn, Practice & Build",
+    title: "Explore, Learn & Practice",
     description:
-      "Explore theoretical concepts, solve quizzes and implement algorithms in the integrated coding workspace.",
+      "Study concepts, verify comprehension through quizzes, and complete interactive learning activities in the integrated workspace.",
     icon: Code2,
     badgeColor: "text-purple border-purple/30 bg-purple/10",
     visual: (
@@ -203,7 +203,7 @@ const HOW_IT_WORKS_STEPS = [
     step: "04",
     title: "Receive Socratic AI Guidance",
     description:
-      "When you encounter a mistake or need guidance, RAG-grounded Socratic AI generates contextual hints that help you reason through problems without revealing complete solutions.",
+      "Get context-aware hints that guide your thinking and help you overcome learning challenges independently without spoiling solutions.",
     icon: Brain,
     badgeColor: "text-warning border-warning/30 bg-warning/10",
     visual: (
@@ -320,14 +320,14 @@ export default function LandingPage() {
             {/* Headline */}
             <h1 className="mt-5 text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl lg:text-[32px] xl:text-[38px] 2xl:text-[42px] leading-[1.18]">
               <span className="block whitespace-nowrap">
-                <span className="text-cyan">Master </span>
-                <span className="text-primary">Data </span>
-                <span className="text-warning">Structures</span>
+                <span className="text-cyan">Turn </span>
+                <span className="text-primary">Your Learning </span>
+                <span className="text-warning">Materials</span>
               </span>
               <span className="mt-1.5 block whitespace-nowrap">
-                <span className="text-cyan">Through </span>
-                <span className="text-primary">Computational </span>
-                <span className="text-warning">Thinking</span>
+                <span className="text-cyan">Into </span>
+                <span className="text-primary">a Clear Path </span>
+                <span className="text-warning">Forward</span>
               </span>
             </h1>
 
@@ -344,7 +344,7 @@ export default function LandingPage() {
                 href={LANDING_LINKS.exploreSkillTree}
                 className="inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-primary px-8 text-sm font-bold text-white dark:text-[#15161E] shadow-[0_0_30px_var(--color-primary-glow)] transition-all hover:bg-primary-hover hover:shadow-[0_0_40px_var(--color-primary-glow)] sm:text-base"
               >
-                <span>Explore Skill Tree</span>
+                <span>Explore Your Learning Path</span>
                 <ArrowRight className="size-4.5 stroke-[2.5]" />
               </Link>
               <Link
@@ -406,7 +406,7 @@ export default function LandingPage() {
                     fill="currentColor"
                   />
                 </svg>
-                <span>Mastery Tracking</span>
+                <span>Learning Progress Tracking</span>
               </div>
             </div>
           </div>
@@ -743,12 +743,12 @@ export default function LandingPage() {
           </div>
 
           <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
-            Everything You Need to Master DSA
+            Everything You Need for Smarter Learning
           </h2>
 
           <p className="mx-auto mt-3.5 max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
-            A smarter way to learn, practice and understand Data Structures and
-            Algorithms through AI-powered guidance.
+            A smarter way to navigate course syllabi, practice interactively, and
+            understand complex concepts through AI-powered guidance.
           </p>
         </div>
 
@@ -826,12 +826,12 @@ export default function LandingPage() {
           </div>
 
           <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
-            From Syllabus to Smarter Thinking
+            From Syllabus to Deeper Understanding
           </h2>
 
           <p className="mx-auto mt-3.5 max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
-            Four simple steps to turn your course materials into an interactive
-            DSA learning experience.
+            Four simple steps to transform raw course materials into an active,
+            guided learning experience.
           </p>
         </div>
 
@@ -901,13 +901,12 @@ export default function LandingPage() {
 
             {/* CTA Heading */}
             <h2 className="text-2xl font-extrabold tracking-tight text-text-primary sm:text-3xl lg:text-4xl">
-              Ready to Think Beyond the Bugs?
+              Ready to Take Control of Your Learning?
             </h2>
 
             {/* CTA Description */}
             <p className="mt-3.5 text-xs leading-relaxed text-text-secondary sm:text-sm">
-              Start your DSA learning journey with personalized roadmaps and
-              AI-powered guidance.
+              Start your learning journey with a smarter, more structured approach.
             </p>
 
             {/* Action Buttons */}
@@ -924,7 +923,7 @@ export default function LandingPage() {
                 href={LANDING_LINKS.exploreSkillTree}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-elevated/60"
               >
-                Explore Skill Tree
+                Explore Your Learning Path
               </Link>
             </div>
           </div>
@@ -993,7 +992,7 @@ export default function LandingPage() {
           {/* Bottom Copyright */}
           <div className="flex flex-col items-center justify-between gap-2 text-[11px] text-text-muted sm:flex-row">
             <p>{BRAND.copyright}</p>
-            <p>Master Data Structures through Computational Thinking</p>
+            <p>Master Concepts Through Independent &amp; Computational Thinking</p>
           </div>
         </div>
       </footer>

@@ -128,7 +128,40 @@ Node* rotateRight(Node* y) {
 
     return x;
 }`,
-      analysis: {
+            problem: {
+        title: "Right Rotation on AVL Tree",
+        difficulty: "Medium",
+        description:
+          "Given the root pointer y of an unbalanced subtree in an AVL tree, perform a single Right Rotation (Clockwise) so that its left child x becomes the new subtree root while preserving the Binary Search Tree (BST) ordering property. After rotation, update the heights of both affected nodes and return the pointer to the new root node x.",
+        inputFormat:
+          "A pointer Node* y pointing to the root of the unbalanced subtree.",
+        outputFormat:
+          "Return Node* pointing to the new root node x of the rotated subtree.",
+        examples: [
+          {
+            input: "y = [30, left: 20, right: 40]\ny->left = [20, left: 10, right: 25]",
+            output: "x = [20, left: 10, right: 30]\nx->right = [30, left: 25, right: 40]",
+            explanation:
+              "Node 20 is promoted to the new subtree root. Node 30 becomes the right child of 20, and subtree T2 (rooted at 25) is transferred to become the left child of 30.",
+          },
+          {
+            input: "y = [10, left: 5, right: null]\ny->left = [5, left: 2, right: null]",
+            output: "x = [5, left: 2, right: 10]",
+            explanation:
+              "Node 5 becomes the root with left child 2 and right child 10. T2 is nullptr.",
+          },
+        ],
+        constraints: [
+          "The number of nodes in the subtree is in the range [1, 10^4].",
+          "-10^5 <= Node.key <= 10^5",
+          "Node y and its left child y->left are guaranteed to be non-null in valid rotation calls.",
+          "Time Complexity: O(1)",
+          "Auxiliary Space: O(1)",
+        ],
+        notes:
+          "Recalculate heights in bottom-up order: update height(y) first, and then height(x), because y is now a child of x.",
+      },
+analysis: {
         timeComplexity: "O(1)",
         spaceComplexity: "O(1)",
         optimalNote: "Meets optimal bounds for AVL operations.",
@@ -267,7 +300,46 @@ TreeNode* searchBST(TreeNode* root, int target) {
         ? searchBST(root->left, target)
         : searchBST(root->right, target);
 }`,
-      analysis: {
+            problem: {
+        title: "Insert Node into Binary Search Tree",
+        difficulty: "Easy",
+        description:
+          "You are given the root node of a Binary Search Tree (BST) and a key value to insert into the tree. Return the root node of the BST after the insertion. It is guaranteed that the new key does not exist in the original BST.\n\nNotice that there may exist multiple valid ways for the insertion, as long as the tree remains a BST after insertion. You can return any of them.",
+        inputFormat:
+          "The root pointer TreeNode* root and an integer key to insert.",
+        outputFormat:
+          "Return TreeNode* pointing to the root of the modified BST.",
+        examples: [
+          {
+            input: "root = [4, 2, 7, 1, 3], key = 5",
+            output: "[4, 2, 7, 1, 3, 5]",
+            explanation:
+              "5 > 4 (traverse right) -> 5 < 7 (traverse left) -> 7's left is null, insert 5 here.",
+          },
+          {
+            input: "root = [40, 20, 60, 10, 30, 50, 70], key = 25",
+            output: "[40, 20, 60, 10, 30, 50, 70, null, null, 25]",
+            explanation:
+              "25 < 40 -> 25 > 20 -> 25 < 30 -> insert 25 as 30's left child.",
+          },
+          {
+            input: "root = [], key = 5",
+            output: "[5]",
+            explanation:
+              "When the initial tree is empty (root == nullptr), create and return a new node with key = 5.",
+          },
+        ],
+        constraints: [
+          "The number of nodes in the tree will be in the range [0, 10^4].",
+          "-10^8 <= Node.val <= 10^8",
+          "All values Node.val are unique.",
+          "-10^8 <= key <= 10^8",
+          "It is guaranteed that key does not exist in the original BST.",
+        ],
+        notes:
+          "Pay special attention to the empty tree edge case where root is nullptr. Ensure you handle it as the base case of your recursion or loop.",
+      },
+analysis: {
         timeComplexity: "O(H) / O(log N)",
         spaceComplexity: "O(H) stack",
         optimalNote: "Logarithmic path traversal on balanced BST inputs.",
@@ -403,7 +475,44 @@ ListNode* reverseList(ListNode* head) {
     }
     return prev;
 }`,
-      analysis: {
+            problem: {
+        title: "Reverse a Singly Linked List",
+        difficulty: "Easy",
+        description:
+          "Given the head of a singly linked list, reverse the list in-place and return the reversed list's new head pointer.\n\nYou should alter the next pointers of each node so that the last node becomes the head and the original head points to nullptr.",
+        inputFormat:
+          "The pointer ListNode* head representing the first node of the list.",
+        outputFormat:
+          "Return ListNode* pointing to the new head of the reversed list.",
+        examples: [
+          {
+            input: "head = [1, 2, 3, 4, 5]",
+            output: "[5, 4, 3, 2, 1]",
+            explanation:
+              "Pointer directions are reversed: 5 -> 4 -> 3 -> 2 -> 1 -> nullptr.",
+          },
+          {
+            input: "head = [1, 2]",
+            output: "[2, 1]",
+            explanation: "2 points to 1, and 1 points to nullptr.",
+          },
+          {
+            input: "head = []",
+            output: "[]",
+            explanation:
+              "An empty linked list (head == nullptr) reverses to an empty linked list.",
+          },
+        ],
+        constraints: [
+          "The number of nodes in the list is in the range [0, 5000].",
+          "-5000 <= Node.val <= 5000",
+          "Time Complexity: O(N)",
+          "Space Complexity: O(1) in-place auxiliary space",
+        ],
+        notes:
+          "Maintain three pointers: prev (initially nullptr), curr (initially head), and nextTemp (to store curr->next before rewiring).",
+      },
+analysis: {
         timeComplexity: "O(N)",
         spaceComplexity: "O(1)",
         optimalNote: "Single-pass in-place pointer reversal.",
@@ -557,7 +666,27 @@ int main() {
     cout << solver.solve(sample) << endl;
     return 0;
 }`,
-    analysis: {
+        problem: {
+      title: `${task.title || node.label} Implementation`,
+      difficulty: "Medium",
+      description: `Implement the algorithm for ${node.label}. ${task.description || "Optimize for the target complexity bounds."}`,
+      inputFormat: `Input data conforming to standard ${node.label} problem specifications.`,
+      outputFormat: `Expected result matching the required time bound of ${node.complexity}.`,
+      examples: [
+        {
+          input: "nums = [4, 2, 9, 1, 7]",
+          output: "9",
+          explanation: "Processes elements according to the problem constraints.",
+        },
+      ],
+      constraints: [
+        "1 <= N <= 10^5",
+        "Target Time Complexity: " + node.complexity,
+        "Target Space Complexity: O(1)",
+      ],
+      notes: "Ensure boundary conditions and empty inputs are safely handled.",
+    },
+analysis: {
       timeComplexity: node.complexity,
       spaceComplexity: "O(1)",
       optimalNote: `Meets optimal bounds for ${node.label} operations.`,

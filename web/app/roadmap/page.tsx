@@ -80,7 +80,7 @@ const NODE_RADIUS = 30
 
 const LOADING_STEPS = [
   "Parsing PDF layout & course syllabus sections...",
-  "Extracting DSA topics & prerequisite dependencies...",
+  "Extracting learning topics & prerequisite dependencies...",
   "Indexing vector chunks into Active Knowledge Base (RAG)...",
   "Synthesizing prerequisite Skill Tree with AI Tutor...",
 ] as const
@@ -352,9 +352,14 @@ export default function RoadmapPage() {
                 <Map className="size-5" />
               </div>
               <div>
-                <h1 className="text-sm font-bold tracking-wide text-text-primary uppercase sm:text-[15px]">
-                  DATA STRUCTURES &amp; ALGORITHMS ROADMAP
-                </h1>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-sm font-bold tracking-wide text-text-primary uppercase sm:text-[15px]">
+                    YOUR LEARNING ROADMAP
+                  </h1>
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 font-mono text-[9px] font-medium text-cyan">
+                    CURRENT DEMO: DATA STRUCTURES &amp; ALGORITHMS
+                  </span>
+                </div>
                 <p className="mt-0.5 text-xs text-text-secondary">
                   {isGeneratedReady && indexedDocs[0]
                     ? `Generated from ${indexedDocs[0].name} • Hold Left/Right Click to pan • Click any node to open tasks.`
@@ -520,7 +525,7 @@ export default function RoadmapPage() {
                   </div>
 
                   <h2 className="mt-4 text-sm font-bold text-text-primary">
-                    Generating Your DSA Skill Tree...
+                    Generating Your Learning Roadmap...
                   </h2>
 
                   {/* Subtitle chạy lặp lại kèm hiệu ứng chuyển mờ (fade) giữa các câu */}
