@@ -20,6 +20,8 @@ import {
   Maximize2,
   Minimize2,
   Lock,
+  PanelLeftClose,
+  PanelLeftOpen,
   Play,
   Search,
   Send,
@@ -33,6 +35,13 @@ import { UserProfileMenu } from "@/components/user-profile-menu"
 import { useTheme } from "next-themes"
 import themeConfig from "@/config/theme.config.json"
 import { SocraticTutorPanel } from "@/components/workspace/SocraticTutorPanel"
+import { ProblemDescriptionPanel } from "@/components/workspace/ProblemDescriptionPanel"
+import { CodeAnalysisPanel } from "@/components/workspace/CodeAnalysisPanel"
+import {
+  runCode,
+  submitCode,
+  type ExecutionResult,
+} from "@/services/executionService"
 import { useAuth } from "@/hooks/useAuth"
 import { useUserProgress } from "@/hooks/useUserProgress"
 import { cn } from "@/lib/utils"
@@ -214,6 +223,13 @@ export function WorkspaceView({
     runtimeMs: number
     memoryMb: string
   } | null>(null)
+  const [executionResult, setExecutionResult] = React.useState<ExecutionResult | null>(null)
+  const [executionStatus, setExecutionStatus] = React.useState<
+    "idle" | "running" | "success" | "failed"
+  >("idle")
+  const [activeAction, setActiveAction] = React.useState<"run" | "submit" | null>(null)
+  const [isOutdated, setIsOutdated] = React.useState<boolean>(false)
+  const executedCodeRef = React.useRef<string>("")
   const [cursorPos, setCursorPos] = React.useState<{
     line: number
     col: number
@@ -230,6 +246,16 @@ export function WorkspaceView({
   const [isVisMinimized, setIsVisMinimized] = React.useState<boolean>(false)
   const [isVisExpanded, setIsVisExpanded] = React.useState<boolean>(false)
   const [hasNewHintAlert, setHasNewHintAlert] = React.useState<boolean>(false)
+  const [isProblemCollapsed, setIsProblemCollapsed] = React.useState<boolean>(false)
+  const [mobileTab, setMobileTab] = React.useState<"problem" | "code">("code")
+
+  // Auto-resize Monaco Editor whenever Problem Description Panel toggles or mobile tab switches
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      editorRef.current?.layout()
+    }, 80)
+    return () => clearTimeout(timer)
+  }, [isProblemCollapsed, mobileTab])
 
   // Refs tới Monaco Editor để điều khiển highlight dòng lỗi & cuộn tới dòng lỗi
   const editorRef = React.useRef<any>(null)
@@ -320,9 +346,32 @@ export function WorkspaceView({
     if (savedCodeObj?.isSubmitted) {
       setCodeRunOutcome("passed")
       setLastRunMetrics({ runtimeMs: 12, memoryMb: "4.1 MB" })
+      setExecutionStatus("success")
+      setActiveAction("submit")
+      setIsOutdated(false)
+      setExecutionResult({
+        action: "submit",
+        status: "success",
+        metrics: { runtimeMs: 12, memoryMb: "4.1 MB" },
+        passedCount: 8,
+        totalCount: 8,
+        testCases: [],
+        complexity: {
+          timeComplexity: taskDetail?.analysis?.timeComplexity || "O(1)",
+          spaceComplexity: taskDetail?.analysis?.spaceComplexity || "O(1)",
+          optimal: true,
+          optimalNote: taskDetail?.analysis?.optimalNote || "Meets optimal bounds.",
+        },
+      })
+      executedCodeRef.current = typeof savedCode === "string" ? savedCode : (taskDetail?.initialCode || "")
     } else {
       setCodeRunOutcome("initial")
       setLastRunMetrics(null)
+      setExecutionStatus("idle")
+      setActiveAction(null)
+      setIsOutdated(false)
+      setExecutionResult(null)
+      executedCodeRef.current = ""
     }
 
     const savedHintCount = userProgress.hintsRemaining?.[activeTask.id]
@@ -369,6 +418,11 @@ export function WorkspaceView({
         language: taskDetail?.language || "C++",
       })
       setIsCodeSavedBadge(true)
+
+      // Mark execution results as outdated if code has been modified since last run
+      if (executedCodeRef.current && nextCode !== executedCodeRef.current) {
+        setIsOutdated(true)
+      }
     },
     [activeTask.id, saveCodeDraft, taskDetail?.language]
   )
@@ -387,63 +441,94 @@ export function WorkspaceView({
     [completeTask, activeTask.id, router, node.id]
   )
 
-  const handleRunCode = React.useCallback(() => {
-    if (isRunningCode) return
+  const handleRunCode = React.useCallback(async () => {
+    if (executionStatus === "running") return
+    setExecutionStatus("running")
     setIsRunningCode(true)
+    setActiveAction("run")
+    setIsOutdated(false)
+
     saveCodeDraft(activeTask.id, {
       code,
       language: taskDetail?.language || "C++",
     })
 
-    window.setTimeout(() => {
+    try {
+      const result = await runCode(
+        activeTask.id,
+        code,
+        taskDetail?.language || "C++",
+        taskDetail
+      )
+      executedCodeRef.current = code
+      setExecutionResult(result)
+      setExecutionStatus(result.status)
       setIsRunningCode(false)
-      const initialTrimmed = (taskDetail?.initialCode || "").trim()
-      const currentTrimmed = code.trim()
-      const hasAddedGuardOrFix =
-        currentTrimmed !== initialTrimmed &&
-        (/nullptr|!y|!x|!root|!head|if\s*\(/.test(currentTrimmed) ||
-          currentTrimmed.length > initialTrimmed.length + 18)
 
-      setCodeRunOutcome(hasAddedGuardOrFix ? "passed" : "warning")
-      setHasNewHintAlert(!hasAddedGuardOrFix && activeTool !== "tutor")
-      setLastRunMetrics({
-        runtimeMs: hasAddedGuardOrFix ? 11 : 16,
-        memoryMb: "4.2 MB",
-      })
+      const isPass = result.status === "success"
+      setCodeRunOutcome(isPass ? "passed" : "warning")
+      setLastRunMetrics(result.metrics)
+      setHasNewHintAlert(!isPass && activeTool !== "tutor")
       setIsCodeSavedBadge(true)
-    }, 650)
+    } catch {
+      setExecutionStatus("failed")
+      setIsRunningCode(false)
+    }
   }, [
-    isRunningCode,
-    saveCodeDraft,
+    executionStatus,
     activeTask.id,
     code,
-    taskDetail?.language,
-    taskDetail?.initialCode,
+    taskDetail,
+    saveCodeDraft,
     activeTool,
   ])
 
-  const handleSubmitCode = React.useCallback(() => {
-    if (isRunningCode) return
+  const handleSubmitCode = React.useCallback(async () => {
+    if (executionStatus === "running") return
+    setExecutionStatus("running")
     setIsRunningCode(true)
-    window.setTimeout(() => {
-      setIsRunningCode(false)
-      saveCodeDraft(activeTask.id, {
+    setActiveAction("submit")
+    setIsOutdated(false)
+
+    try {
+      const result = await submitCode(
+        activeTask.id,
         code,
-        language: taskDetail?.language || "C++",
-        isSubmitted: true,
-      })
-      completeTask(activeTask.id)
-      setCodeRunOutcome("passed")
-      setLastRunMetrics({ runtimeMs: 12, memoryMb: "4.1 MB" })
+        taskDetail?.language || "C++",
+        taskDetail
+      )
+      executedCodeRef.current = code
+      setExecutionResult(result)
+      setExecutionStatus(result.status)
+      setIsRunningCode(false)
+
+      if (result.status === "success") {
+        completeTask(activeTask.id)
+        saveCodeDraft(activeTask.id, {
+          code,
+          language: taskDetail?.language || "C++",
+          isSubmitted: true,
+        })
+        setCodeRunOutcome("passed")
+        setHasNewHintAlert(false)
+      } else {
+        setCodeRunOutcome("warning")
+        setHasNewHintAlert(activeTool !== "tutor")
+      }
+      setLastRunMetrics(result.metrics)
       setIsCodeSavedBadge(true)
-    }, 550)
+    } catch {
+      setExecutionStatus("failed")
+      setIsRunningCode(false)
+    }
   }, [
-    isRunningCode,
+    executionStatus,
     activeTask.id,
     code,
+    taskDetail,
     completeTask,
     saveCodeDraft,
-    taskDetail?.language,
+    activeTool,
   ])
 
   const handleSelectTask = React.useCallback(
@@ -878,8 +963,59 @@ export function WorkspaceView({
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border-subtle bg-surface-secondary">
               {/* Thanh Tab & Nút điều khiển Editor */}
               <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface px-3.5 py-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-secondary px-3 py-1 text-xs font-medium text-text-primary">
+                <div className="flex items-center gap-2">
+                  {/* Nút mở/thu gọn Problem Description Panel */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProblemCollapsed((prev) => !prev)
+                      setMobileTab("problem")
+                    }}
+                    className={cn(
+                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-semibold transition-all",
+                      !isProblemCollapsed
+                        ? "border-cyan/50 bg-cyan/10 text-cyan shadow-[0_0_12px_rgba(125,207,255,0.18)]"
+                        : "border-border-subtle bg-surface-secondary text-text-primary hover:border-cyan/60 hover:text-cyan"
+                    )}
+                    title={isProblemCollapsed ? "Expand Problem Description" : "Collapse Problem Description"}
+                  >
+                    {isProblemCollapsed ? (
+                      <PanelLeftOpen className="size-3.5 text-cyan" />
+                    ) : (
+                      <PanelLeftClose className="size-3.5 text-cyan" />
+                    )}
+                    <span>Description</span>
+                  </button>
+
+                  {/* Segmented Switch on smaller screens (< lg) */}
+                  <div className="inline-flex lg:hidden rounded-lg border border-border-subtle bg-surface-secondary p-0.5 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setMobileTab("problem")}
+                      className={cn(
+                        "rounded-md px-2 py-0.5 font-medium transition-colors",
+                        mobileTab === "problem"
+                          ? "bg-cyan/15 text-cyan font-bold"
+                          : "text-text-muted hover:text-text-primary"
+                      )}
+                    >
+                      Problem
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileTab("code")}
+                      className={cn(
+                        "rounded-md px-2 py-0.5 font-medium transition-colors",
+                        mobileTab === "code"
+                          ? "bg-primary/15 text-primary font-bold"
+                          : "text-text-muted hover:text-text-primary"
+                      )}
+                    >
+                      Code
+                    </button>
+                  </div>
+
+                  <div className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-secondary px-3 py-1 text-xs font-medium text-text-primary">
                     <span className="font-mono text-[11px] font-bold text-cyan">
                       {taskDetail?.language || "C++"}
                     </span>
@@ -918,244 +1054,158 @@ export function WorkspaceView({
 
                   <button
                     type="button"
-                    disabled={isRunningCode}
+                    disabled={executionStatus === "running"}
                     onClick={handleRunCode}
                     className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[11px] font-semibold text-text-primary transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Play
                       className={`size-3 text-primary ${
-                        isRunningCode ? "animate-pulse" : ""
+                        executionStatus === "running" && activeAction === "run"
+                          ? "animate-pulse"
+                          : ""
                       }`}
                     />
-                    <span>{isRunningCode ? "Running..." : "Run Code"}</span>
+                    <span>
+                      {executionStatus === "running" && activeAction === "run"
+                        ? "Running..."
+                        : "Run Code"}
+                    </span>
                   </button>
 
                   <button
                     type="button"
-                    disabled={isRunningCode}
+                    disabled={executionStatus === "running"}
                     onClick={handleSubmitCode}
                     className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[11px] font-bold text-surface-secondary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <Send className="size-3" />
-                    <span>Submit</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Thanh chỉ báo mờ trỏ tới dòng code lỗi khi Run Code bị fail */}
-              {codeRunOutcome === "warning" && (
-                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/35 bg-gradient-to-r from-[#DB4B4B]/18 via-[#FF9E64]/10 to-transparent px-3.5 py-1.5 text-[11px]">
-                  <div className="flex min-w-0 items-center gap-2 text-warning">
-                    <span className="inline-flex items-center gap-1 rounded bg-danger/25 px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-primary">
-                      ↳ Line {socraticProfile.faultyLine.line}
-                    </span>
-                    <span className="truncate font-mono text-[10.5px] text-text-primary/90">
-                      {socraticProfile.faultyLine.codeToken}
-                    </span>
-                    <span className="hidden truncate text-warning/90 sm:inline">
-                      — {socraticProfile.faultyLine.shortReason}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleFocusFaultyLine(socraticProfile.faultyLine.line)
-                    }
-                    className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-danger/50 bg-surface-secondary/85 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan transition-colors hover:border-cyan hover:text-text-primary"
-                  >
-                    <Target className="size-3 text-danger" />
+                    <Send
+                      className={`size-3 ${
+                        executionStatus === "running" && activeAction === "submit"
+                          ? "animate-pulse"
+                          : ""
+                      }`}
+                    />
                     <span>
-                      Point to Line {socraticProfile.faultyLine.line}
+                      {executionStatus === "running" && activeAction === "submit"
+                        ? "Submitting..."
+                        : "Submit"}
                     </span>
                   </button>
                 </div>
-              )}
-
-              {/* Vùng soạn thảo Monaco Editor */}
-              <div className="relative min-h-[300px] flex-1 bg-surface-secondary">
-                <Editor
-                  height="100%"
-                  defaultLanguage="cpp"
-                  theme={monacoTheme}
-                  value={code}
-                  onChange={handleCodeChange}
-                  beforeMount={handleEditorBeforeMount}
-                  onMount={handleEditorDidMount}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 12.5,
-                    lineHeight: 19,
-                    fontFamily:
-                      "var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                    scrollBeyondLastLine: false,
-                    renderLineHighlight: "all",
-                    padding: { top: 10, bottom: 10 },
-                    overviewRulerLanes: 0,
-                    hideCursorInOverviewRuler: true,
-                    overviewRulerBorder: false,
-                    automaticLayout: true,
-                    scrollbar: {
-                      verticalScrollbarSize: 8,
-                      horizontalScrollbarSize: 8,
-                    },
-                  }}
-                />
               </div>
 
-              {/* Thanh trạng thái dưới đáy Editor (VSCode Status Bar) */}
-              <div className="flex shrink-0 items-center justify-end gap-4 border-t border-border-subtle bg-surface px-4 py-1 font-mono text-[10px] text-text-muted">
-                <span>
-                  Ln {cursorPos.line}, Col {cursorPos.col}
-                </span>
-                <span>{taskDetail?.language || "C++"}</span>
-                <span>UTF-8</span>
-                <span className="inline-flex items-center gap-1.5 text-success">
-                  <span className="size-1.5 rounded-full bg-success" />
-                  {isCodeSavedBadge ? "Draft Saved" : "Ready"}
-                </span>
-              </div>
-            </div>
-
-            {/* 2. KHUNG DƯỚI: CODE ANALYSIS & TEST RESULTS */}
-            <div className="shrink-0 rounded-2xl border border-border-subtle bg-surface-secondary p-3.5">
-              <div className="flex items-center justify-between border-b border-border-subtle pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Settings
-                    className={`size-4 text-cyan ${
-                      isRunningCode ? "animate-spin" : ""
-                    }`}
+              {/* VÙNG LÀM VIỆC CHÍNH 2 CỘT: PROBLEM DESCRIPTION (TRÁI) & MONACO EDITOR (PHẢI) */}
+              <div className="relative flex min-h-[340px] flex-1 overflow-hidden">
+                {/* CỘT TRÁI: Problem Description Panel */}
+                <div
+                  className={cn(
+                    "w-full border-b lg:border-b-0 lg:border-r border-border-subtle shrink-0 transition-all",
+                    "lg:w-[380px] xl:w-[440px]",
+                    isProblemCollapsed ? "hidden" : "flex flex-col",
+                    mobileTab !== "problem" && "hidden lg:flex"
+                  )}
+                >
+                  <ProblemDescriptionPanel
+                    problem={taskDetail?.problem}
+                    taskTitle={activeTask.title}
+                    isCollapsed={isProblemCollapsed}
+                    onToggleCollapse={() => setIsProblemCollapsed(true)}
                   />
-                  <h2 className="text-xs font-bold text-text-primary">
-                    Code Analysis &amp; Test Results
-                  </h2>
                 </div>
 
-                {isRunningCode ? (
-                  <span className="font-mono text-[10px] text-cyan">
-                    Compiling &amp; running test suite...
-                  </span>
-                ) : lastRunMetrics ? (
-                  <span className="font-mono text-[10px] text-success">
-                    Executed in {lastRunMetrics.runtimeMs}ms • Memory:{" "}
-                    {lastRunMetrics.memoryMb}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                {/* Thẻ Trái: Complexity Estimation */}
-                <div className="flex flex-col justify-between rounded-xl border border-border-subtle bg-surface-secondary p-3">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
-                        <BarChart2 className="size-3.5 text-cyan" />
-                        <span>Complexity Estimation</span>
-                      </div>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-success/40 bg-success/12 px-2 py-0.5 text-[10px] font-semibold text-success">
-                        <span className="size-1.5 rounded-full bg-success" />
-                        Optimal
-                      </span>
-                    </div>
-
-                    <div className="mt-2.5 space-y-1 text-xs">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-text-secondary">Time Complexity</span>
-                        <span className="font-mono font-bold text-success">
-                          {taskDetail?.analysis?.timeComplexity || "O(1)"}
+                {/* CỘT PHẢI: Monaco Code Editor */}
+                <div
+                  className={cn(
+                    "flex flex-1 min-w-0 flex-col bg-surface-secondary",
+                    mobileTab !== "code" && "hidden lg:flex"
+                  )}
+                >
+                  {/* Thanh chỉ báo mờ trỏ tới dòng code lỗi khi Run Code bị fail */}
+                  {codeRunOutcome === "warning" && (
+                    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/35 bg-gradient-to-r from-[#DB4B4B]/18 via-[#FF9E64]/10 to-transparent px-3.5 py-1.5 text-[11px]">
+                      <div className="flex min-w-0 items-center gap-2 text-warning">
+                        <span className="inline-flex items-center gap-1 rounded bg-danger/25 px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-primary">
+                          ↳ Line {socraticProfile.faultyLine.line}
+                        </span>
+                        <span className="truncate font-mono text-[10.5px] text-text-primary/90">
+                          {socraticProfile.faultyLine.codeToken}
+                        </span>
+                        <span className="hidden truncate text-warning/90 sm:inline">
+                          — {socraticProfile.faultyLine.shortReason}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-text-secondary">Space Complexity</span>
-                        <span className="font-mono font-bold text-success">
-                          {taskDetail?.analysis?.spaceComplexity || "O(1)"}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleFocusFaultyLine(socraticProfile.faultyLine.line)
+                        }
+                        className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-danger/50 bg-surface-secondary/85 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan transition-colors hover:border-cyan hover:text-text-primary"
+                      >
+                        <Target className="size-3 text-danger" />
+                        <span>
+                          Point to Line {socraticProfile.faultyLine.line}
                         </span>
-                      </div>
+                      </button>
                     </div>
+                  )}
+
+                  {/* Vùng soạn thảo Monaco Editor */}
+                  <div className="relative min-h-[300px] flex-1 bg-surface-secondary">
+                    <Editor
+                      height="100%"
+                      defaultLanguage="cpp"
+                      theme={monacoTheme}
+                      value={code}
+                      onChange={handleCodeChange}
+                      beforeMount={handleEditorBeforeMount}
+                      onMount={handleEditorDidMount}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 12.5,
+                        lineHeight: 19,
+                        fontFamily:
+                          "var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                        scrollBeyondLastLine: false,
+                        renderLineHighlight: "all",
+                        padding: { top: 10, bottom: 10 },
+                        overviewRulerLanes: 0,
+                        hideCursorInOverviewRuler: true,
+                        overviewRulerBorder: false,
+                        automaticLayout: true,
+                        scrollbar: {
+                          verticalScrollbarSize: 8,
+                          horizontalScrollbarSize: 8,
+                        },
+                      }}
+                    />
                   </div>
 
-                  <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-border-subtle bg-surface px-2.5 py-1.5 text-[11px] text-text-secondary">
-                    <CheckCircle2 className="size-3.5 shrink-0 text-success" />
+                  {/* Thanh trạng thái dưới đáy Editor (VSCode Status Bar) */}
+                  <div className="flex shrink-0 items-center justify-end gap-4 border-t border-border-subtle bg-surface px-4 py-1 font-mono text-[10px] text-text-muted">
                     <span>
-                      {taskDetail?.analysis?.optimalNote ||
-                        "Meets optimal bounds."}
+                      Ln {cursorPos.line}, Col {cursorPos.col}
+                    </span>
+                    <span>{taskDetail?.language || "C++"}</span>
+                    <span>UTF-8</span>
+                    <span className="inline-flex items-center gap-1.5 text-success">
+                      <span className="size-1.5 rounded-full bg-success" />
+                      {isCodeSavedBadge ? "Draft Saved" : "Ready"}
                     </span>
                   </div>
                 </div>
-
-                {/* Thẻ Phải: Edge Case Warning hoặc All Tests Passed */}
-                {codeRunOutcome === "passed" ? (
-                  <div className="flex flex-col justify-between rounded-xl border border-success/65 bg-surface-secondary p-3">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
-                          <CheckCircle2 className="size-3.5 text-success" />
-                          <span>Test Suite Verification</span>
-                        </div>
-                        <span className="rounded-md border border-success/40 bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
-                          Passed (8 / 8 Tests)
-                        </span>
-                      </div>
-
-                      <div className="mt-2 text-[11px] leading-relaxed text-text-secondary">
-                        <div className="font-medium text-text-primary">
-                          All standard &amp; boundary edge cases verified
-                        </div>
-                        <div className="mt-0.5 text-text-secondary">
-                          • Null pointer &amp; subtree re-attachment checks
-                          succeeded without memory leaks.
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-success/40 bg-success/10 px-2.5 py-1.5 text-[11px] font-medium text-success">
-                      <Check className="size-3.5 shrink-0 text-success" />
-                      <span>Mastery task completed &amp; saved to Roadmap</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col justify-between rounded-xl border border-danger/65 bg-surface-secondary p-3">
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
-                          <AlertTriangle className="size-3.5 text-danger" />
-                          <span>Edge Case Warning</span>
-                        </div>
-                        <span className="rounded-md border border-danger/40 bg-danger/15 px-2 py-0.5 text-[10px] font-semibold text-danger">
-                          {taskDetail?.analysis?.failedTestLabel ||
-                            "Failed (Test Case #5)"}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 text-[11px] leading-relaxed text-text-secondary">
-                        <div className="font-medium text-text-primary">
-                          {taskDetail?.analysis?.errorTitle}
-                        </div>
-                        <div className="mt-0.5 text-text-secondary">
-                          • {taskDetail?.analysis?.errorCause}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleFocusFaultyLine(socraticProfile.faultyLine.line)
-                      }
-                      className="mt-2.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-danger/40 bg-danger/10 px-2.5 py-1.5 text-left text-[11px] font-medium text-warning transition-colors hover:border-danger/70 hover:bg-danger/18"
-                    >
-                      <span className="flex items-center gap-2">
-                        <ArrowRight className="size-3.5 shrink-0 text-danger" />
-                        <span>{taskDetail?.analysis?.errorAction}</span>
-                      </span>
-                      <span className="shrink-0 rounded bg-danger/25 px-1.5 py-0.5 font-mono text-[9.5px] font-bold text-text-primary">
-                        Ln {socraticProfile.faultyLine.line}
-                      </span>
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
+
+            {/* 2. KHUNG DƯỚI: CODE ANALYSIS & TEST RESULTS (STATE-DRIVEN DYNAMIC UI) */}
+            <CodeAnalysisPanel
+              status={executionStatus}
+              activeAction={activeAction}
+              executionResult={executionResult}
+              isOutdated={isOutdated}
+              onRunCode={handleRunCode}
+              onFocusFaultyLine={handleFocusFaultyLine}
+            />
           </section>
         )}
       </main>
