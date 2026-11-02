@@ -94,10 +94,10 @@ function RoadmapFlowInner({
       className="relative h-full min-h-[470px] w-full flex-1 cursor-grab overflow-hidden active:cursor-grabbing"
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Ambient Tokyo Night Glow inside the Canvas */}
+      {/* Ambient Glow inside the Canvas */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-1/2 h-[380px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7AA2F7]/[0.05] blur-[110px]"
+        className="pointer-events-none absolute top-1/2 left-1/2 h-[380px] w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/[0.05] blur-[110px]"
       />
 
       <ReactFlow
@@ -130,24 +130,24 @@ function RoadmapFlowInner({
           variant={BackgroundVariant.Dots}
           gap={22}
           size={1.4}
-          color="#292E42"
+          color="var(--color-border-subtle, #292E42)"
         />
       </ReactFlow>
 
-      {/* Helper hint for Left/Right Click Pan + Tokyo Night Zoom Controls */}
+      {/* Helper hint for Left/Right Click Pan + Zoom Controls */}
       <div className="pointer-events-none absolute right-3 bottom-3 left-3 z-20 flex items-center justify-between gap-2">
-        <div className="hidden items-center gap-1.5 rounded-lg border border-[#292E42]/80 bg-[#1A1B26]/85 px-2.5 py-1 text-[11px] text-[#565F89] backdrop-blur-sm sm:inline-flex">
-          <Move className="size-3 text-[#7AA2F7]" />
+        <div className="hidden items-center gap-1.5 rounded-lg border border-border-subtle/80 bg-surface-elevated/85 px-2.5 py-1 text-[11px] text-text-muted backdrop-blur-sm sm:inline-flex">
+          <Move className="size-3 text-primary" />
           <span>Hold Left or Right Click to drag map • Scroll to zoom</span>
         </div>
 
-        <div className="pointer-events-auto ml-auto flex items-center gap-1 rounded-xl border border-[#292E42] bg-[#1A1B26]/95 p-1 shadow-lg backdrop-blur-md">
+        <div className="pointer-events-auto ml-auto flex items-center gap-1 rounded-xl border border-border-subtle bg-surface-elevated/95 p-1 shadow-lg backdrop-blur-md">
           <button
             type="button"
             onClick={() => zoomIn({ duration: 180 })}
             title="Zoom In"
             aria-label="Zoom In"
-            className="flex size-7 cursor-pointer items-center justify-center rounded-lg text-[#A9B1D6] transition-colors hover:bg-[#292E42] hover:text-[#C0CAF5]"
+            className="flex size-7 cursor-pointer items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
             <Plus className="size-3.5" />
           </button>
@@ -156,11 +156,11 @@ function RoadmapFlowInner({
             onClick={() => zoomOut({ duration: 180 })}
             title="Zoom Out"
             aria-label="Zoom Out"
-            className="flex size-7 cursor-pointer items-center justify-center rounded-lg text-[#A9B1D6] transition-colors hover:bg-[#292E42] hover:text-[#C0CAF5]"
+            className="flex size-7 cursor-pointer items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
           >
             <Minus className="size-3.5" />
           </button>
-          <div className="mx-0.5 h-4 w-px bg-[#292E42]" />
+          <div className="mx-0.5 h-4 w-px bg-border-subtle" />
           <button
             type="button"
             onClick={() =>
@@ -173,7 +173,7 @@ function RoadmapFlowInner({
             }
             title="Fit View"
             aria-label="Fit View"
-            className="flex size-7 cursor-pointer items-center justify-center rounded-lg text-[#7AA2F7] transition-colors hover:bg-[#292E42] hover:text-[#7DCFFF]"
+            className="flex size-7 cursor-pointer items-center justify-center rounded-lg text-primary transition-colors hover:bg-surface hover:text-cyan"
           >
             <Maximize2 className="size-3.5" />
           </button>

@@ -4,39 +4,31 @@ import * as React from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 import { AuthProvider } from "@/contexts/AuthContext"
+import themeConfig from "@/config/theme.config.json"
 
-function ThemeProvider({
-  children,
-  ...props
-}: React.ComponentProps<typeof NextThemesProvider>) {
-  const [queryClient] = React.useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 1000 * 60 * 5,
-            refetchOnWindowFocus: false,
-          },
-        },
-      })
-  )
+export type ThemeMode = "dark" | "light"
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <NextThemesProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          {...props}
-        >
-          <ThemeHotkey />
-          {children}
-        </NextThemesProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  )
+/**
+ * Automatically synchronizes semantic CSS Custom Properties from theme.config.json
+ * to document.documentElement whenever the active theme changes.
+ */
+function ThemeSync() {
+  const { resolvedTheme } = useTheme()
+
+  React.useEffect(() => {
+    const isLight = resolvedTheme === "light"
+    const currentTheme = isLight ? themeConfig.light : themeConfig.dark
+    const root = document.documentElement
+
+    // Set all top-level semantic tokens (--color-background, --color-surface, etc.)
+    Object.entries(currentTheme).forEach(([token, value]) => {
+      if (typeof value === "string") {
+        root.style.setProperty(`--color-${token}`, value)
+      }
+    })
+  }, [resolvedTheme])
+
+  return null
 }
 
 function isTypingTarget(target: EventTarget | null) {
@@ -86,4 +78,39 @@ function ThemeHotkey() {
   return null
 }
 
-export { ThemeProvider }
+function ThemeProvider({
+  children,
+  ...props
+}: React.ComponentProps<typeof NextThemesProvider>) {
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60 * 5,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  )
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <NextThemesProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+          {...props}
+        >
+          <ThemeSync />
+          <ThemeHotkey />
+          {children}
+        </NextThemesProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  )
+}
+
+export { ThemeProvider, ThemeSync }

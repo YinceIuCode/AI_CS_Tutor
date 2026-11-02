@@ -25,6 +25,7 @@ import { UserProfileMenu } from "@/components/user-profile-menu"
 import { BRAND } from "@/config/brand"
 import { BrandLogo } from "@/components/brand-logo"
 import { PwaInstallButton } from "@/components/pwa-install-button"
+import { ThemeToggleButton } from "@/components/theme-toggle-button"
 import { useAuth } from "@/hooks/useAuth"
 import { useRoadmap } from "@/hooks/useRoadmap"
 import { useUserProgress } from "@/hooks/useUserProgress"
@@ -294,23 +295,23 @@ export default function RoadmapPage() {
 
   if (isInitializing || !isAuthenticated) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-[#15161E] font-mono text-xs text-[#7DCFFF]">
+      <div className="flex min-h-svh items-center justify-center bg-surface-secondary font-mono text-xs text-cyan">
         Verifying session...
       </div>
     )
   }
 
   return (
-    <div className="relative flex min-h-svh flex-col justify-between overflow-x-hidden bg-[#15161E] px-4 py-3 font-sans text-[#A9B1D6] selection:bg-[#7AA2F7]/30 selection:text-[#C0CAF5] md:px-7 md:py-4 lg:h-svh lg:overflow-hidden">
+    <div className="relative flex min-h-svh flex-col justify-between overflow-x-hidden bg-surface-secondary px-4 py-3 font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary md:px-7 md:py-4 lg:h-svh lg:overflow-hidden">
       {/* Quầng sáng nền nhẹ chuẩn Tokyo Night */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-[30%] left-[25%] h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7AA2F7]/8 blur-[140px]"
+        className="pointer-events-none absolute top-[30%] left-[25%] h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-[140px]"
       />
 
       {/* ==================== THANH ĐIỀU HƯỚNG TRÊN CÙNG (TOP NAVBAR) ==================== */}
       <header className="relative z-40 mx-auto w-full max-w-[1480px] shrink-0">
-        <nav className="flex items-center justify-between gap-4 rounded-2xl border border-[#292E42] bg-[#1A1B26]/95 px-5 py-2.5 shadow-lg backdrop-blur-md">
+        <nav className="flex items-center justify-between gap-4 rounded-2xl border border-border-subtle bg-surface/95 px-5 py-2.5 shadow-lg backdrop-blur-md">
           <Link
             href={ROADMAP_LINKS.brand}
             className="group flex shrink-0 items-center transition-opacity hover:opacity-95"
@@ -318,22 +319,23 @@ export default function RoadmapPage() {
             <BrandLogo size="sm" priority />
           </Link>
 
-          <div className="hidden max-w-[460px] flex-1 items-center justify-between rounded-full border border-[#292E42] bg-[#15161E]/90 px-4 py-2 text-xs text-[#565F89] transition-colors focus-within:border-[#414868] md:flex">
+          <div className="hidden max-w-[460px] flex-1 items-center justify-between rounded-full border border-border-subtle bg-surface-secondary/90 px-4 py-2 text-xs text-text-muted transition-colors focus-within:border-border md:flex">
             <div className="flex flex-1 items-center gap-2.5">
-              <Search className="size-4 shrink-0 text-[#565F89]" />
+              <Search className="size-4 shrink-0 text-text-muted" />
               <input
                 type="text"
                 placeholder="Search concepts, algorithms, or problems..."
-                className="w-full bg-transparent text-xs text-[#C0CAF5] placeholder:text-[#565F89] focus:outline-none"
+                className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
               />
             </div>
-            <kbd className="rounded-md border border-[#292E42] bg-[#1A1B26] px-2 py-0.5 font-mono text-[10px] font-medium text-[#A9B1D6]">
+            <kbd className="rounded-md border border-border-subtle bg-surface px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary">
               Ctrl + K
             </kbd>
           </div>
 
           <div className="flex items-center gap-3">
             <PwaInstallButton />
+            <ThemeToggleButton />
             <UserProfileMenu />
           </div>
         </nav>
@@ -342,18 +344,18 @@ export default function RoadmapPage() {
       {/* ==================== KHÔNG GIAN LÀM VIỆC CHÍNH 2 CỘT (MAIN WORKSPACE) ==================== */}
       <main className="relative z-10 mx-auto mt-3 grid min-h-0 w-full max-w-[1480px] flex-1 grid-cols-1 gap-4 lg:grid-cols-12">
         {/* -------------------- CỘT TRÁI (9/12): KHUNG CHỨA HORIZONTAL ROADMAP TREE -------------------- */}
-        <section className="flex min-h-0 flex-col justify-between rounded-2xl border border-[#292E42] bg-[#15161E]/90 p-4 shadow-xl lg:col-span-8 xl:col-span-9">
+        <section className="flex min-h-0 flex-col justify-between rounded-2xl border border-border-subtle bg-surface-secondary/90 p-4 shadow-xl lg:col-span-8 xl:col-span-9">
           {/* 1. Thanh Banner Thông Tin Roadmap */}
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-xl border border-[#292E42] bg-[#1A1B26] px-5 py-3">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-xl border border-border-subtle bg-surface px-5 py-3">
             <div className="flex items-center gap-3.5">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#7AA2F7]/35 bg-[#7AA2F7]/12 text-[#7DCFFF]">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/35 bg-primary/12 text-cyan">
                 <Map className="size-5" />
               </div>
               <div>
-                <h1 className="text-sm font-bold tracking-wide text-[#C0CAF5] uppercase sm:text-[15px]">
+                <h1 className="text-sm font-bold tracking-wide text-text-primary uppercase sm:text-[15px]">
                   DATA STRUCTURES &amp; ALGORITHMS ROADMAP
                 </h1>
-                <p className="mt-0.5 text-xs text-[#A9B1D6]">
+                <p className="mt-0.5 text-xs text-text-secondary">
                   {isGeneratedReady && indexedDocs[0]
                     ? `Generated from ${indexedDocs[0].name} • Hold Left/Right Click to pan • Click any node to open tasks.`
                     : "Upload your course syllabus (PDF) to generate your horizontal skill tree."}
@@ -369,7 +371,7 @@ export default function RoadmapPage() {
                     cy="22"
                     r="18"
                     fill="none"
-                    stroke="#292E42"
+                    stroke="var(--color-border-subtle)"
                     strokeWidth="3.5"
                   />
                   <circle
@@ -377,7 +379,7 @@ export default function RoadmapPage() {
                     cy="22"
                     r="18"
                     fill="none"
-                    stroke="#7DCFFF"
+                    stroke="var(--color-cyan)"
                     strokeWidth="3.5"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 18}
@@ -387,14 +389,14 @@ export default function RoadmapPage() {
                     className="transition-all duration-500"
                   />
                 </svg>
-                <span className="absolute text-[11px] font-bold text-[#C0CAF5]">
+                <span className="absolute text-[11px] font-bold text-text-primary">
                   {completionPercent}%
                 </span>
               </div>
 
-              <div className="text-xs text-[#A9B1D6]">
+              <div className="text-xs text-text-secondary">
                 Unlocked:{" "}
-                <span className="font-bold text-[#C0CAF5]">
+                <span className="font-bold text-text-primary">
                   {unlockedCount} / {totalCount}
                 </span>{" "}
                 Nodes
@@ -403,7 +405,7 @@ export default function RoadmapPage() {
           </div>
 
           {/* 2. Canvas Đồ Thị Cây Ngang (Horizontal React Flow + Dagre) */}
-          <div className="relative my-2.5 flex min-h-[450px] flex-1 flex-col items-center justify-center overflow-hidden rounded-xl border border-[#292E42]/50 bg-[#13141C]/65 select-none">
+          <div className="relative my-2.5 flex min-h-[450px] flex-1 flex-col items-center justify-center overflow-hidden rounded-xl border border-border-subtle/50 bg-surface-secondary/65 select-none">
             {isGeneratedReady && roadmapData?.nodes ? (
               <RoadmapCanvas
                 roadmapNodes={roadmapData.nodes}
@@ -444,7 +446,7 @@ export default function RoadmapPage() {
                       x2={pts.x2}
                       y2={pts.y2}
                       stroke={
-                        isProcessingOrFetching ? "#7AA2F7" : "#3B4261"
+                        isProcessingOrFetching ? "var(--color-primary)" : "var(--color-border-subtle)"
                       }
                       strokeOpacity={isProcessingOrFetching ? 0.5 : 0.85}
                       strokeWidth="1.75"
@@ -460,9 +462,9 @@ export default function RoadmapPage() {
                   >
                     <circle
                       r={NODE_RADIUS}
-                      fill="#15161E"
+                      fill="var(--color-surface-secondary)"
                       stroke={
-                        isProcessingOrFetching ? "#7AA2F7" : "#3B4261"
+                        isProcessingOrFetching ? "var(--color-primary)" : "var(--color-border-subtle)"
                       }
                       strokeWidth="2"
                       strokeDasharray="6 5"
@@ -470,7 +472,7 @@ export default function RoadmapPage() {
                     <text
                       y={NODE_RADIUS + 20}
                       textAnchor="middle"
-                      fill="#565F89"
+                      fill="var(--color-text-muted)"
                       fontSize="13"
                       fontWeight="500"
                     >
@@ -484,14 +486,14 @@ export default function RoadmapPage() {
             {/* HỘP THÔNG BÁO TRUNG TÂM KHI CHƯA CÓ PDF (EMPTY) */}
             {flowState === "empty" && (
               <div className="absolute top-1/2 left-1/2 z-20 w-[90%] max-w-[400px] -translate-x-1/2 -translate-y-1/2">
-                <div className="flex flex-col items-center rounded-2xl border-2 border-dashed border-[#292E42] bg-[#1A1B26]/95 px-7 py-7 text-center shadow-2xl">
-                  <div className="flex size-12 items-center justify-center rounded-xl bg-[#7DCFFF]/10 text-[#7DCFFF]">
+                <div className="flex flex-col items-center rounded-2xl border-2 border-dashed border-border-subtle bg-surface/95 px-7 py-7 text-center shadow-2xl">
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-cyan/10 text-cyan">
                     <FileCode2 className="size-7" />
                   </div>
-                  <h2 className="mt-3.5 text-base font-bold text-[#C0CAF5]">
+                  <h2 className="mt-3.5 text-base font-bold text-text-primary">
                     No Skill Tree Generated Yet
                   </h2>
-                  <p className="mt-2 text-xs leading-relaxed text-[#A9B1D6]">
+                  <p className="mt-2 text-xs leading-relaxed text-text-secondary">
                     Upload your course syllabus or lecture slides on the right
                     panel to extract topics and build your learning path.
                   </p>
@@ -508,23 +510,23 @@ export default function RoadmapPage() {
                     : "scale-100 opacity-100"
                 }`}
               >
-                <div className="flex flex-col items-center rounded-2xl border border-[#7AA2F7]/50 bg-[#1A1B26]/98 px-7 py-7 text-center shadow-[0_0_45px_rgba(122,162,247,0.24)] backdrop-blur-md">
-                  <div className="relative flex size-12 items-center justify-center rounded-2xl border border-[#7AA2F7]/35 bg-[#7AA2F7]/15 text-[#7DCFFF]">
+                <div className="flex flex-col items-center rounded-2xl border border-primary/50 bg-surface/98 px-7 py-7 text-center shadow-[0_0_45px_rgba(122,162,247,0.24)] backdrop-blur-md">
+                  <div className="relative flex size-12 items-center justify-center rounded-2xl border border-primary/35 bg-primary/15 text-cyan">
                     <Sparkles className="size-5 animate-spin" />
                     <span
                       aria-hidden="true"
-                      className="pointer-events-none absolute -inset-1 rounded-2xl border border-[#7DCFFF]/30 animate-ping"
+                      className="pointer-events-none absolute -inset-1 rounded-2xl border border-cyan/30 animate-ping"
                     />
                   </div>
 
-                  <h2 className="mt-4 text-sm font-bold text-[#C0CAF5]">
+                  <h2 className="mt-4 text-sm font-bold text-text-primary">
                     Generating Your DSA Skill Tree...
                   </h2>
 
                   {/* Subtitle chạy lặp lại kèm hiệu ứng chuyển mờ (fade) giữa các câu */}
                   <div className="mt-2 flex min-h-[36px] items-center justify-center">
                     <p
-                      className={`font-mono text-[11px] leading-relaxed text-[#7DCFFF] transition-opacity duration-200 ${
+                      className={`font-mono text-[11px] leading-relaxed text-cyan transition-opacity duration-200 ${
                         isSubtitleFading ? "opacity-0" : "opacity-100"
                       }`}
                     >
@@ -535,10 +537,10 @@ export default function RoadmapPage() {
                   </div>
 
                   {/* Nhịp sóng trạng thái AI (thay cho thanh % thời gian cố định) */}
-                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#292E42] bg-[#15161E] px-3.5 py-1 font-mono text-[10px] text-[#A9B1D6]">
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-secondary px-3.5 py-1 font-mono text-[10px] text-text-secondary">
                     <span className="flex items-center gap-1">
-                      <span className="size-1.5 animate-bounce rounded-full bg-[#7DCFFF] [animation-delay:-0.3s]" />
-                      <span className="size-1.5 animate-bounce rounded-full bg-[#7AA2F7] [animation-delay:-0.15s]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-cyan [animation-delay:-0.3s]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.15s]" />
                       <span className="size-1.5 animate-bounce rounded-full bg-[#BB9AF7]" />
                     </span>
                     <span className="truncate max-w-[230px]">
@@ -552,14 +554,14 @@ export default function RoadmapPage() {
             {/* HỘP BÁO LỖI KHI TANSTACK QUERY GẶP SỰ CỐ */}
             {flowState === "ready" && isQueryError && (
               <div className="absolute top-1/2 left-1/2 z-20 w-[90%] max-w-[400px] -translate-x-1/2 -translate-y-1/2">
-                <div className="flex flex-col items-center rounded-2xl border border-[#DB4B4B]/60 bg-[#1A1B26]/98 px-7 py-6 text-center shadow-2xl">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-[#DB4B4B]/15 text-[#DB4B4B]">
+                <div className="flex flex-col items-center rounded-2xl border border-danger/60 bg-surface/98 px-7 py-6 text-center shadow-2xl">
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-danger/15 text-danger">
                     <AlertTriangle className="size-6" />
                   </div>
-                  <h2 className="mt-3 text-sm font-bold text-[#C0CAF5]">
+                  <h2 className="mt-3 text-sm font-bold text-text-primary">
                     Failed to Load Roadmap Data
                   </h2>
-                  <p className="mt-1.5 text-xs text-[#A9B1D6]">
+                  <p className="mt-1.5 text-xs text-text-secondary">
                     {queryError instanceof Error
                       ? queryError.message
                       : "An unexpected error occurred while fetching the skill tree."}
@@ -567,7 +569,7 @@ export default function RoadmapPage() {
                   <button
                     type="button"
                     onClick={() => refetch()}
-                    className="mt-4 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-[#7AA2F7] px-5 text-xs font-bold text-[#15161E] transition-colors hover:bg-[#8DB0FF]"
+                    className="mt-4 inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-primary px-5 text-xs font-bold text-surface-secondary transition-colors hover:bg-primary-hover"
                   >
                     Retry Request
                   </button>
@@ -578,18 +580,18 @@ export default function RoadmapPage() {
 
           {/* 3. Chú Thích Trạng Thái (Bottom Legend Pill) + Thanh gợi ý mở Pop-up */}
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-5 rounded-full border border-[#292E42] bg-[#1A1B26] px-5 py-1.5 text-xs">
+            <div className="inline-flex items-center gap-5 rounded-full border border-border-subtle bg-surface px-5 py-1.5 text-xs">
               <div className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-[#9ECE6A]" />
-                <span className="text-[#A9B1D6]">Completed</span>
+                <span className="size-2.5 rounded-full bg-success" />
+                <span className="text-text-secondary">Completed</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-[#3DB5E6]" />
-                <span className="text-[#A9B1D6]">Current</span>
+                <span className="size-2.5 rounded-full bg-cyan" />
+                <span className="text-text-secondary">Current</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-[#414868]" />
-                <span className="text-[#A9B1D6]">Locked</span>
+                <span className="size-2.5 rounded-full bg-border" />
+                <span className="text-text-secondary">Locked</span>
               </div>
             </div>
 
@@ -598,7 +600,7 @@ export default function RoadmapPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedNodeId("avl-tree")}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#7AA2F7]/40 bg-[#7AA2F7]/12 px-3.5 py-1.5 text-[11px] font-semibold text-[#7DCFFF] transition-colors hover:bg-[#7AA2F7]/20"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-primary/40 bg-primary/12 px-3.5 py-1.5 text-[11px] font-semibold text-cyan transition-colors hover:bg-primary/20"
                 >
                   <span>Preview &ldquo;AVL Tree&rdquo; Pop-up</span>
                 </button>
@@ -606,9 +608,9 @@ export default function RoadmapPage() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#292E42] bg-[#1A1B26] px-3.5 py-1.5 text-[11px] font-medium text-[#A9B1D6] transition-colors hover:border-[#414868] hover:text-[#C0CAF5]"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border-subtle bg-surface px-3.5 py-1.5 text-[11px] font-medium text-text-secondary transition-colors hover:border-border hover:text-text-primary"
                 >
-                  <RotateCcw className="size-3 text-[#7AA2F7]" />
+                  <RotateCcw className="size-3 text-primary" />
                   <span>Reset to Empty State</span>
                 </button>
               </div>
@@ -619,7 +621,7 @@ export default function RoadmapPage() {
         {/* -------------------- CỘT PHẢI (3/12): UPLOAD PANEL & ACTIVE KNOWLEDGE BASE -------------------- */}
         <aside className="flex min-h-0 flex-col gap-4 lg:col-span-4 xl:col-span-3">
           {/* KHUNG TRÊN: Upload your study material (PDF/Syllabus) */}
-          <div className="rounded-2xl border border-[#292E42] bg-[#15161E]/90 p-4 shadow-xl">
+          <div className="rounded-2xl border border-border-subtle bg-surface-secondary/90 p-4 shadow-xl">
             <input
               ref={fileInputRef}
               type="file"
@@ -638,13 +640,13 @@ export default function RoadmapPage() {
               onClick={handleOpenFileDialog}
               className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-6 text-center transition-colors ${
                 isDraggingFile
-                  ? "border-[#7DCFFF] bg-[#7AA2F7]/12"
-                  : "border-[#414868] bg-[#1A1B26]/60 hover:border-[#7AA2F7]/60"
+                  ? "border-cyan bg-primary/12"
+                  : "border-border bg-surface/60 hover:border-primary/60"
               }`}
             >
-              <CloudUpload className="size-11 stroke-[1.75] text-[#3DB5E6]" />
+              <CloudUpload className="size-11 stroke-[1.75] text-cyan" />
 
-              <p className="mt-3 text-xs font-medium text-[#C0CAF5]">
+              <p className="mt-3 text-xs font-medium text-text-primary">
                 Upload your study material (PDF/Syllabus)
               </p>
 
@@ -655,7 +657,7 @@ export default function RoadmapPage() {
                   e.stopPropagation()
                   handleOpenFileDialog()
                 }}
-                className="mt-3.5 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#7AA2F7] px-6 text-xs font-bold text-[#15161E] shadow-[0_0_20px_rgba(122,162,247,0.25)] transition-all hover:bg-[#8DB0FF] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-3.5 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 text-xs font-bold text-surface-secondary shadow-[0_0_20px_rgba(122,162,247,0.25)] transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <FileText className="size-4 stroke-[2.2]" />
                 <span>
@@ -670,18 +672,18 @@ export default function RoadmapPage() {
                   e.stopPropagation()
                   triggerSimulation("CS101_DSA_Syllabus_HCMUS.pdf", "2.4 MB")
                 }}
-                className="mt-2 cursor-pointer font-mono text-[11px] font-medium text-[#7DCFFF] underline decoration-[#7DCFFF]/40 underline-offset-4 transition-colors hover:text-[#C0CAF5] disabled:pointer-events-none disabled:opacity-50"
+                className="mt-2 cursor-pointer font-mono text-[11px] font-medium text-cyan underline decoration-[#7DCFFF]/40 underline-offset-4 transition-colors hover:text-text-primary disabled:pointer-events-none disabled:opacity-50"
               >
                 Or use sample CS101_DSA_Syllabus_HCMUS.pdf
               </button>
 
               {uploadError && (
-                <p className="mt-2.5 text-[11px] font-medium text-[#DB4B4B]">
+                <p className="mt-2.5 text-[11px] font-medium text-danger">
                   {uploadError}
                 </p>
               )}
 
-              <p className="mt-2.5 text-[11px] text-[#565F89]">
+              <p className="mt-2.5 text-[11px] text-text-muted">
                 {currentUser?.accountType === "guest"
                   ? "Select any PDF from your device or drag & drop here"
                   : "Supported format: PDF (Max 10MB) • Drag & drop supported"}
@@ -690,17 +692,17 @@ export default function RoadmapPage() {
           </div>
 
           {/* KHUNG DƯỚI: Active Knowledge Base (RAG) */}
-          <div className="flex flex-1 flex-col rounded-2xl border border-[#292E42] bg-[#15161E]/90 p-5 shadow-xl">
+          <div className="flex flex-1 flex-col rounded-2xl border border-border-subtle bg-surface-secondary/90 p-5 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Database className="size-4 text-[#7AA2F7]" />
-                <h2 className="text-xs font-bold text-[#C0CAF5]">
+                <Database className="size-4 text-primary" />
+                <h2 className="text-xs font-bold text-text-primary">
                   Active Knowledge Base (RAG)
                 </h2>
               </div>
               {isGeneratedReady && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#9ECE6A]/15 px-2 py-0.5 text-[10px] font-semibold text-[#9ECE6A]">
-                  <span className="size-1.5 rounded-full bg-[#9ECE6A]" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
+                  <span className="size-1.5 rounded-full bg-success" />
                   Indexed
                 </span>
               )}
@@ -708,15 +710,15 @@ export default function RoadmapPage() {
 
             <div className="mt-4">
               {flowState === "empty" && (
-                <div className="flex items-center gap-3.5 rounded-xl border border-[#292E42] bg-[#1A1B26] p-4">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#15161E] text-[#565F89]">
+                <div className="flex items-center gap-3.5 rounded-xl border border-border-subtle bg-surface p-4">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-secondary text-text-muted">
                     <FileText className="size-5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-[#C0CAF5]">
+                    <div className="text-xs font-bold text-text-primary">
                       0 Documents Indexed
                     </div>
-                    <p className="mt-0.5 text-[11px] leading-snug text-[#565F89]">
+                    <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
                       Your uploaded PDFs will appear here for RAG citations.
                     </p>
                   </div>
@@ -724,16 +726,16 @@ export default function RoadmapPage() {
               )}
 
               {isProcessingOrFetching && (
-                <div className="rounded-xl border border-[#7AA2F7]/40 bg-[#1A1B26] p-4">
+                <div className="rounded-xl border border-primary/40 bg-surface p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#7AA2F7]/15 text-[#7DCFFF]">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-cyan">
                       <FileText className="size-5 animate-pulse" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-bold text-[#C0CAF5]">
+                      <div className="truncate text-xs font-bold text-text-primary">
                         {simulatedFileMeta.fileName}
                       </div>
-                      <p className="mt-0.5 text-[11px] text-[#7DCFFF]">
+                      <p className="mt-0.5 text-[11px] text-cyan">
                         Chunking &amp; embedding PDF into vector store...
                       </p>
                     </div>
@@ -751,24 +753,24 @@ export default function RoadmapPage() {
                   }) => (
                     <div
                       key={doc.id}
-                      className="rounded-xl border border-[#7AA2F7]/40 bg-[#1A1B26] p-4"
+                      className="rounded-xl border border-primary/40 bg-surface p-4"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#7AA2F7]/16 text-[#7DCFFF]">
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/16 text-cyan">
                             <FileText className="size-5" />
                           </div>
                           <div className="min-w-0">
                             <div
-                              className="truncate text-xs font-bold text-[#C0CAF5]"
+                              className="truncate text-xs font-bold text-text-primary"
                               title={doc.name}
                             >
                               {doc.name}
                             </div>
-                            <div className="mt-0.5 flex items-center gap-2 text-[11px] text-[#565F89]">
+                            <div className="mt-0.5 flex items-center gap-2 text-[11px] text-text-muted">
                               <span>{doc.size}</span>
                               <span>•</span>
-                              <span className="text-[#7AA2F7]">
+                              <span className="text-primary">
                                 {doc.chunks} chunks
                               </span>
                             </div>
@@ -779,18 +781,18 @@ export default function RoadmapPage() {
                           type="button"
                           onClick={handleReset}
                           title="Remove PDF & reset roadmap"
-                          className="cursor-pointer rounded-lg p-1.5 text-[#565F89] transition-colors hover:bg-[#15161E] hover:text-[#FF9E64]"
+                          className="cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-secondary hover:text-warning"
                         >
                           <Trash2 className="size-4" />
                         </button>
                       </div>
 
-                      <div className="mt-3 flex items-center justify-between border-t border-[#292E42] pt-2.5 text-[10px] text-[#A9B1D6]">
+                      <div className="mt-3 flex items-center justify-between border-t border-border-subtle pt-2.5 text-[10px] text-text-secondary">
                         <span>
                           {roadmapData?.knowledgeBase?.totalDocuments ?? 1}{" "}
                           Document Indexed
                         </span>
-                        <span className="font-mono text-[#9ECE6A]">
+                        <span className="font-mono text-success">
                           {roadmapData?.knowledgeBase?.ragStatus ??
                             "RAG Citations Active"}
                         </span>
@@ -806,7 +808,7 @@ export default function RoadmapPage() {
       {/* ==================== POP-UP MODAL CĂN GIỮA MÀN HÌNH (KHÔNG BAO GIỜ BỊ CẮT KHUẤT) ==================== */}
       {isGeneratedReady && popupNode && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D0E14]/75 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-surface-secondary/75 p-4 backdrop-blur-sm"
           onClick={() => setSelectedNodeId(null)}
         >
           <div
@@ -814,22 +816,22 @@ export default function RoadmapPage() {
             aria-modal="true"
             aria-labelledby="popup-node-title"
             onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-[540px] overflow-hidden rounded-2xl border bg-[#1A1B26] shadow-[0_28px_80px_rgba(0,0,0,0.85)] ${
+            className={`w-full max-w-[540px] overflow-hidden rounded-2xl border bg-surface shadow-[0_28px_80px_rgba(0,0,0,0.85)] ${
               popupNode.status === "locked"
-                ? "border-[#414868]"
-                : "border-[#7AA2F7]/65"
+                ? "border-border"
+                : "border-primary/65"
             }`}
           >
             {/* 1. Header Pop-up: Huy hiệu Node + Tên chủ đề + Badge trạng thái + Nút X */}
-            <div className="flex items-start justify-between gap-4 border-b border-[#292E42] bg-[#15161E]/60 px-6 py-4">
+            <div className="flex items-start justify-between gap-4 border-b border-border-subtle bg-surface-secondary/60 px-6 py-4">
               <div className="flex items-center gap-3.5">
                 <div
-                  className={`flex size-11 shrink-0 items-center justify-center rounded-full border-2 bg-[#1A1B26] ${
+                  className={`flex size-11 shrink-0 items-center justify-center rounded-full border-2 bg-surface ${
                     popupNode.status === "completed"
-                      ? "border-[#9ECE6A] text-[#9ECE6A]"
+                      ? "border-success text-success"
                       : popupNode.status === "current"
-                        ? "border-[#3DB5E6] font-mono text-sm font-extrabold text-[#7DCFFF]"
-                        : "border-[#414868] text-[#565F89]"
+                        ? "border-cyan font-mono text-sm font-extrabold text-cyan"
+                        : "border-border text-text-muted"
                   }`}
                 >
                   {popupNode.status === "completed" && (
@@ -844,28 +846,28 @@ export default function RoadmapPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2
                       id="popup-node-title"
-                      className="text-lg font-bold tracking-tight text-[#C0CAF5]"
+                      className="text-lg font-bold tracking-tight text-text-primary"
                     >
                       {popupNode.label}
                     </h2>
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
                         popupNode.status === "completed"
-                          ? "bg-[#9ECE6A]/15 text-[#9ECE6A]"
+                          ? "bg-success/15 text-success"
                           : popupNode.status === "current"
-                            ? "bg-[#3DB5E6]/15 text-[#7DCFFF]"
-                            : "bg-[#414868]/40 text-[#A9B1D6]"
+                            ? "bg-cyan/15 text-cyan"
+                            : "bg-border/40 text-text-secondary"
                       }`}
                     >
                       {popupNode.status}
                     </span>
                     {popupNode.complexity && (
-                      <span className="rounded-md border border-[#292E42] bg-[#15161E] px-2 py-0.5 font-mono text-[10px] text-[#7DCFFF]">
+                      <span className="rounded-md border border-border-subtle bg-surface-secondary px-2 py-0.5 font-mono text-[10px] text-cyan">
                         {popupNode.complexity}
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-[#A9B1D6]">
+                  <p className="mt-1 text-xs leading-relaxed text-text-secondary">
                     {popupNode.description}
                   </p>
                 </div>
@@ -875,7 +877,7 @@ export default function RoadmapPage() {
                 type="button"
                 onClick={() => setSelectedNodeId(null)}
                 aria-label="Close pop-up"
-                className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[#292E42] bg-[#15161E] text-[#A9B1D6] transition-colors hover:border-[#7AA2F7] hover:text-[#C0CAF5]"
+                className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border-subtle bg-surface-secondary text-text-secondary transition-colors hover:border-primary hover:text-text-primary"
               >
                 <X className="size-4" />
               </button>
@@ -884,10 +886,10 @@ export default function RoadmapPage() {
             {/* 2. Thân Pop-up: Prerequisites, Tiến độ học tập, Danh sách Task (chỉ hiển thị thông tin) & Nút hành động chính Enter Workspace */}
             <div className="px-6 py-4">
               {/* Khung thông tin Prerequisites & Mastery Progress */}
-              <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/85 p-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 rounded-xl border border-border-subtle bg-surface-secondary/85 p-3 sm:grid-cols-2">
                 <div className="flex flex-col justify-between">
-                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[#565F89]">
-                    <GitBranch className="size-3.5 text-[#7AA2F7]" />
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-text-muted">
+                    <GitBranch className="size-3.5 text-primary" />
                     <span>Prerequisites</span>
                   </span>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -897,14 +899,14 @@ export default function RoadmapPage() {
                         (prereqLabel: string) => (
                           <span
                             key={prereqLabel}
-                            className="rounded-md border border-[#292E42] bg-[#1A1B26] px-2 py-0.5 font-mono text-[10px] font-medium text-[#7AA2F7]"
+                            className="rounded-md border border-border-subtle bg-surface px-2 py-0.5 font-mono text-[10px] font-medium text-primary"
                           >
                             {prereqLabel}
                           </span>
                         )
                       )
                     ) : (
-                      <span className="font-mono text-[11px] font-medium text-[#9ECE6A]">
+                      <span className="font-mono text-[11px] font-medium text-success">
                         None (Foundation Topic)
                       </span>
                     )}
@@ -913,15 +915,15 @@ export default function RoadmapPage() {
 
                 <div className="flex flex-col justify-between">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-semibold text-[#A9B1D6]">
+                    <span className="font-semibold text-text-secondary">
                       Learning Progress ({popupNode.completedTasks}/
                       {popupNode.totalTasks} Tasks)
                     </span>
-                    <span className="font-mono font-bold text-[#7DCFFF]">
+                    <span className="font-mono font-bold text-cyan">
                       {popupNode.progress}%
                     </span>
                   </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#1A1B26] p-0.5">
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface p-0.5">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-[#7AA2F7] to-[#9ECE6A] transition-all duration-300"
                       style={{ width: `${popupNode.progress}%` }}
@@ -945,16 +947,16 @@ export default function RoadmapPage() {
                   ) => (
                     <div
                       key={task.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-[#292E42] bg-[#15161E]/75 px-3.5 py-2.5"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/75 px-3.5 py-2.5"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <span
                           className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                             task.status === "completed"
-                              ? "bg-[#9ECE6A] text-[#15161E]"
+                              ? "bg-success text-surface-secondary"
                               : task.status === "current"
-                                ? "bg-[#7DCFFF] text-[#15161E]"
-                                : "border border-[#414868] bg-[#1A1B26] text-[#565F89]"
+                                ? "bg-cyan text-surface-secondary"
+                                : "border border-border bg-surface text-text-muted"
                           }`}
                         >
                           {task.status === "locked" ? (
@@ -967,20 +969,20 @@ export default function RoadmapPage() {
                           <div
                             className={`truncate text-xs font-bold sm:text-[13px] ${
                               task.status === "locked"
-                                ? "text-[#A9B1D6]"
-                                : "text-[#C0CAF5]"
+                                ? "text-text-secondary"
+                                : "text-text-primary"
                             }`}
                           >
                             {task.title}
                           </div>
-                          <p className="mt-0.5 truncate text-[11px] text-[#565F89]">
+                          <p className="mt-0.5 truncate text-[11px] text-text-muted">
                             {task.description}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex shrink-0 items-center gap-2">
-                        <span className="rounded-md border border-[#292E42] bg-[#1A1B26] px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-[#7DCFFF]">
+                        <span className="rounded-md border border-border-subtle bg-surface px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-cyan">
                           {task.type}
                         </span>
                       </div>
@@ -994,9 +996,9 @@ export default function RoadmapPage() {
                 <button
                   type="button"
                   disabled
-                  className="mt-4 flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-[#292E42] bg-[#15161E] px-4 text-xs font-semibold text-[#565F89] select-none sm:text-sm"
+                  className="mt-4 flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border-subtle bg-surface-secondary px-4 text-xs font-semibold text-text-muted select-none sm:text-sm"
                 >
-                  <Lock className="size-4 shrink-0 text-[#565F89]" />
+                  <Lock className="size-4 shrink-0 text-text-muted" />
                   <span className="truncate">
                     Locked — Complete{" "}
                     {popupNode.prerequisiteLabels &&
@@ -1009,7 +1011,7 @@ export default function RoadmapPage() {
               ) : (
                 <Link
                   href={popupNode.workspaceHref}
-                  className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#7AA2F7] text-sm font-bold text-[#15161E] shadow-[0_0_24px_rgba(122,162,247,0.3)] transition-all hover:bg-[#8DB0FF]"
+                  className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-bold text-surface-secondary shadow-[0_0_24px_rgba(122,162,247,0.3)] transition-all hover:bg-primary-hover"
                 >
                   <ArrowRight className="size-4 stroke-[2.5]" />
                   <span>Enter Workspace</span>

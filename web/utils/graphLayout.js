@@ -94,10 +94,10 @@ export function buildLayoutedRoadmapGraph(roadmapNodes = [], options = {}) {
 
       const strokeColor =
         edgeState === "completed"
-          ? "#9ECE6A"
+          ? "var(--color-success, #9ECE6A)"
           : edgeState === "active"
-            ? "#3DB5E6"
-            : "#414868"
+            ? "var(--color-cyan, #7DCFFF)"
+            : "var(--color-border, #414868)"
 
       rawEdges.push({
         id: `edge-${sourceId}-${targetNode.id}`,

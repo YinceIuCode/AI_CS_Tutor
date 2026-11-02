@@ -28,7 +28,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Why Local Subtree Heights Suffice",
           content:
             "Notice how Balance Factor (BF) is defined as Height(Left) - Height(Right). When you rotate node y with its child x, why don't nodes above y's parent need their pointers rewired?",
@@ -36,7 +36,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Invariant Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Subtree Order Preservation (T1 < x < T2 < y < T3)",
           content:
             "During a Right Rotation, only subtree T2 changes parent (from x->right to y->left). Since all keys in T2 are strictly between x and y, the global BST ordering remains intact in O(1) time.",
@@ -44,7 +44,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Height Recalculation Order",
           content:
             "After rotating, y becomes the child of x. Which node's height MUST be recomputed first—y (the lower node) or x (the new root)?",
@@ -54,7 +54,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Interpreting the Sign of Balance Factor",
           content:
             "Balance Factor = Height(Left) - Height(Right) = 3 - 1 = +2. A positive sign means the Left subtree is heavier. Which direction must the tree tip to equalize height?",
@@ -62,7 +62,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Visualizing Left-Left (LL) Imbalance",
           content:
             "Imagine holding node N and pulling its taller left child up to become the new root while N drops down to the right. That clockwise motion is a Right Rotation.",
@@ -70,7 +70,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "When Single vs. Double Rotation Applies",
           content:
             "If the left child itself had BF = -1 (Left-Right case), you would perform Left-Right rotation. Here, standard LL imbalance with BF = +2 requires a single Right Rotation.",
@@ -80,7 +80,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "What Happens When a Subtree Is Empty?",
           content:
             "Look at Line 19: `Node* x = y->left;` followed by `Node* T2 = x->right;`. What happens in memory if `rotateRight` is called when `y == nullptr` or `y->left == nullptr`?",
@@ -88,7 +88,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Tracing Test Case #5 (Leaf / Null Pivot)",
           content:
             "In Test Case #5, `y->left` is `nullptr`. Line 19 sets `x = nullptr`, and Line 20 immediately evaluates `nullptr->right`, triggering `SIGSEGV` before any rotation occurs.",
@@ -96,7 +96,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Defensive Guard Clause Before Dereferencing",
           content:
             "Guard the entry of `rotateRight(Node* y)` by checking whether `y` or `y->left` is null (`if (!y || !y->left) return y;`) right before Line 19.",
@@ -168,7 +168,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Local vs. Global Subtree Ordering",
           content:
             "Why is checking `node->left->key < node->key` at every node NOT enough to guarantee a valid Binary Search Tree?",
@@ -176,7 +176,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Invariant Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Propagating [minBound, maxBound] Downward",
           content:
             "Every time you branch left from ancestor P, all descendants in that subtree must be strictly less than P.key—even if they are on a right branch deeper down.",
@@ -184,7 +184,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Duplicate Keys & Skewed Degeneration",
           content:
             "If sorted keys [10, 20, 30, 40] are inserted into an unbalanced BST, what shape does the tree take and what happens to search complexity?",
@@ -194,7 +194,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Preserving BST Order During Two-Child Deletion",
           content:
             "If node K has both a left and a right subtree, its replacement must be larger than every key in K's left subtree and smaller than every remaining key in K's right subtree.",
@@ -202,7 +202,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Locating the Inorder Successor",
           content:
             "Step once into `K->right`, then walk `left` as far as possible until `left == nullptr`. That node is the minimum of the right subtree (Inorder Successor).",
@@ -210,7 +210,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Why Maximum of Right Subtree Fails",
           content:
             "If you replaced K with the maximum of K's right subtree, K's new key would be larger than its right children—violating the BST property immediately.",
@@ -220,7 +220,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Where Does Recursive Insertion Stop?",
           content:
             "Look at `insertBST(TreeNode* root, int key)` on Line 10. As recursion walks down `root->left` or `root->right`, it eventually hits `nullptr`. Where is the new `TreeNode(key)` allocated?",
@@ -228,7 +228,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Tracing Line 11 on an Empty Tree (Test Case #1)",
           content:
             "When `root == nullptr`, execution jumps straight to Line 11 (`if (key < root->key)`), attempting to read memory at `0x0` and crashing.",
@@ -236,7 +236,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Adding the Base Case Before Line 11",
           content:
             "At the very top of `insertBST`, check `if (!root) return new TreeNode(key);` so recursion terminates cleanly and links the new leaf back up.",
@@ -307,7 +307,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Why We Need Three Pointers to Reverse In-Place",
           content:
             "As soon as you execute `curr->next = prev`, the original forward link is overwritten. How do you keep track of the remainder of the list without O(N) extra memory?",
@@ -315,7 +315,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Lockstep Advancement: prev → curr → nextTemp",
           content:
             "In every iteration: (1) save `nextTemp = curr->next`, (2) flip `curr->next = prev`, (3) advance `prev = curr`, (4) advance `curr = nextTemp`.",
@@ -323,7 +323,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Empty List & Single-Node Termination",
           content:
             "When `curr` finally becomes `nullptr`, `prev` sits on the last non-null node—which is now the new head of the reversed list.",
@@ -333,7 +333,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Hash Set vs. Two Pointers for Cycle Detection",
           content:
             "Storing visited node addresses in an `unordered_set` takes O(N) auxiliary memory. How does Floyd's Tortoise and Hare avoid storing past nodes?",
@@ -341,7 +341,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Relative Speed Inside a Cycle",
           content:
             "Once both `slow` (+1 step) and `fast` (+2 steps) enter the cycle, the distance between them shrinks by 1 link per iteration, guaranteeing collision in O(N) time and O(1) space.",
@@ -349,7 +349,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Safe Loop Condition for Fast Pointer",
           content:
             "Why must the loop condition check `while (fast && fast->next)` before evaluating `fast = fast->next->next`?",
@@ -359,7 +359,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: "Inspecting the Reversal Invariant at Line 16",
           content:
             "At Line 16 (`curr->next = prev;`), `curr` detaches from the forward chain and points backward. What invariant holds between `prev` and `curr` at the start of each iteration?",
@@ -367,7 +367,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: "Tracing Boundary Inputs (Empty & 1-Node List)",
           content:
             "On a 1-node list `[42]`, `nextTemp` is `nullptr`, `42->next` becomes `nullptr`, `prev` becomes `42`, and `curr` becomes `nullptr`.",
@@ -375,7 +375,7 @@ export const SOCRATIC_NODE_PROFILES = {
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: "Explicit Early-Exit Guard",
           content:
             "Add an explicit guard `if (!head || !head->next) return head;` at the top of `reverseList` to short-circuit empty and single-element lists.",
@@ -572,21 +572,21 @@ export function getSocraticTutorProfile(nodeId, nodeLabel = "Algorithm", complex
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: `Core Invariant of ${nodeLabel}`,
           content: `What structural property of ${nodeLabel} allows us to guarantee ${complexity} complexity instead of brute-force scanning?`,
         },
         {
           tier: 2,
           badge: "Invariant Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: `Memory Layout & State Transitions`,
           content: `Trace how ${nodeLabel} updates its internal state step by step. Notice how work per step is bounded by ${complexity}.`,
         },
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: `Degenerate Inputs & Boundary Safety`,
           content: `What happens to ${nodeLabel} when the input is empty, has 1 element, or arrives in adversarial (already sorted/reverse) order?`,
         },
@@ -595,21 +595,21 @@ export function getSocraticTutorProfile(nodeId, nodeLabel = "Algorithm", complex
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: `Eliminating Non-Optimal Bounds`,
           content: `Compare the options against the syllabus invariant for ${nodeLabel}. Does updating ${nodeLabel} require rebuilding everything from scratch?`,
         },
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: `Verifying the ${complexity} Complexity Bound`,
           content: `Count how many elements or pointers are touched during a single ${nodeLabel} operation—it matches ${complexity}.`,
         },
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: `Space vs. Time Trade-Off`,
           content: `Confirm that boundary cases (0 or 1 element) are handled in O(1) auxiliary check without exponential blowup.`,
         },
@@ -618,21 +618,21 @@ export function getSocraticTutorProfile(nodeId, nodeLabel = "Algorithm", complex
         {
           tier: 1,
           badge: "Conceptual Probe",
-          color: "#BB9AF7",
+          color: "var(--color-purple)",
           title: `Inspecting Line ${extra.faultyLine.line} (${extra.faultyLine.codeToken})`,
           content: `Look closely at Line ${extra.faultyLine.line} in your editor. What assumption does this line make about the size and values of \`nums\`?`,
         },
         {
           tier: 2,
           badge: "Pointer / Dry-Run Trace",
-          color: "#7DCFFF",
+          color: "var(--color-cyan)",
           title: `Tracing Boundary Test Case #5`,
           content: `${extra.faultyLine.calloutDetail}`,
         },
         {
           tier: 3,
           badge: "Edge-Case Guard",
-          color: "#FF9E64",
+          color: "var(--color-warning)",
           title: `Defensive Fix Suggestion`,
           content: `${extra.faultyLine.suggestedFixHint}`,
         },

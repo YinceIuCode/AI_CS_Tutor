@@ -5,144 +5,164 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+
+  /* OffByOne Tokyo Night Semantic Color Tokens */
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-secondary: var(--color-surface-secondary);
+  --color-surface-elevated: var(--color-surface-elevated);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-border: var(--color-border);
+  --color-border-subtle: var(--color-border-subtle);
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-cyan: var(--color-cyan);
+  --color-purple: var(--color-purple);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-overlay: var(--color-overlay);
+  --color-shadow: var(--color-shadow);
+  --color-primary-glow: var(--color-primary-glow);
+
+  /* shadcn compat */
+  --color-foreground: var(--color-text-primary);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text-primary);
+  --color-popover: var(--color-surface-elevated);
+  --color-popover-foreground: var(--color-text-primary);
+  --color-muted: var(--color-surface-secondary);
+  --color-muted-foreground: var(--color-text-muted);
+  --color-accent: var(--color-surface);
+  --color-accent-foreground: var(--color-text-primary);
+  --color-destructive: var(--color-danger);
+  --color-input: var(--color-border-subtle);
+  --color-ring: var(--color-primary);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+  /* Tokyo Night Day (Light Theme Defaults) */
+  --color-background: #E1E2E7;
+  --color-surface: #D0D5E3;
+  --color-surface-secondary: #FFFFFF;
+  --color-surface-elevated: #F3F4F8;
+  --color-text-primary: #3760BF;
+  --color-text-secondary: #6172B0;
+  --color-text-muted: #848CB5;
+  --color-border: #C1C9DF;
+  --color-border-subtle: #D0D5E3;
+  --color-primary: #2E7DE9;
+  --color-primary-hover: #1E66D5;
+  --color-cyan: #007197;
+  --color-purple: #9854F1;
+  --color-success: #587539;
+  --color-warning: #B15C00;
+  --color-danger: #F52A65;
+  --color-overlay: rgba(225, 226, 231, 0.8);
+  --color-shadow: rgba(55, 96, 191, 0.12);
+  --color-primary-glow: rgba(46, 125, 233, 0.25);
+
+  --background: #E1E2E7;
+  --foreground: #3760BF;
+  --card: #D0D5E3;
+  --card-foreground: #3760BF;
+  --popover: #F3F4F8;
+  --popover-foreground: #3760BF;
+  --primary: #2E7DE9;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFFFFF;
+  --secondary-foreground: #3760BF;
+  --muted: #D0D5E3;
+  --muted-foreground: #848CB5;
+  --accent: #D0D5E3;
+  --accent-foreground: #3760BF;
+  --destructive: #F52A65;
+  --border: #C1C9DF;
+  --input: #C1C9DF;
+  --ring: #2E7DE9;
+  --radius: 0.625rem;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+  /* Tokyo Night Night (Dark Theme Defaults) */
+  --color-background: #15161E;
+  --color-surface: #1A1B26;
+  --color-surface-secondary: #15161E;
+  --color-surface-elevated: #1A1B26;
+  --color-text-primary: #C0CAF5;
+  --color-text-secondary: #A9B1D6;
+  --color-text-muted: #545C7E;
+  --color-border: #414868;
+  --color-border-subtle: #292E42;
+  --color-primary: #7AA2F7;
+  --color-primary-hover: #8DB0FF;
+  --color-cyan: #7DCFFF;
+  --color-purple: #BB9AF7;
+  --color-success: #9ECE6A;
+  --color-warning: #FF9E64;
+  --color-danger: #DB4B4B;
+  --color-overlay: rgba(21, 22, 30, 0.8);
+  --color-shadow: rgba(0, 0, 0, 0.55);
+  --color-primary-glow: rgba(122, 162, 247, 0.3);
+
+  --background: #15161E;
+  --foreground: #C0CAF5;
+  --card: #1A1B26;
+  --card-foreground: #C0CAF5;
+  --popover: #1A1B26;
+  --popover-foreground: #C0CAF5;
+  --primary: #7AA2F7;
+  --primary-foreground: #15161E;
+  --secondary: #15161E;
+  --secondary-foreground: #C0CAF5;
+  --muted: #1A1B26;
+  --muted-foreground: #545C7E;
+  --accent: #1A1B26;
+  --accent-foreground: #C0CAF5;
+  --destructive: #DB4B4B;
+  --border: #414868;
+  --input: #414868;
+  --ring: #7AA2F7;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
-    @apply bg-background text-foreground;
-    }
+    @apply bg-background text-text-primary;
+  }
   html {
     @apply font-sans;
-    }
+  }
 }
-
 
 /* Monaco Editor Faulty Line Highlight & Translucent Pointer Decorations */
 .monaco-editor .algopath-faulty-line-bg {
   background: linear-gradient(
     90deg,
-    rgba(219, 75, 75, 0.24) 0%,
-    rgba(255, 158, 100, 0.12) 55%,
-    rgba(219, 75, 75, 0.04) 100%
+    color-mix(in srgb, var(--color-danger) 24%, transparent) 0%,
+    color-mix(in srgb, var(--color-warning) 12%, transparent) 55%,
+    color-mix(in srgb, var(--color-danger) 4%, transparent) 100%
   ) !important;
-  border-left: 3px solid #db4b4b !important;
-  box-shadow: inset 0 0 14px rgba(219, 75, 75, 0.16);
+  border-left: 3px solid var(--color-danger) !important;
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--color-danger) 16%, transparent);
 }
 
 .monaco-editor .algopath-faulty-line-gutter {
-  background-color: rgba(219, 75, 75, 0.28) !important;
+  background-color: color-mix(in srgb, var(--color-danger) 28%, transparent) !important;
   border-radius: 3px;
 }
 
@@ -150,9 +170,9 @@
   margin-left: 16px;
   padding: 1px 8px;
   border-radius: 9999px;
-  background: rgba(219, 75, 75, 0.16);
-  border: 1px solid rgba(219, 75, 75, 0.45);
-  color: #ff9e64 !important;
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 45%, transparent);
+  color: var(--color-warning) !important;
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px !important;
   font-style: italic;
