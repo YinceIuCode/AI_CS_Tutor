@@ -1,5 +1,4 @@
 # Who Are You?
-================
 
 Find your role below:
 
@@ -8,10 +7,8 @@ Find your role below:
 * Visitor/User: Exploring or using the project
 
 ## For Specific Users
-=====================
 
 ### Team Member
----------------
 
 Welcome! As a team member, you are expected to collaborate responsibly and
 follow the project's development guidelines.
@@ -30,7 +27,6 @@ You are expected to:
 * Ensure your contributions comply with the project's license.
 
 ### Coding Assistant
---------------------
 
 AI-powered coding assistants are welcome to help with the project.
 
@@ -49,7 +45,6 @@ You are expected to:
 * Ensure generated code is appropriate for the project.
 
 ### Visitor/User
-----------------
 
 We welcome everyone to explore our project and make use of our services.
 
@@ -68,7 +63,6 @@ You are not allowed to:
 Please respect our license and these guidelines when using our project.
 
 ## Communication and Support
-============================
 
 * Bug Reports: Contact us to report bugs or issues.
 * Feedback: Share your suggestions and ideas.
