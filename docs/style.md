@@ -38,7 +38,7 @@ ruff format --check .
 * Resolve all reported issues before submitting changes.
 * Use project-defined Ruff configuration when available.
 
-## References
+# References
 
 * Python Style Guide: https://peps.python.org/pep-0008/
 * Ruff Documentation: https://docs.astral.sh/ruff/
