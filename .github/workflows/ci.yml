@@ -15,13 +15,17 @@ jobs:
         working-directory: ./web
 
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-          
-      - run: npm install
+
+      - name: Install Packages
+        run: npm install
+
       - run: npm run build
 
   backend-check:
@@ -32,13 +36,15 @@ jobs:
         working-directory: ./api
 
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
-      - run: |
-          pip install -r requirements.txt
-          pip install ruff
+
+      - name: Install Packages
+        run: pip install -r server/requirements.txt
+
+        name: Lint Files
       - run: ruff check .
