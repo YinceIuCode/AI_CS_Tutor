@@ -1,24 +1,19 @@
 # API
-=====
 
 This document describes the API endpoints, request formats, response
 structures, and authentication requirements provided by the project.
 
 ## Features
-===========
 
 * Authentication
 * User Management
 * ...
 
 ## API Reference
-================
 
 ### Authentication
-------------------
 
 #### `/login`
-------------
 
 Authenticate a user and establish an authenticated session.
 
@@ -59,7 +54,6 @@ Authenticate a user and establish an authenticated session.
 | `500 Internal Server Error` | Unexpected server error |
 
 #### `/signup`
--------------
 
 Register a new user account.
 
@@ -101,15 +95,12 @@ Register a new user account.
 | `500 Internal Server Error` | Unexpected server error |
 
 ## Endpoint Template
-===================
 
 Use the following template when documenting additional endpoints.
 
 ### `<Feature Name>`
--------------------
 
 #### `<Endpoint>`
------------------
 
 Briefly describe the purpose of this endpoint.
 
