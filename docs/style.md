@@ -1,8 +1,6 @@
 # Web
-=====
 
 ## Coding Style
----------------
 
 * Follow the project's web development conventions.
 * Keep the code clean, readable, and maintainable.
@@ -10,10 +8,8 @@
 * Ensure all applicable linting checks pass before submitting changes.
 
 # Python
-========
 
 ## Coding Style
----------------
 
 Python code must follow the [PEP 8](https://peps.python.org/pep-0008/) style
 guide.
@@ -25,7 +21,6 @@ guide.
 * Use meaningful names for variables, functions, classes, and modules.
 
 ## Code Quality
----------------
 
 All Python code must pass the following checks:
 
@@ -44,7 +39,6 @@ ruff format --check .
 * Use project-defined Ruff configuration when available.
 
 ## References
--------------
 
 * Python Style Guide: https://peps.python.org/pep-0008/
 * Ruff Documentation: https://docs.astral.sh/ruff/
