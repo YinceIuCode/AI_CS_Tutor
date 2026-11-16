@@ -1,0 +1,345 @@
+erDiagram
+    %% =========================================================================
+    %% OFFBYONE PLATFORM - COMPREHENSIVE LOGICAL ENTITY-RELATIONSHIP DIAGRAM
+    %% Standards: PostgreSQL Standard, UUID PKs, Multi-Subject, Multi-File Coding
+    %% =========================================================================
+
+    users {
+        uuid id PK
+        varchar email UK
+        varchar password_hash
+        varchar full_name
+        varchar role
+        varchar avatar_url
+        varchar preferred_theme
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    auth_sessions {
+        uuid id PK
+        uuid user_id FK
+        varchar refresh_token_hash UK
+        varchar device_info
+        varchar ip_address
+        timestamptz expires_at
+        timestamptz created_at
+    }
+
+    courses {
+        uuid id PK
+        varchar code UK
+        varchar title
+        varchar slug UK
+        text description
+        varchar category
+        varchar icon_name
+        boolean is_active
+        uuid created_by FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    course_enrollments {
+        uuid id PK
+        uuid user_id FK
+        uuid course_id FK
+        varchar role
+        varchar status
+        numeric progress_percent
+        timestamptz enrolled_at
+        timestamptz last_accessed_at
+    }
+
+    knowledge_base_documents {
+        uuid id PK
+        uuid course_id FK
+        varchar title
+        varchar file_type
+        varchar file_url
+        integer file_size_bytes
+        varchar ingestion_status
+        jsonb metadata
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    roadmaps {
+        uuid id PK
+        uuid course_id FK,UK
+        varchar title
+        varchar version
+        text description
+        boolean is_published
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    roadmap_nodes {
+        uuid id PK
+        uuid roadmap_id FK
+        varchar slug
+        varchar title
+        text description
+        integer sequence_order
+        varchar category
+        varchar icon_name
+        integer estimated_minutes
+        integer coordinate_x
+        integer coordinate_y
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    node_prerequisites {
+        uuid id PK
+        uuid node_id FK
+        uuid prerequisite_node_id FK
+        timestamptz created_at
+    }
+
+    tasks {
+        uuid id PK
+        uuid node_id FK
+        varchar slug
+        varchar title
+        text description
+        varchar task_type
+        integer sequence_order
+        varchar duration_text
+        integer exp_reward
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    theory_contents {
+        uuid id PK
+        uuid task_id FK,UK
+        text content_markdown
+        varchar reading_time_minutes
+        varchar audio_podcast_url
+        integer audio_duration_seconds
+        jsonb key_takeaways
+        jsonb dry_run_table_data
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    quiz_questions {
+        uuid id PK
+        uuid task_id FK
+        integer sequence_order
+        text prompt
+        text code_snippet
+        varchar programming_language
+        text explanation
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    quiz_options {
+        uuid id PK
+        uuid question_id FK
+        integer sequence_order
+        text content
+        boolean is_correct
+        text feedback_rationale
+        timestamptz created_at
+    }
+
+    coding_tasks {
+        uuid id PK
+        uuid task_id FK,UK
+        varchar difficulty
+        varchar default_language
+        text problem_statement
+        text input_format
+        text output_format
+        jsonb examples
+        jsonb constraints
+        text starter_code
+        text driver_code
+        integer time_limit_ms
+        integer memory_limit_mb
+        varchar expected_time_complexity
+        varchar expected_space_complexity
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    coding_task_starter_files {
+        uuid id PK
+        uuid coding_task_id FK
+        varchar file_path
+        text file_content
+        varchar file_type
+        boolean is_entry_point
+        boolean is_read_only
+        integer sequence_order
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    coding_test_cases {
+        uuid id PK
+        uuid coding_task_id FK
+        text input_data
+        text expected_output
+        boolean is_public
+        integer sequence_order
+        text explanation
+        timestamptz created_at
+    }
+
+    user_node_progress {
+        uuid id PK
+        uuid user_id FK
+        uuid node_id FK
+        varchar status
+        numeric progress_percent
+        timestamptz started_at
+        timestamptz completed_at
+        timestamptz updated_at
+    }
+
+    user_task_progress {
+        uuid id PK
+        uuid user_id FK
+        uuid task_id FK
+        varchar status
+        integer score
+        integer hints_used_count
+        timestamptz started_at
+        timestamptz completed_at
+        timestamptz updated_at
+    }
+
+    quiz_attempts {
+        uuid id PK
+        uuid user_id FK
+        uuid task_id FK
+        integer attempt_number
+        integer score
+        numeric percentage
+        jsonb student_answers
+        timestamptz submitted_at
+    }
+
+    code_drafts {
+        uuid id PK
+        uuid user_id FK
+        uuid coding_task_id FK
+        varchar active_file_path
+        varchar programming_language
+        timestamptz updated_at
+    }
+
+    code_draft_files {
+        uuid id PK
+        uuid draft_id FK
+        varchar file_path
+        text file_content
+        boolean is_read_only
+        timestamptz updated_at
+    }
+
+    code_submissions {
+        uuid id PK
+        uuid user_id FK
+        uuid coding_task_id FK
+        varchar programming_language
+        varchar status
+        integer passed_test_cases_count
+        integer total_test_cases_count
+        integer score
+        varchar detected_time_complexity
+        varchar detected_space_complexity
+        integer execution_time_ms
+        integer memory_usage_kb
+        text compiler_error_log
+        timestamptz submitted_at
+    }
+
+    code_submission_files {
+        uuid id PK
+        uuid submission_id FK
+        varchar file_path
+        text file_content
+        timestamptz created_at
+    }
+
+    submission_test_case_results {
+        uuid id PK
+        uuid submission_id FK
+        uuid test_case_id FK
+        varchar status
+        text actual_output
+        text error_message
+        integer execution_time_ms
+        integer memory_usage_kb
+        timestamptz created_at
+    }
+
+    socratic_tutor_profiles {
+        uuid id PK
+        uuid task_id FK,UK
+        varchar pedagogy_mode
+        text system_prompt_override
+        integer max_hints_allowed
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    socratic_hint_tiers {
+        uuid id PK
+        uuid tutor_profile_id FK
+        integer tier_level
+        varchar title
+        text guideline_prompt
+        timestamptz created_at
+    }
+
+    %% =========================================================================
+    %% RELATIONSHIP CARDINALITIES
+    %% =========================================================================
+
+    users ||--o{ auth_sessions : "maintains"
+    users ||--o{ courses : "authors"
+    users ||--o{ course_enrollments : "enrolls_in"
+    courses ||--o{ course_enrollments : "has_students"
+    courses ||--o{ knowledge_base_documents : "indexes_rag"
+    courses ||--|| roadmaps : "defines"
+
+    roadmaps ||--|{ roadmap_nodes : "contains_topics"
+    roadmap_nodes ||--o{ node_prerequisites : "requires"
+    roadmap_nodes ||--o{ tasks : "hosts"
+
+    tasks ||--o| theory_contents : "specializes_as_theory"
+    tasks ||--o{ quiz_questions : "specializes_as_quiz"
+    quiz_questions ||--|{ quiz_options : "has_choices"
+
+    tasks ||--o| coding_tasks : "specializes_as_coding"
+    coding_tasks ||--|{ coding_task_starter_files : "starter_templates"
+    coding_tasks ||--|{ coding_test_cases : "graded_by"
+
+    users ||--o{ user_node_progress : "tracks_node"
+    roadmap_nodes ||--o{ user_node_progress : "progress_recorded_for"
+
+    users ||--o{ user_task_progress : "tracks_task"
+    tasks ||--o{ user_task_progress : "progress_recorded_for"
+
+    users ||--o{ quiz_attempts : "attempts"
+    tasks ||--o{ quiz_attempts : "evaluated_in"
+
+    users ||--o{ code_drafts : "works_on"
+    coding_tasks ||--o{ code_drafts : "draft_for"
+    code_drafts ||--|{ code_draft_files : "composed_of"
+
+    users ||--o{ code_submissions : "submits"
+    coding_tasks ||--o{ code_submissions : "submitted_for"
+    code_submissions ||--|{ code_submission_files : "snapshots_code"
+    code_submissions ||--|{ submission_test_case_results : "evaluated_into"
+    coding_test_cases ||--o{ submission_test_case_results : "tested_against"
+
+    tasks ||--o| socratic_tutor_profiles : "mentored_by"
+    socratic_tutor_profiles ||--|{ socratic_hint_tiers : "structures_pedagogy"
