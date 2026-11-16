@@ -50,8 +50,7 @@ import { BrandLogo } from "@/components/brand-logo"
 import { PwaInstallButton } from "@/components/pwa-install-button"
 import { ThemeToggleButton } from "@/components/theme-toggle-button"
 import { getSocraticTutorProfile } from "@/mocks/socraticTutorData"
-import { resolveWorkspaceSession } from "@/services/roadmapService"
-import { fetchTaskDetailFromSupabase } from "@/services/supabaseService"
+import { resolveWorkspaceSession, evaluateQuizAnswer } from "@/services/roadmapService"
 
 /**
  * Cấu hình các đường dẫn điều hướng (href) trong trang Workspace.
@@ -207,7 +206,9 @@ export function WorkspaceView({
   React.useEffect(() => {
     let isCancelled = false
     setDynamicTaskDetail(null)
-    fetchTaskDetailFromSupabase(node.id, activeTask.id)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+    fetch(`${apiUrl}/api/tasks/${encodeURIComponent(activeTask.id)}`)
+      .then((res) => (res.ok ? res.json() : null))
       .then((detail) => {
         if (!isCancelled && detail) {
           setDynamicTaskDetail(detail)
@@ -413,11 +414,24 @@ export function WorkspaceView({
   ])
 
   const handleSelectQuizOption = React.useCallback(
-    (optionId: string, isCorrect: boolean) => {
+    async (optionId: string, localIsCorrect?: boolean) => {
       setSelectedOption(optionId)
+
+      let isCorrect = localIsCorrect
+      if (isCorrect === undefined) {
+        try {
+          const evalRes = await evaluateQuizAnswer(activeTask.id, optionId)
+          if (evalRes && typeof evalRes.isCorrect === "boolean") {
+            isCorrect = evalRes.isCorrect
+          }
+        } catch {
+          // Fallback
+        }
+      }
+
       saveQuizAnswer(activeTask.id, {
         selectedOption: optionId,
-        isSubmitted: isCorrect,
+        isSubmitted: Boolean(isCorrect),
       })
       if (isCorrect) {
         completeTask(activeTask.id)

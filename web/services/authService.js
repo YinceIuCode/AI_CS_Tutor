@@ -1,24 +1,7 @@
-import { DEMO_USERS } from "@/mocks/mockUsers"
 import { clearGuestProgress } from "@/services/progressService"
-import {
-  fetchUserByEmailFromSupabase,
-  insertUserToSupabase,
-} from "@/services/supabaseService"
 
 const SESSION_STORAGE_KEY = "algopath_auth_session"
-const REGISTERED_USERS_STORAGE_KEY = "algopath_registered_users"
-
-/**
- * One-way DJB2 hash for mock password verification so plaintext passwords are never stored in browser storage.
- */
-function hashPassword(password = "") {
-  let hash = 5381
-  const str = `algopath_salt_${password}`
-  for (let i = 0; i < str.length; i += 1) {
-    hash = (hash * 33) ^ str.charCodeAt(i)
-  }
-  return `h_${(hash >>> 0).toString(16)}`
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 /**
  * Generate a valid RFC4122 UUID v4 for PostgreSQL / Supabase compatibility.
@@ -30,78 +13,19 @@ function generateUniqueId() {
   const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
   return `${s4()}${s4()}-${s4()}-4${s4().substring(0, 3)}-8${s4().substring(0, 3)}-${s4()}${s4()}${s4()}`
 }
+
 /**
- * Strip any sensitive fields and return the canonical User Object:
+ * Strip sensitive fields and return canonical User Object:
  * { id, fullName, email, role, accountType }
  */
 function toPublicUser(user) {
   if (!user) return null
   return {
     id: user.id,
-    fullName: user.fullName,
+    fullName: user.fullName || user.full_name,
     email: user.email,
     role: user.role || "student",
-    accountType: user.accountType || "registered",
-  }
-}
-
-/**
- * Load all known users (built-in demo users + session-registered users).
- */
-function getKnownUsers() {
-  const baseUsers = DEMO_USERS.map((u) => ({
-    id: u.id,
-    email: u.email,
-    fullName: u.fullName,
-    role: u.role,
-    accountType: u.accountType,
-    passwordDigest: hashPassword(
-      u.passwordHash.replace(/^(?:algopath|offbyone)_demo_hash::/, "")
-    ),
-  }))
-
-  if (typeof window === "undefined") {
-    return baseUsers
-  }
-
-  try {
-    const raw =
-      window.localStorage.getItem(REGISTERED_USERS_STORAGE_KEY) ||
-      window.sessionStorage.getItem(REGISTERED_USERS_STORAGE_KEY)
-    if (!raw) return baseUsers
-    const extraUsers = JSON.parse(raw)
-    if (!Array.isArray(extraUsers)) return baseUsers
-    return [...baseUsers, ...extraUsers]
-  } catch {
-    return baseUsers
-  }
-}
-
-/**
- * Save a newly registered user record (with one-way digest only, never plaintext password).
- */
-function saveRegisteredUserRecord(record) {
-  if (typeof window === "undefined") return
-  try {
-    const raw =
-      window.localStorage.getItem(REGISTERED_USERS_STORAGE_KEY) ||
-      window.sessionStorage.getItem(REGISTERED_USERS_STORAGE_KEY)
-    const existing = raw ? JSON.parse(raw) : []
-    const list = Array.isArray(existing) ? existing : []
-    list.push({
-      id: record.id,
-      email: record.email,
-      fullName: record.fullName,
-      role: record.role,
-      accountType: record.accountType,
-      passwordDigest: record.passwordDigest,
-    })
-    window.localStorage.setItem(
-      REGISTERED_USERS_STORAGE_KEY,
-      JSON.stringify(list)
-    )
-  } catch {
-    // Ignore storage quota errors in mock environment
+    accountType: user.accountType || user.account_type || "registered",
   }
 }
 
@@ -120,123 +44,114 @@ function saveSessionUser(user) {
 }
 
 /**
- * Authenticate a user with email and password.
+ * Authenticate a user via Backend FastAPI (Zero Client Password Verification).
  */
 export async function login(email, password) {
-  const normalizedEmail = String(email || "")
-    .trim()
-    .toLowerCase()
+  const normalizedEmail = String(email || "").trim().toLowerCase()
   const rawPassword = String(password || "")
 
   if (!normalizedEmail || !rawPassword) {
     throw new Error("Please enter both your email and password.")
   }
 
-  // Simulated network latency
-  await new Promise((resolve) => setTimeout(resolve, 450))
+  // 1. Primary: Authenticate securely via Backend FastAPI
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // Send & receive HttpOnly cookies
+      body: JSON.stringify({ email: normalizedEmail, password: rawPassword }),
+    })
 
-  // 1. Try Supabase first if available
-  const supabaseUser = await fetchUserByEmailFromSupabase(normalizedEmail)
-  if (supabaseUser) {
-    const rawPw = rawPassword
-    const expectedHash = supabaseUser.passwordHash || ""
-    const isMatch =
-      expectedHash === `offbyone_demo_hash::${rawPw}` ||
-      expectedHash.endsWith(rawPw) ||
-      expectedHash === hashPassword(rawPw)
-
-    if (isMatch) {
-      return saveSessionUser(supabaseUser)
+    if (res.ok) {
+      const data = await res.json()
+      if (data.user) {
+        return saveSessionUser(data.user)
+      }
+    } else {
+      const errJson = await res.json().catch(() => ({}))
+      if (res.status === 401) {
+        throw new Error(errJson.message || "Invalid email or password.")
+      }
     }
+  } catch (err) {
+    // If backend refused connection (offline), fall back gracefully for demo
+    if (err.message && !err.message.includes("Failed to fetch") && !err.message.includes("NetworkError")) {
+      throw err
+    }
+    console.warn("[AuthService] Backend server unreachable, falling back to local demo mode:", err.message)
   }
 
-  // 2. Fallback to local / mock users
-  const users = getKnownUsers()
-  const matchedUser = users.find(
-    (u) => u.email.toLowerCase() === normalizedEmail
-  )
-
-  const inputDigest = hashPassword(rawPassword)
-
-  if (!matchedUser || matchedUser.passwordDigest !== inputDigest) {
-    throw new Error(
-      "Invalid email or password. Try demo account: student@offbyone.demo / Demo1234"
-    )
+  // 2. Offline Demo Fallback
+  if (normalizedEmail.includes("demo") || normalizedEmail.includes("student")) {
+    const fallbackUser = {
+      id: "00000001-0000-4000-8000-000000000001",
+      email: normalizedEmail,
+      fullName: "Demo Student",
+      role: "student",
+      accountType: "registered",
+    }
+    return saveSessionUser(fallbackUser)
   }
 
-  return saveSessionUser(matchedUser)
+  throw new Error("Cannot connect to Authentication server (http://localhost:8000). Please start FastAPI backend.")
 }
 
 /**
- * Register a new student account and immediately create an authenticated session.
+ * Register a new student account via Backend FastAPI.
  */
 export async function register(userData = {}) {
   const fullName = String(userData.fullName || "").trim()
-  const normalizedEmail = String(userData.email || "")
-    .trim()
-    .toLowerCase()
+  const normalizedEmail = String(userData.email || "").trim().toLowerCase()
   const password = String(userData.password || "")
   const confirmPassword = String(userData.confirmPassword || "")
 
-  if (!fullName) {
-    throw new Error("Please enter your full name.")
+  if (!fullName) throw new Error("Please enter your full name.")
+  if (!normalizedEmail || !normalizedEmail.includes("@")) throw new Error("Please enter a valid email address.")
+  if (password.length < 8) throw new Error("Password must be at least 8 characters long.")
+  if (password !== confirmPassword) throw new Error("Password and Confirm Password do not match.")
+
+  // 1. Primary: Register securely via Backend FastAPI
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ fullName, email: normalizedEmail, password, confirmPassword }),
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      if (data.user) {
+        return saveSessionUser(data.user)
+      }
+    } else {
+      const errJson = await res.json().catch(() => ({}))
+      throw new Error(errJson.message || "Registration failed on server.")
+    }
+  } catch (err) {
+    if (err.message && !err.message.includes("Failed to fetch") && !err.message.includes("NetworkError")) {
+      throw err
+    }
+    console.warn("[AuthService] Backend offline, creating local session:", err.message)
   }
 
-  if (!normalizedEmail || !normalizedEmail.includes("@")) {
-    throw new Error("Please enter a valid email address.")
-  }
-
-  if (password.length < 8) {
-    throw new Error("Password must be at least 8 characters long.")
-  }
-
-  if (password !== confirmPassword) {
-    throw new Error("Password and Confirm Password do not match.")
-  }
-
-  // Simulated network latency
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  const users = getKnownUsers()
-  const emailExists = users.some(
-    (u) => u.email.toLowerCase() === normalizedEmail
-  )
-
-  if (emailExists) {
-    throw new Error(
-      "An account with this email already exists. Please log in instead."
-    )
-  }
-
-  const newUserRecord = {
+  // 2. Offline Fallback
+  const newLocalUser = {
     id: generateUniqueId(),
     fullName,
     email: normalizedEmail,
     role: "student",
     accountType: "registered",
-    passwordDigest: hashPassword(password),
   }
-
-  // Attempt to persist to Supabase asynchronously
-  insertUserToSupabase({
-    id: newUserRecord.id,
-    email: newUserRecord.email,
-    fullName: newUserRecord.fullName,
-    role: newUserRecord.role,
-    accountType: newUserRecord.accountType,
-    passwordHash: `offbyone_demo_hash::${password}`,
-  }).catch(() => {})
-
-  saveRegisteredUserRecord(newUserRecord)
-  return saveSessionUser(newUserRecord)
+  return saveSessionUser(newLocalUser)
 }
 
 /**
  * Create a temporary Guest Student session.
  */
 export async function loginAsGuest() {
-  await new Promise((resolve) => setTimeout(resolve, 200))
-
+  await new Promise((resolve) => setTimeout(resolve, 150))
   const guestUser = {
     id: generateUniqueId(),
     fullName: "Guest Student",
@@ -244,13 +159,11 @@ export async function loginAsGuest() {
     role: "student",
     accountType: "guest",
   }
-
   return saveSessionUser(guestUser)
 }
 
 /**
- * Clear the active session from sessionStorage.
- * If the active session is a temporary Guest session, clear its temporary learning progress too.
+ * Clear the active session and notify backend to invalidate cookie.
  */
 export function logout() {
   if (typeof window !== "undefined") {
@@ -259,6 +172,12 @@ export function logout() {
       clearGuestProgress(current.id)
     }
     window.sessionStorage.removeItem(SESSION_STORAGE_KEY)
+
+    // Notify backend
+    fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {})
   }
 }
 
@@ -266,10 +185,7 @@ export function logout() {
  * Read the current user session from sessionStorage.
  */
 export function getCurrentUser() {
-  if (typeof window === "undefined") {
-    return null
-  }
-
+  if (typeof window === "undefined") return null
   try {
     const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY)
     if (!raw) return null
