@@ -1,5 +1,9 @@
 import { DEMO_USERS } from "@/mocks/mockUsers"
 import { clearGuestProgress } from "@/services/progressService"
+import {
+  fetchUserByEmailFromSupabase,
+  insertUserToSupabase,
+} from "@/services/supabaseService"
 
 const SESSION_STORAGE_KEY = "algopath_auth_session"
 const REGISTERED_USERS_STORAGE_KEY = "algopath_registered_users"
@@ -17,14 +21,14 @@ function hashPassword(password = "") {
 }
 
 /**
- * Generate a collision-free unique ID across tabs and devices.
+ * Generate a valid RFC4122 UUID v4 for PostgreSQL / Supabase compatibility.
  */
-function generateUniqueId(prefix = "id") {
+function generateUniqueId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `${prefix}-${crypto.randomUUID()}`
+    return crypto.randomUUID()
   }
-  const randomSuffix = Math.random().toString(36).substring(2, 10)
-  return `${prefix}-${Date.now()}-${randomSuffix}`
+  const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
+  return `${s4()}${s4()}-${s4()}-4${s4().substring(0, 3)}-8${s4().substring(0, 3)}-${s4()}${s4()}${s4()}`
 }
 /**
  * Strip any sensitive fields and return the canonical User Object:
@@ -131,6 +135,22 @@ export async function login(email, password) {
   // Simulated network latency
   await new Promise((resolve) => setTimeout(resolve, 450))
 
+  // 1. Try Supabase first if available
+  const supabaseUser = await fetchUserByEmailFromSupabase(normalizedEmail)
+  if (supabaseUser) {
+    const rawPw = rawPassword
+    const expectedHash = supabaseUser.passwordHash || ""
+    const isMatch =
+      expectedHash === `offbyone_demo_hash::${rawPw}` ||
+      expectedHash.endsWith(rawPw) ||
+      expectedHash === hashPassword(rawPw)
+
+    if (isMatch) {
+      return saveSessionUser(supabaseUser)
+    }
+  }
+
+  // 2. Fallback to local / mock users
   const users = getKnownUsers()
   const matchedUser = users.find(
     (u) => u.email.toLowerCase() === normalizedEmail
@@ -189,13 +209,23 @@ export async function register(userData = {}) {
   }
 
   const newUserRecord = {
-    id: generateUniqueId("user"),
+    id: generateUniqueId(),
     fullName,
     email: normalizedEmail,
     role: "student",
     accountType: "registered",
     passwordDigest: hashPassword(password),
   }
+
+  // Attempt to persist to Supabase asynchronously
+  insertUserToSupabase({
+    id: newUserRecord.id,
+    email: newUserRecord.email,
+    fullName: newUserRecord.fullName,
+    role: newUserRecord.role,
+    accountType: newUserRecord.accountType,
+    passwordHash: `offbyone_demo_hash::${password}`,
+  }).catch(() => {})
 
   saveRegisteredUserRecord(newUserRecord)
   return saveSessionUser(newUserRecord)
@@ -208,7 +238,7 @@ export async function loginAsGuest() {
   await new Promise((resolve) => setTimeout(resolve, 200))
 
   const guestUser = {
-    id: generateUniqueId("guest"),
+    id: generateUniqueId(),
     fullName: "Guest Student",
     email: "guest@offbyone.demo",
     role: "student",

@@ -4,6 +4,10 @@ import {
 } from "@/mocks/roadmapData"
 import { getWorkspaceTaskDetail } from "@/mocks/workspaceTasks"
 import { applyUserProgressToNodes } from "@/services/progressService"
+import {
+  fetchFullRoadmapFromSupabase,
+  fetchTaskDetailFromSupabase,
+} from "@/services/supabaseService"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
 const USE_MOCK_DATA = !API_BASE_URL
@@ -57,13 +61,35 @@ export function mergeRoadmapWithUserProgress(roadmapPayload, userProgress) {
 
 /**
  * Fetch the generated DSA Skill Tree Roadmap.
- * Uses native browser Fetch API when `NEXT_PUBLIC_API_URL` is set; otherwise resolves Mock Data.
+ * Prioritizes direct Supabase queries, then REST API, then local Mock Data fallback.
  */
 export async function fetchRoadmapData(options = {}) {
   const {
     fileName = INITIAL_KNOWLEDGE_BASE_DOC.name,
     fileSize = INITIAL_KNOWLEDGE_BASE_DOC.size,
   } = options
+
+  // 1. Try Supabase first if available
+  try {
+    const supabaseRoadmap = await fetchFullRoadmapFromSupabase("CS101")
+    if (
+      supabaseRoadmap &&
+      Array.isArray(supabaseRoadmap.nodes) &&
+      supabaseRoadmap.nodes.length > 0
+    ) {
+      const documentMeta = supabaseRoadmap.documentMeta || {
+        ...INITIAL_KNOWLEDGE_BASE_DOC,
+        name: fileName,
+        size: fileSize,
+      }
+      return buildRoadmapPayload(supabaseRoadmap.nodes, documentMeta)
+    }
+  } catch (err) {
+    console.warn(
+      "[RoadmapService] Supabase query failed, falling back to mock:",
+      err
+    )
+  }
 
   if (!USE_MOCK_DATA) {
     const response = await fetch(`${API_BASE_URL}/api/roadmap`, {
@@ -169,4 +195,30 @@ export function resolveWorkspaceSession(nodeId, taskId, userProgress = null) {
     activeTask,
     taskDetail,
   }
+}
+
+/**
+ * Async version of resolveWorkspaceSession that attempts to fetch dynamic task content from Supabase.
+ */
+export async function resolveWorkspaceSessionAsync(
+  nodeId,
+  taskId,
+  userProgress = null
+) {
+  const baseSession = resolveWorkspaceSession(nodeId, taskId, userProgress)
+  try {
+    const dbDetail = await fetchTaskDetailFromSupabase(
+      baseSession.node.id,
+      baseSession.activeTask.id
+    )
+    if (dbDetail) {
+      return {
+        ...baseSession,
+        taskDetail: dbDetail,
+      }
+    }
+  } catch (err) {
+    console.warn("[RoadmapService] Supabase task detail fetch failed:", err)
+  }
+  return baseSession
 }

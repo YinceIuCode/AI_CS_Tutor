@@ -7,6 +7,9 @@
  * seamlessly with a real backend remote execution container (Judge0 / Piston).
  */
 
+import { getCurrentUser } from "@/services/authService"
+import { recordSubmissionToSupabase } from "@/services/supabaseService"
+
 export interface TestCaseResult {
   id: number
   label: string
@@ -345,9 +348,9 @@ export async function runCode(
 }
 
 /**
- * Submit code for comprehensive grading against all hidden & edge test cases.
+ * Internal grading simulation against comprehensive test suite.
  */
-export async function submitCode(
+async function evaluateSubmissionCode(
   taskId: string,
   code: string,
   language: string = "C++",
@@ -721,4 +724,46 @@ export async function submitCode(
       optimalNote: "Meets required bounds.",
     },
   }
+}
+
+/**
+ * Submit code for comprehensive grading against all test cases.
+ * Seamlessly snapshots submission and test results to Supabase when logged in.
+ */
+export async function submitCode(
+  taskId: string,
+  code: string,
+  language: string = "C++",
+  taskDetail?: any
+): Promise<ExecutionResult> {
+  const result = await evaluateSubmissionCode(
+    taskId,
+    code,
+    language,
+    taskDetail
+  )
+
+  try {
+    const currentUser = getCurrentUser()
+    if (currentUser?.id && currentUser.accountType !== "guest") {
+      recordSubmissionToSupabase(currentUser.id, taskId, {
+        actionType: "submit",
+        status: result.status,
+        code,
+        passedCount: result.passedCount,
+        totalCount: result.totalCount,
+        runtimeMs: result.metrics.runtimeMs,
+        memoryMb: result.metrics.memoryMb,
+        stdout: result.stdout,
+        errorType: result.errorType,
+        errorTitle: result.errorTitle,
+        errorMessage: result.errorMessage,
+        testCases: result.testCases,
+      }).catch(() => {})
+    }
+  } catch {
+    // Non-blocking
+  }
+
+  return result
 }

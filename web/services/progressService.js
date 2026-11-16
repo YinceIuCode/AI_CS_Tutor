@@ -30,6 +30,11 @@ const GUEST_PROGRESS_PREFIX = "algopath_guest_progress_v2_"
 const PROGRESS_BROADCAST_CHANNEL = "algopath_progress_sync"
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
 
+import {
+  saveCodeDraftToSupabase,
+  syncTaskCompletionToSupabase,
+} from "@/services/supabaseService"
+
 /**
  * Create a default empty progress object for a user.
  *
@@ -204,6 +209,17 @@ export function saveQuizProgress(user, taskId, quizState) {
  */
 export function saveCodeProgress(user, taskId, codeState) {
   if (!taskId) return getUserProgress(user)
+
+  // Asynchronously persist to Supabase if registered user
+  if (user?.id && user.accountType !== "guest" && codeState?.code) {
+    saveCodeDraftToSupabase(
+      user.id,
+      taskId,
+      codeState.code,
+      codeState.language || "C++"
+    ).catch(() => {})
+  }
+
   return updateUserProgress(user, (prev) => ({
     ...prev,
     codeDrafts: {
@@ -242,6 +258,12 @@ export function saveHintsProgress(user, taskId, remaining) {
  */
 export function markTaskAsCompleted(user, taskId) {
   if (!taskId) return getUserProgress(user)
+
+  // Asynchronously persist completion to Supabase if registered user
+  if (user?.id && user.accountType !== "guest") {
+    syncTaskCompletionToSupabase(user.id, taskId, true).catch(() => {})
+  }
+
   return updateUserProgress(user, (prev) => ({
     ...prev,
     completedTasks: {

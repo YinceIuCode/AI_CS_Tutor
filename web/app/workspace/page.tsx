@@ -51,6 +51,7 @@ import { PwaInstallButton } from "@/components/pwa-install-button"
 import { ThemeToggleButton } from "@/components/theme-toggle-button"
 import { getSocraticTutorProfile } from "@/mocks/socraticTutorData"
 import { resolveWorkspaceSession } from "@/services/roadmapService"
+import { fetchTaskDetailFromSupabase } from "@/services/supabaseService"
 
 /**
  * Cấu hình các đường dẫn điều hướng (href) trong trang Workspace.
@@ -196,10 +197,29 @@ export function WorkspaceView({
     }
   }, [isInitializing, isAuthenticated, router])
 
-  const { node, activeTask, taskDetail } = React.useMemo(
+  const { node, activeTask, taskDetail: fallbackTaskDetail } = React.useMemo(
     () => resolveWorkspaceSession(resolvedNodeId, resolvedTaskId, userProgress),
     [resolvedNodeId, resolvedTaskId, userProgress]
   )
+
+  const [dynamicTaskDetail, setDynamicTaskDetail] = React.useState<any>(null)
+
+  React.useEffect(() => {
+    let isCancelled = false
+    setDynamicTaskDetail(null)
+    fetchTaskDetailFromSupabase(node.id, activeTask.id)
+      .then((detail) => {
+        if (!isCancelled && detail) {
+          setDynamicTaskDetail(detail)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      isCancelled = true
+    }
+  }, [node.id, activeTask.id])
+
+  const taskDetail = dynamicTaskDetail || fallbackTaskDetail
 
   const activeMode: WorkspaceMode = (activeTask?.type ||
     taskDetail?.type ||
