@@ -123,21 +123,21 @@ const handleEditorBeforeMount: BeforeMount = (monaco) => {
     },
   })
 
-  // 2. OffByOne Tokyo Night Day Light Theme
+  // 2. OffByOne Crisp Developer Slate Light Theme
   monaco.editor.defineTheme("offbyone-light", {
     base: "vs",
     inherit: true,
     rules: [
-      { token: "keyword", foreground: "9854F1" },
-      { token: "keyword.directive", foreground: "9854F1" },
-      { token: "type", foreground: "2E7DE9" },
-      { token: "type.identifier", foreground: "007197" },
-      { token: "identifier", foreground: "3760BF" },
-      { token: "number", foreground: "B15C00" },
-      { token: "string", foreground: "587539" },
-      { token: "comment", foreground: "848CB5", fontStyle: "italic" },
-      { token: "delimiter", foreground: "007197" },
-      { token: "operator", foreground: "007197" },
+      { token: "keyword", foreground: "7C3AED" },
+      { token: "keyword.directive", foreground: "7C3AED" },
+      { token: "type", foreground: "4F46E5" },
+      { token: "type.identifier", foreground: "0284C7" },
+      { token: "identifier", foreground: "0F172A" },
+      { token: "number", foreground: "D97706" },
+      { token: "string", foreground: "059669" },
+      { token: "comment", foreground: "64748B", fontStyle: "italic" },
+      { token: "delimiter", foreground: "0284C7" },
+      { token: "operator", foreground: "0284C7" },
     ],
     colors: {
       "editor.background": themeConfig.light.monaco.background,
@@ -230,6 +230,8 @@ export function WorkspaceView({
   const [selectedOption, setSelectedOption] = React.useState<string | null>(
     null
   )
+  const [isEvaluatingQuiz, setIsEvaluatingQuiz] = React.useState<boolean>(false)
+  const [quizEvaluationMap, setQuizEvaluationMap] = React.useState<Record<string, boolean>>({})
 
   // State cho phần Monaco Code Editor (khôi phục code đang viết dở hoặc dùng initialCode)
   const [code, setCode] = React.useState<string>(
@@ -355,6 +357,13 @@ export function WorkspaceView({
   React.useEffect(() => {
     const savedQuiz = userProgress.quizAnswers?.[activeTask.id]
     setSelectedOption(savedQuiz?.selectedOption ?? null)
+    const chosenOption = savedQuiz?.selectedOption
+    if (typeof chosenOption === "string") {
+      setQuizEvaluationMap((prev) => ({
+        ...prev,
+        [chosenOption]: Boolean(savedQuiz?.isSubmitted),
+      }))
+    }
 
     const savedCodeObj = userProgress.codeDrafts?.[activeTask.id]
     const savedCode = savedCodeObj?.code
@@ -411,6 +420,10 @@ export function WorkspaceView({
     taskDetail?.initialCode,
     isProgressLoaded,
     userProgress.userId,
+    userProgress.quizAnswers,
+    userProgress.codeDrafts,
+    userProgress.hintsRemaining,
+    taskDetail?.analysis,
   ])
 
   const handleSelectQuizOption = React.useCallback(
@@ -419,14 +432,21 @@ export function WorkspaceView({
 
       let isCorrect = localIsCorrect
       if (isCorrect === undefined) {
+        setIsEvaluatingQuiz(true)
         try {
           const evalRes = await evaluateQuizAnswer(activeTask.id, optionId)
           if (evalRes && typeof evalRes.isCorrect === "boolean") {
             isCorrect = evalRes.isCorrect
           }
         } catch {
-          // Fallback
+          // Fallback gracefully
+        } finally {
+          setIsEvaluatingQuiz(false)
         }
+      }
+
+      if (typeof isCorrect === "boolean") {
+        setQuizEvaluationMap((prev) => ({ ...prev, [optionId]: isCorrect }))
       }
 
       saveQuizAnswer(activeTask.id, {
@@ -607,6 +627,32 @@ export function WorkspaceView({
       ) || null
     )
   }, [selectedOption, taskDetail])
+
+  const resolvedProblem = React.useMemo(() => {
+    if (taskDetail?.problem) return taskDetail.problem
+    if (taskDetail?.description || taskDetail?.markdown || taskDetail?.content) {
+      return {
+        title: taskDetail.title || activeTask.title || "Problem Specification",
+        difficulty: (taskDetail.difficulty || "Medium") as "Easy" | "Medium" | "Hard",
+        description: taskDetail.description || taskDetail.markdown || taskDetail.content || "",
+        inputFormat: taskDetail.inputFormat || "Standard Input as described.",
+        outputFormat: taskDetail.outputFormat || "Standard Output result.",
+        examples: Array.isArray(taskDetail.testCases)
+          ? taskDetail.testCases.slice(0, 3).map((tc: any, i: number) => ({
+              input: tc.input || "",
+              output: tc.expected || tc.output || "",
+              explanation: tc.explanation || `Sample test case ${i + 1}`,
+            }))
+          : [],
+        constraints: taskDetail.constraints || [
+          "1 <= N <= 10^5",
+          "Time Limit: 2.0s",
+          "Memory Limit: 256MB",
+        ],
+      }
+    }
+    return null
+  }, [taskDetail, activeTask.title])
 
   if (isInitializing || !isAuthenticated) {
     return (
@@ -836,12 +882,12 @@ export function WorkspaceView({
 
         {/* ==================== TRẠNG THÁI 1 & 2: THEORY HOẶC QUIZ (MỞ RỘNG TOÀN BỘ 10/12 CỘT CÒN LẠI) ==================== */}
         {activeMode !== "coding" ? (
-          <section className="flex flex-col rounded-2xl border border-border-subtle bg-surface-secondary p-6 lg:col-span-10">
-            <div className="flex items-center justify-between border-b border-border-subtle pb-4">
+          <section className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-border-subtle bg-surface-secondary p-6 lg:col-span-10 custom-scrollbar transition-all duration-200 ease-out">
+            <div className="flex shrink-0 items-center justify-between border-b border-border-subtle pb-4">
               <div className="flex items-center gap-2.5">
-                <BookOpen className="size-4 text-text-primary" />
+                <BookOpen className="size-4 text-cyan" />
                 <h2 className="text-xs font-bold tracking-wider text-text-primary uppercase">
-                  {taskDetail?.headerTitle}
+                  {taskDetail?.headerTitle || taskDetail?.title || "Task Overview"}
                 </h2>
               </div>
 
@@ -849,7 +895,7 @@ export function WorkspaceView({
                 <button
                   type="button"
                   onClick={() => handleCompleteAndAdvance(nextTask.id)}
-                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-bold text-surface-secondary transition-colors hover:bg-primary-hover"
+                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-bold text-surface-secondary transition-all hover:bg-primary-hover active:scale-95 shadow-sm"
                 >
                   <span>Next: Take Quiz</span>
                   <ArrowRight className="size-3.5" />
@@ -858,102 +904,131 @@ export function WorkspaceView({
                 <button
                   type="button"
                   onClick={() => handleCompleteAndAdvance(nextTask.id)}
-                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-bold text-surface-secondary transition-colors hover:bg-primary-hover"
+                  disabled={isEvaluatingQuiz}
+                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-bold text-surface-secondary transition-all hover:bg-primary-hover active:scale-95 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send className="size-3.5" />
-                  <span>Submit</span>
+                  <span>Next: Coding Task</span>
                 </button>
               ) : null}
             </div>
 
             {/* Nội dung Trạng thái 1: THEORY */}
             {activeMode === "theory" && (
-              <div className="mt-6">
-                <p className="text-sm leading-relaxed text-text-primary">
-                  <span className="font-semibold text-cyan">
-                    {taskDetail?.moduleLabel || "Module 1 of 3:"}
-                  </span>{" "}
-                  {taskDetail?.summaryLead}
-                </p>
-
-                <div className="mt-6 space-y-3.5">
-                  {(taskDetail?.cards || []).map(
-                    (card: {
-                      badge: string
-                      title: string
-                      detail: string
-                      tag: string
-                    }) => (
-                      <div
-                        key={card.badge}
-                        className="flex items-start gap-4 rounded-xl border border-border-subtle bg-surface-secondary/85 p-4 transition-colors hover:border-border"
-                      >
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/20 font-mono text-xs font-bold text-primary">
-                          {card.badge}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h3 className="text-xs font-bold text-text-primary">
-                              {card.title}
-                            </h3>
-                            <span className="rounded bg-primary/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan">
-                              {card.tag}
-                            </span>
-                          </div>
-                          <p className="mt-1.5 text-xs leading-relaxed text-text-secondary">
-                            {card.detail}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  )}
+              <div className="mt-6 flex-1 space-y-6">
+                <div>
+                  <p className="text-sm leading-relaxed text-text-primary">
+                    <span className="font-semibold text-cyan">
+                      {taskDetail?.moduleLabel || "Module 1 of 3:"}
+                    </span>{" "}
+                    {taskDetail?.summaryLead || taskDetail?.description || ""}
+                  </p>
                 </div>
+
+                {/* Render structured cards if present */}
+                {taskDetail?.cards && taskDetail.cards.length > 0 ? (
+                  <div className="space-y-3.5">
+                    {taskDetail.cards.map(
+                      (card: {
+                        badge: string
+                        title: string
+                        detail: string
+                        tag: string
+                      }) => (
+                        <div
+                          key={card.badge}
+                          className="flex items-start gap-4 rounded-xl border border-border-subtle bg-surface/75 p-4 transition-colors hover:border-border"
+                        >
+                          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/20 font-mono text-xs font-bold text-primary">
+                            {card.badge}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <h3 className="text-xs font-bold text-text-primary">
+                                {card.title}
+                              </h3>
+                              <span className="rounded bg-primary/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan">
+                                {card.tag}
+                              </span>
+                            </div>
+                            <p className="mt-1.5 text-xs leading-relaxed text-text-secondary">
+                              {card.detail}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  /* Fallback to raw text or markdown from Supabase Lean tasks table */
+                  (taskDetail?.markdown || taskDetail?.description || taskDetail?.content) && (
+                    <div className="rounded-xl border border-border-subtle bg-surface/60 p-5 text-xs leading-relaxed text-text-secondary sm:text-[13px] space-y-3">
+                      {(taskDetail.markdown || taskDetail.description || taskDetail.content)
+                        .split("\n\n")
+                        .map((paragraph: string, pIdx: number) => (
+                          <p key={pIdx} className="leading-relaxed">
+                            {paragraph}
+                          </p>
+                        ))}
+                    </div>
+                  )
+                )}
               </div>
             )}
 
             {/* Nội dung Trạng thái 2: QUIZ */}
             {activeMode === "quiz" && (
-              <div className="mt-6">
-                <p className="text-sm leading-relaxed text-text-primary">
-                  <span className="font-semibold text-cyan">
-                    {taskDetail?.questionLabel || "Question 2 of 3:"}
-                  </span>{" "}
-                  {taskDetail?.questionPrompt}
-                </p>
+              <div className="mt-6 flex-1 space-y-6">
+                <div>
+                  <p className="text-sm leading-relaxed text-text-primary">
+                    <span className="font-semibold text-cyan">
+                      {taskDetail?.questionLabel || "Question 2 of 3:"}
+                    </span>{" "}
+                    {taskDetail?.questionPrompt || taskDetail?.question || taskDetail?.title || "Choose the best answer:"}
+                  </p>
+                </div>
 
-                <div className="mt-7 space-y-3.5">
+                <div className="space-y-3.5">
                   {(taskDetail?.options || []).map(
                     (option: {
                       id: string
                       text: string
-                      isCorrect: boolean
+                      isCorrect?: boolean
                     }) => {
                       const isSelected = selectedOption === option.id
-                      const isWrongSelection = isSelected && !option.isCorrect
-                      const isRightSelection = isSelected && option.isCorrect
+                      const evaluated = typeof option.isCorrect === "boolean"
+                        ? option.isCorrect
+                        : quizEvaluationMap[option.id]
+                      const isEvaluatingThis = isEvaluatingQuiz && isSelected && evaluated === undefined
+                      const isRightSelection = isSelected && evaluated === true
+                      const isWrongSelection = isSelected && evaluated === false
 
                       return (
                         <button
                           key={option.id}
                           type="button"
+                          disabled={isEvaluatingQuiz}
                           onClick={() =>
                             handleSelectQuizOption(option.id, option.isCorrect)
                           }
                           className={cn(
                             "relative flex w-full cursor-pointer items-center rounded-xl border px-4 py-4 text-left transition-all",
                             isWrongSelection &&
-                              "border-danger bg-danger/6",
+                              "border-danger bg-danger/10",
                             isRightSelection &&
-                              "border-success bg-success/8",
+                              "border-success bg-success/10",
+                            isEvaluatingThis &&
+                              "border-cyan bg-cyan/10 animate-pulse",
                             !isSelected &&
-                              "border-border-subtle bg-surface-secondary/70 hover:border-border"
+                              "border-border-subtle bg-surface/70 hover:border-border hover:bg-surface disabled:opacity-60 disabled:cursor-not-allowed"
                           )}
                         >
                           <span
                             className={cn(
-                              "flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold",
+                              "flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold transition-colors",
                               isWrongSelection && "bg-danger text-surface-secondary",
                               isRightSelection && "bg-success text-surface-secondary",
+                              isEvaluatingThis && "bg-cyan text-surface-secondary",
                               !isSelected && "bg-primary/20 text-primary"
                             )}
                           >
@@ -962,22 +1037,29 @@ export function WorkspaceView({
 
                           <span
                             className={cn(
-                              "flex-1 text-center text-xs font-medium sm:text-[13px]",
-                              isSelected ? "text-text-primary" : "text-text-secondary"
+                              "flex-1 px-4 text-xs font-medium sm:text-[13px]",
+                              isSelected ? "text-text-primary font-semibold" : "text-text-secondary"
                             )}
                           >
                             {option.text}
                           </span>
 
+                          {isEvaluatingThis && (
+                            <span className="absolute right-3 bottom-2 sm:bottom-auto inline-flex items-center gap-1.5 rounded bg-cyan/20 px-2 py-0.5 text-[10px] font-semibold text-cyan">
+                              <span className="size-2 rounded-full bg-cyan animate-ping" />
+                              <span>Evaluating...</span>
+                            </span>
+                          )}
+
                           {isWrongSelection && (
-                            <span className="absolute right-3 bottom-1.5 inline-flex items-center gap-1 rounded bg-danger px-2 py-0.5 text-[10px] font-bold text-surface-secondary">
+                            <span className="absolute right-3 bottom-2 sm:bottom-auto inline-flex items-center gap-1 rounded bg-danger px-2 py-0.5 text-[10px] font-bold text-surface-secondary shadow-sm">
                               <X className="size-2.5 stroke-[3]" />
                               <span>Incorrect Selection</span>
                             </span>
                           )}
 
                           {isRightSelection && (
-                            <span className="absolute right-3 bottom-1.5 inline-flex items-center gap-1 rounded bg-success px-2 py-0.5 text-[10px] font-bold text-surface-secondary">
+                            <span className="absolute right-3 bottom-2 sm:bottom-auto inline-flex items-center gap-1 rounded bg-success px-2 py-0.5 text-[10px] font-bold text-surface-secondary shadow-sm">
                               <Check className="size-2.5 stroke-[3]" />
                               <span>Correct Answer</span>
                             </span>
@@ -1140,7 +1222,7 @@ export function WorkspaceView({
                   )}
                 >
                   <ProblemDescriptionPanel
-                    problem={taskDetail?.problem}
+                    problem={resolvedProblem}
                     taskTitle={activeTask.title}
                     isCollapsed={isProblemCollapsed}
                     onToggleCollapse={() => setIsProblemCollapsed(true)}
@@ -1156,7 +1238,7 @@ export function WorkspaceView({
                 >
                   {/* Thanh chỉ báo mờ trỏ tới dòng code lỗi khi Run Code bị fail */}
                   {codeRunOutcome === "warning" && (
-                    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/35 bg-gradient-to-r from-[#DB4B4B]/18 via-[#FF9E64]/10 to-transparent px-3.5 py-1.5 text-[11px]">
+                    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/35 bg-gradient-to-r from-danger/18 via-warning/10 to-transparent px-3.5 py-1.5 text-[11px]">
                       <div className="flex min-w-0 items-center gap-2 text-warning">
                         <span className="inline-flex items-center gap-1 rounded bg-danger/25 px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-primary">
                           ↳ Line {socraticProfile.faultyLine.line}

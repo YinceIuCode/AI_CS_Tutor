@@ -2,13 +2,24 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-theme="dark"] *, .dark *));
 
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
 
-  /* OffByOne Tokyo Night Semantic Color Tokens */
+  /* OffByOne "Crisp Developer Slate" Palette & Semantic Color Tokens */
+  --color-bg-app: var(--bg-app);
+  --color-bg-canvas: var(--bg-canvas);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-code: var(--bg-code);
+  --color-accent-indigo: var(--accent-indigo);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-emerald: var(--accent-emerald);
+  --color-accent-purple: var(--accent-purple);
+
   --color-background: var(--color-background);
   --color-surface: var(--color-surface);
   --color-surface-secondary: var(--color-surface-secondary);
@@ -52,89 +63,130 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  /* Tokyo Night Day (Light Theme Defaults) */
-  --color-background: #E1E2E7;
-  --color-surface: #D0D5E3;
-  --color-surface-secondary: #FFFFFF;
-  --color-surface-elevated: #F3F4F8;
-  --color-text-primary: #3760BF;
-  --color-text-secondary: #6172B0;
-  --color-text-muted: #848CB5;
-  --color-border: #C1C9DF;
-  --color-border-subtle: #D0D5E3;
-  --color-primary: #2E7DE9;
-  --color-primary-hover: #1E66D5;
-  --color-cyan: #007197;
-  --color-purple: #9854F1;
-  --color-success: #587539;
-  --color-warning: #B15C00;
-  --color-danger: #F52A65;
-  --color-overlay: rgba(225, 226, 231, 0.8);
-  --color-shadow: rgba(55, 96, 191, 0.12);
-  --color-primary-glow: rgba(46, 125, 233, 0.25);
+:root,
+[data-theme="dark"],
+.dark {
+  /* Crisp Developer Slate - Dark Theme Defaults */
+  --bg-app: #0B0F19;
+  --bg-canvas: #0E1320;
+  --bg-surface: #131B2E;
+  --bg-elevated: #1A243B;
+  --bg-code: #0D1117;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --accent-indigo: #818CF8;
+  --accent-cyan: #38BDF8;
+  --accent-amber: #F59E0B;
+  --accent-emerald: #10B981;
+  --accent-purple: #A855F7;
+  --dot-grid-color: rgba(255, 255, 255, 0.07);
+  --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
 
-  --background: #E1E2E7;
-  --foreground: #3760BF;
-  --card: #D0D5E3;
-  --card-foreground: #3760BF;
-  --popover: #F3F4F8;
-  --popover-foreground: #3760BF;
-  --primary: #2E7DE9;
-  --primary-foreground: #FFFFFF;
-  --secondary: #FFFFFF;
-  --secondary-foreground: #3760BF;
-  --muted: #D0D5E3;
-  --muted-foreground: #848CB5;
-  --accent: #D0D5E3;
-  --accent-foreground: #3760BF;
-  --destructive: #F52A65;
-  --border: #C1C9DF;
-  --input: #C1C9DF;
-  --ring: #2E7DE9;
+  /* Semantic Token Mapping for OffByOne Components */
+  --color-background: var(--bg-app);
+  --color-surface: var(--bg-surface);
+  --color-surface-secondary: var(--bg-canvas);
+  --color-surface-elevated: var(--bg-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
+  --color-primary: var(--accent-indigo);
+  --color-primary-hover: #98A2FF;
+  --color-cyan: var(--accent-cyan);
+  --color-purple: var(--accent-purple);
+  --color-success: var(--accent-emerald);
+  --color-warning: var(--accent-amber);
+  --color-danger: #EF4444;
+  --color-overlay: rgba(11, 15, 25, 0.85);
+  --color-shadow: var(--card-shadow);
+  --color-primary-glow: rgba(129, 140, 248, 0.28);
+
+  --background: var(--bg-app);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-indigo);
+  --primary-foreground: #0B0F19;
+  --secondary: var(--bg-canvas);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-surface);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-elevated);
+  --accent-foreground: var(--text-primary);
+  --destructive: #EF4444;
+  --border: var(--border-strong);
+  --input: var(--border-subtle);
+  --ring: var(--accent-indigo);
   --radius: 0.625rem;
 }
 
-.dark {
-  /* Tokyo Night Night (Dark Theme Defaults) */
-  --color-background: #15161E;
-  --color-surface: #1A1B26;
-  --color-surface-secondary: #15161E;
-  --color-surface-elevated: #1A1B26;
-  --color-text-primary: #C0CAF5;
-  --color-text-secondary: #A9B1D6;
-  --color-text-muted: #545C7E;
-  --color-border: #414868;
-  --color-border-subtle: #292E42;
-  --color-primary: #7AA2F7;
-  --color-primary-hover: #8DB0FF;
-  --color-cyan: #7DCFFF;
-  --color-purple: #BB9AF7;
-  --color-success: #9ECE6A;
-  --color-warning: #FF9E64;
-  --color-danger: #DB4B4B;
-  --color-overlay: rgba(21, 22, 30, 0.8);
-  --color-shadow: rgba(0, 0, 0, 0.55);
-  --color-primary-glow: rgba(122, 162, 247, 0.3);
+[data-theme="light"],
+.light {
+  /* Crisp Developer Slate - Light Theme Defaults */
+  --bg-app: #F8FAFC;          /* Nền xám sứ lạnh dịu mắt, không dùng trắng tinh */
+  --bg-canvas: #F1F5F9;       /* Nền vùng đồ thị DAG & khung phụ */
+  --bg-surface: #FFFFFF;      /* Nền Card, Modal, Sidebar trắng sắc nét */
+  --bg-elevated: #F8FAFC;     /* Nền các thẻ con bên trong Card */
+  --bg-code: #F8FAFC;         /* Nền Code Editor kiểu GitHub Light */
+  --border-subtle: #E2E8F0;   /* Viền Slate 200 sắc nét */
+  --border-strong: #CBD5E1;   /* Viền khi hover hoặc active */
+  --text-primary: #0F172A;     /* Chữ chính Slate 900 */
+  --text-secondary: #475569;   /* Chữ mô tả Slate 600 */
+  --text-muted: #64748B;       /* Chữ phụ Slate 500 */
+  --accent-indigo: #4F46E5;   /* Indigo 600 đậm rõ trên nền sáng */
+  --accent-cyan: #0284C7;     /* Sky 600 cho trạng thái Active/Current */
+  --accent-amber: #D97706;    /* Amber 600 cho điểm nhấn cam */
+  --accent-emerald: #059669;  /* Emerald 600 cho trạng thái Completed */
+  --accent-purple: #7C3AED;   /* Violet 600 cho Socratic AI Hint */
+  --dot-grid-color: #CBD5E1;  /* Chấm lưới trên bản đồ Skill Tree */
+  --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
 
-  --background: #15161E;
-  --foreground: #C0CAF5;
-  --card: #1A1B26;
-  --card-foreground: #C0CAF5;
-  --popover: #1A1B26;
-  --popover-foreground: #C0CAF5;
-  --primary: #7AA2F7;
-  --primary-foreground: #15161E;
-  --secondary: #15161E;
-  --secondary-foreground: #C0CAF5;
-  --muted: #1A1B26;
-  --muted-foreground: #545C7E;
-  --accent: #1A1B26;
-  --accent-foreground: #C0CAF5;
-  --destructive: #DB4B4B;
-  --border: #414868;
-  --input: #414868;
-  --ring: #7AA2F7;
+  /* Semantic Token Mapping for OffByOne Components */
+  --color-background: var(--bg-app);
+  --color-surface: var(--bg-surface);
+  --color-surface-secondary: var(--bg-canvas);
+  --color-surface-elevated: var(--bg-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
+  --color-primary: var(--accent-indigo);
+  --color-primary-hover: #4338CA;
+  --color-cyan: var(--accent-cyan);
+  --color-purple: var(--accent-purple);
+  --color-success: var(--accent-emerald);
+  --color-warning: var(--accent-amber);
+  --color-danger: #DC2626;
+  --color-overlay: rgba(15, 23, 42, 0.45);
+  --color-shadow: var(--card-shadow);
+  --color-primary-glow: rgba(79, 70, 229, 0.22);
+
+  --background: var(--bg-app);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-indigo);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--bg-canvas);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-elevated);
+  --accent-foreground: var(--text-primary);
+  --destructive: #DC2626;
+  --border: var(--border-strong);
+  --input: var(--border-subtle);
+  --ring: var(--accent-indigo);
 }
 
 @layer base {

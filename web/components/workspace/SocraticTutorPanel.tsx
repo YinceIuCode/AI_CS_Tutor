@@ -407,21 +407,23 @@ export function SocraticTutorPanel({
             {activeResourceView === "slide" ? (
               <div className="mt-2.5 space-y-2 text-[11px]">
                 <div className="font-mono text-[9.5px] text-text-muted">
-                  {profile.slideCitation.courseRef}
+                  {profile?.slideCitation?.courseRef || "Course Reference Slide"}
                 </div>
                 <p className="rounded-lg border border-border-subtle bg-surface p-2.5 leading-relaxed text-text-primary">
-                  “{profile.slideCitation.excerpt}”
+                  “{profile?.slideCitation?.excerpt || "Review the key invariant and edge conditions for this algorithm."}”
                 </p>
-                <div className="rounded-lg border border-success/35 bg-success/10 px-2.5 py-1.5 font-mono text-[10px] text-success">
-                  {profile.slideCitation.keyInvariant}
-                </div>
+                {profile?.slideCitation?.keyInvariant && (
+                  <div className="rounded-lg border border-success/35 bg-success/10 px-2.5 py-1.5 font-mono text-[10px] text-success">
+                    {profile.slideCitation.keyInvariant}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="mt-2 overflow-x-auto">
+              <div className="mt-2 max-h-48 overflow-y-auto overflow-x-auto custom-scrollbar">
                 <table className="w-full border-collapse text-left font-mono text-[9.5px]">
                   <thead>
-                    <tr className="border-b border-border-subtle text-cyan">
-                      {profile.dryRunTable.columns.map((col: string) => (
+                    <tr className="border-b border-border-subtle text-cyan sticky top-0 bg-surface-secondary">
+                      {(profile?.dryRunTable?.columns || ["Step", "Variable", "State"]).map((col: string) => (
                         <th key={col} className="px-1.5 py-1 font-semibold">
                           {col}
                         </th>
@@ -429,22 +431,24 @@ export function SocraticTutorPanel({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-subtle/60 text-text-secondary">
-                    {profile.dryRunTable.rows.map(
-                      (row: string[], rIdx: number) => (
-                        <tr
-                          key={rIdx}
-                          className={cn(
-                            rIdx === profile.dryRunTable.rows.length - 1 &&
-                              "bg-danger/12 text-warning"
-                          )}
-                        >
-                          {row.map((cell, cIdx) => (
-                            <td key={cIdx} className="px-1.5 py-1">
-                              {cell}
-                            </td>
-                          ))}
-                        </tr>
-                      )
+                    {(profile?.dryRunTable?.rows || []).map(
+                      (row: string[], rIdx: number) => {
+                        const isLastRow = rIdx === (profile?.dryRunTable?.rows?.length ?? 0) - 1
+                        return (
+                          <tr
+                            key={rIdx}
+                            className={cn(
+                              isLastRow && "bg-danger/12 text-warning"
+                            )}
+                          >
+                            {row.map((cell, cIdx) => (
+                              <td key={cIdx} className="px-1.5 py-1">
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        )
+                      }
                     )}
                   </tbody>
                 </table>

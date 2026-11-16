@@ -130,7 +130,7 @@ function RoadmapFlowInner({
           variant={BackgroundVariant.Dots}
           gap={22}
           size={1.4}
-          color="var(--color-border-subtle, #292E42)"
+          color="var(--dot-grid-color, var(--color-border-subtle, #292E42))"
         />
       </ReactFlow>
 
