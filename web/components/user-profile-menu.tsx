@@ -88,7 +88,7 @@ export function UserProfileMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-[100] mt-2 w-60 overflow-hidden rounded-xl border border-border-subtle bg-surface-elevated p-2 shadow-2xl backdrop-blur-md">
+        <div className="absolute right-0 z-[100] mt-2 w-60 overflow-hidden rounded-lg border border-border-subtle bg-surface p-1.5 shadow-xl">
           <div className="border-b border-border-subtle px-3 py-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="truncate text-xs font-bold text-text-primary">

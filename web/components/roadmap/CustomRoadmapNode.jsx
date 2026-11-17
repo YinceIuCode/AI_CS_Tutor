@@ -76,10 +76,10 @@ function CustomRoadmapNode({ data }) {
 
   const coreStyle =
     status === "completed"
-      ? "border-success/80 bg-radial from-success/22 via-background to-surface-secondary text-success shadow-[0_0_28px_rgba(158,206,106,0.28)]"
+      ? "border-2 border-success bg-surface text-success shadow-sm"
       : status === "current"
-        ? "border-cyan bg-radial from-cyan/26 via-background to-surface-secondary text-cyan shadow-[0_0_32px_rgba(61,181,230,0.36)]"
-        : "border-border/80 bg-surface-secondary text-text-muted shadow-md"
+        ? "border-2 border-primary bg-surface text-cyan shadow-sm"
+        : "border border-border-subtle bg-surface-secondary text-text-muted"
 
   const portColor =
     status === "completed"
@@ -128,14 +128,14 @@ function CustomRoadmapNode({ data }) {
           role="tooltip"
           className="pointer-events-none absolute bottom-[calc(100%+12px)] left-1/2 z-50 w-[215px] -translate-x-1/2 animate-in fade-in zoom-in-95 duration-150"
         >
-          <div className="rounded-xl border border-border bg-surface-elevated/98 p-3 shadow-2xl backdrop-blur-md">
+          <div className="rounded-lg border border-border-subtle bg-surface p-3 shadow-md">
             {/* 1. Tên chủ đề & Trạng thái */}
             <div className="flex items-start justify-between gap-2">
               <span className="line-clamp-1 text-xs font-bold text-text-primary">
                 {data?.label}
               </span>
               <span
-                className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase ${statusBadgeClass}`}
+                className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-bold uppercase ${statusBadgeClass}`}
               >
                 {status === "current" && <Sparkles className="size-2.5" />}
                 {statusLabel}
@@ -147,11 +147,11 @@ function CustomRoadmapNode({ data }) {
               <div className="flex items-center justify-between text-[10.5px]">
                 <span className="font-medium text-text-secondary">
                   Tasks:{" "}
-                  <strong className="font-mono text-text-primary">
+                  <strong className="font-mono text-text-primary tabular-nums">
                     {completedTasks}/{totalTasks}
                   </strong>
                 </span>
-                <span className={`font-mono font-bold ${complexityColor}`}>
+                <span className={`font-mono font-bold tabular-nums ${complexityColor}`}>
                   {progress}%
                 </span>
               </div>
@@ -162,7 +162,7 @@ function CustomRoadmapNode({ data }) {
                     status === "completed"
                       ? "bg-success"
                       : status === "current"
-                        ? "bg-gradient-to-r from-primary to-cyan"
+                        ? "bg-primary"
                         : "bg-border"
                   }`}
                   style={{ width: `${progress}%` }}
@@ -201,21 +201,11 @@ function CustomRoadmapNode({ data }) {
           className={`!size-2.5 !rounded-full !border-2 ${portColor}`}
         />
 
-        {/* Ambient Outer Halo for Completed / Active Orbs */}
-        {status !== "locked" && (
-          <span
-            aria-hidden="true"
-            className={`pointer-events-none absolute -inset-1.5 rounded-full opacity-60 blur-md transition-opacity duration-200 group-hover:opacity-95 ${
-              status === "completed" ? "bg-success/25" : "bg-cyan/30"
-            }`}
-          />
-        )}
-
         {/* Selection Ring when Node Detail Pop-up is open */}
         {isSelected && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -inset-2 rounded-full border-2 border-primary shadow-[0_0_24px_var(--color-primary-glow)]"
+            className="pointer-events-none absolute -inset-2 rounded-full border-2 border-primary shadow-sm"
           />
         )}
 
@@ -285,9 +275,9 @@ function CustomRoadmapNode({ data }) {
                 key={idx}
                 className={`size-1.5 rounded-full transition-colors ${
                   isPipDone
-                    ? "bg-success shadow-[0_0_5px_var(--color-success)]"
+                    ? "bg-success"
                     : isPipCurrent
-                      ? "bg-cyan shadow-[0_0_5px_var(--color-cyan)]"
+                      ? "bg-cyan"
                       : "bg-border"
                 }`}
               />
@@ -296,19 +286,19 @@ function CustomRoadmapNode({ data }) {
         </div>
       </div>
 
-      {/* ==================== 2. FLOATING GLASS NAMEPLATE PILL ==================== */}
+      {/* ==================== 2. FLOATING NAMEPLATE PILL ==================== */}
       <div
-        className={`relative z-10 mt-2.5 flex flex-col items-center rounded-xl border bg-surface-elevated/95 px-3 py-1.5 text-center shadow-lg backdrop-blur-sm transition-colors ${pillBorder}`}
+        className={`relative z-10 mt-2 flex flex-col items-center rounded-md border bg-surface px-2.5 py-1 text-center shadow-sm transition-colors ${pillBorder}`}
       >
         <span
-          className={`line-clamp-1 text-[12.5px] leading-tight font-bold ${
+          className={`line-clamp-1 text-[12px] leading-tight font-bold ${
             status === "locked" ? "text-text-muted" : "text-text-primary"
           }`}
         >
           {data?.label}
         </span>
         <span
-          className={`mt-0.5 font-mono text-[10.5px] font-semibold ${complexityColor}`}
+          className={`mt-0.5 font-mono text-[10px] font-semibold tabular-nums ${complexityColor}`}
         >
           {data?.complexity || `${completedTasks}/${totalTasks} Mastered`}
         </span>

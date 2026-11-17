@@ -154,7 +154,7 @@ export function ProblemDescriptionPanel({
     <aside
       aria-label="Problem Description"
       className={cn(
-        "flex h-full flex-col overflow-hidden bg-surface-secondary select-text transition-all duration-200 ease-out",
+        "flex h-full flex-col overflow-hidden bg-surface-secondary select-text transition-colors duration-150 ease-out",
         className
       )}
     >

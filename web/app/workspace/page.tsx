@@ -336,7 +336,7 @@ export function WorkspaceView({
               className: "algopath-faulty-line-bg",
               linesDecorationsClassName: "algopath-faulty-line-gutter",
               after: {
-                content: `  ⟵ ⚠️ ${socraticProfile.faultyLine.shortReason}`,
+                content: `  ⟵ [FAULT] ${socraticProfile.faultyLine.shortReason}`,
                 inlineClassName: "algopath-faulty-inline-pointer",
               },
             },
@@ -666,7 +666,7 @@ export function WorkspaceView({
     <div className="relative flex min-h-svh flex-col overflow-x-hidden bg-surface-secondary px-4 py-3 font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary md:px-6 lg:h-svh lg:max-h-svh lg:overflow-hidden">
       {/* ==================== THANH HEADER TRÊN CÙNG (TOP NAVBAR) ==================== */}
       <header className="relative z-40 mx-auto w-full max-w-[1480px] shrink-0">
-        <nav className="flex items-center justify-between gap-4 rounded-2xl border border-border-subtle bg-surface/95 px-5 py-2.5 shadow-lg backdrop-blur-md">
+        <nav className="flex items-center justify-between gap-4 rounded-xl border border-border-subtle bg-surface px-4 py-2 shadow-sm">
           {/* Logo OffByOne */}
           <Link
             href={WORKSPACE_LINKS.brand}
@@ -676,7 +676,7 @@ export function WorkspaceView({
           </Link>
 
           {/* Thanh Search ở giữa */}
-          <div className="hidden max-w-[460px] flex-1 items-center justify-between rounded-full border border-border-subtle bg-surface-secondary/90 px-4 py-1.5 text-xs text-text-muted transition-colors focus-within:border-border md:flex">
+          <div className="hidden max-w-[460px] flex-1 items-center justify-between rounded-md border border-border-subtle bg-surface-secondary px-3.5 py-1.5 text-xs text-text-muted transition-colors focus-within:border-primary/60 md:flex">
             <div className="flex flex-1 items-center gap-2.5">
               <Search className="size-3.5 shrink-0 text-text-muted" />
               <input
@@ -685,13 +685,13 @@ export function WorkspaceView({
                 className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
               />
             </div>
-            <kbd className="rounded border border-border-subtle bg-surface px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary">
+            <kbd className="rounded border border-border-subtle bg-surface px-1.5 py-0.5 font-mono text-[10px] font-medium text-text-secondary">
               Ctrl + K
             </kbd>
           </div>
 
           {/* User Profile & PWA Download Button */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <PwaInstallButton />
             <ThemeToggleButton />
             <UserProfileMenu />
@@ -702,7 +702,7 @@ export function WorkspaceView({
       {/* ==================== KHÔNG GIAN LÀM VIỆC 3 CỘT (MAIN WORKSPACE) ==================== */}
       <main className="relative z-10 mx-auto mt-3 grid min-h-0 w-full max-w-[1480px] flex-1 grid-cols-1 gap-3.5 lg:grid-cols-12">
         {/* -------------------- CỘT 1 (TRÁI - 2/12): THANH ĐIỀU HƯỚNG TASK THEO NODE + THẺ SOCRATIC AI TUTOR -------------------- */}
-        <aside className="flex min-h-0 flex-col justify-between rounded-2xl border border-border-subtle bg-surface-secondary p-3.5 lg:col-span-2">
+        <aside className="flex min-h-0 flex-col justify-between rounded-xl border border-border-subtle bg-surface-secondary p-3.5 lg:col-span-2">
           {/* Phần đầu cố định: Nút Back + Tiêu đề Node */}
           <div className="shrink-0">
             <Link
@@ -735,12 +735,12 @@ export function WorkspaceView({
                   type="button"
                   onClick={() => handleSelectTask(taskItem.id)}
                   className={cn(
-                    "w-full cursor-pointer rounded-xl border p-2.5 text-left transition-all",
+                    "w-full cursor-pointer rounded-lg border p-2.5 text-left transition-colors",
                     isSelected
-                      ? "border-primary bg-primary/20/40 shadow-[0_0_20px_rgba(122,162,247,0.18)]"
+                      ? "border-primary/80 bg-primary/10"
                       : isCompleted
-                        ? "border-success/55 bg-surface/60 hover:border-success"
-                        : "border-border-subtle bg-surface/45 hover:border-border"
+                        ? "border-success/50 bg-surface/60 hover:border-success"
+                        : "border-border-subtle bg-surface/40 hover:border-border"
                   )}
                 >
                   <div className="flex items-start gap-2.5">
@@ -810,18 +810,18 @@ export function WorkspaceView({
           <div className="mt-3 shrink-0 space-y-2 border-t border-border-subtle pt-3">
             <div
               className={cn(
-                "relative rounded-xl border p-3 transition-all",
+                "relative rounded-lg border p-3 transition-colors",
                 activeTool === "tutor"
-                  ? "border-cyan bg-primary/20/45 shadow-[0_0_20px_rgba(125,207,255,0.16)]"
+                  ? "border-cyan/70 bg-cyan/10"
                   : hasNewHintAlert
-                    ? "border-warning/80 bg-surface/90 shadow-[0_0_18px_rgba(255,158,100,0.16)]"
+                    ? "border-warning/70 bg-surface"
                     : "border-border-subtle bg-surface/75 hover:border-border"
               )}
             >
               {/* Hàng trên: Bot Icon + Tiêu đề + Trạng thái Ready to help */}
               <div className="flex items-start justify-between gap-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-cyan/35 bg-cyan/12 text-cyan">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-cyan/35 bg-cyan/10 text-cyan">
                     <Bot className="size-3.5" />
                   </span>
                   <div className="min-w-0">
@@ -832,7 +832,7 @@ export function WorkspaceView({
                       <span
                         className={cn(
                           "size-1.5 shrink-0 rounded-full bg-success",
-                          hasNewHintAlert && "animate-ping bg-warning"
+                          hasNewHintAlert && "bg-warning"
                         )}
                       />
                       <span className={cn(hasNewHintAlert && "text-warning")}>
@@ -843,7 +843,7 @@ export function WorkspaceView({
                 </div>
 
                 {/* Badge số lượng Hint khả dụng */}
-                <span className="shrink-0 rounded-full border border-primary/35 bg-surface-secondary px-2 py-0.5 font-mono text-[9.5px] font-semibold text-cyan">
+                <span className="shrink-0 rounded-md border border-primary/30 bg-surface px-1.5 py-0.5 font-mono text-[10px] font-semibold text-cyan tabular-nums">
                   {hintsRemaining}/3
                 </span>
               </div>
@@ -861,10 +861,10 @@ export function WorkspaceView({
                   setActiveTool((prev) => (prev === "tutor" ? null : "tutor"))
                 }}
                 className={cn(
-                  "mt-2.5 inline-flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border text-[11px] font-bold transition-all",
+                  "mt-2.5 inline-flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border text-[11px] font-semibold transition-colors",
                   activeTool === "tutor"
                     ? "border-cyan bg-cyan text-surface-secondary"
-                    : "border-primary/45 bg-primary/20/55 text-text-primary hover:border-primary hover:bg-primary/20/85"
+                    : "border-border-subtle bg-surface text-text-primary hover:border-primary/60 hover:bg-surface-elevated"
                 )}
               >
                 <Sparkles className="size-3 text-cyan" />
@@ -874,7 +874,7 @@ export function WorkspaceView({
               </button>
             </div>
 
-            <div className="rounded-xl border border-border-subtle bg-surface-secondary p-1.5 text-center text-[10px] text-text-muted">
+            <div className="rounded-md border border-border-subtle bg-surface-secondary p-1.5 text-center text-[10px] text-text-muted">
               Click Task 1, 2, or 3 to switch stages.
             </div>
           </div>
@@ -882,7 +882,7 @@ export function WorkspaceView({
 
         {/* ==================== TRẠNG THÁI 1 & 2: THEORY HOẶC QUIZ (MỞ RỘNG TOÀN BỘ 10/12 CỘT CÒN LẠI) ==================== */}
         {activeMode !== "coding" ? (
-          <section className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-border-subtle bg-surface-secondary p-6 lg:col-span-10 custom-scrollbar transition-all duration-200 ease-out">
+          <section className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-xl border border-border-subtle bg-surface-secondary p-5 lg:col-span-10 custom-scrollbar transition-colors duration-150 ease-out">
             <div className="flex shrink-0 items-center justify-between border-b border-border-subtle pb-4">
               <div className="flex items-center gap-2.5">
                 <BookOpen className="size-4 text-cyan" />
@@ -1076,9 +1076,9 @@ export function WorkspaceView({
           /* ==================== TRẠNG THÁI 3: CODE WORKSPACE (MỞ RỘNG TOÀN BỘ 10/12 CỘT CÒN LẠI) ==================== */
           <section className="flex min-h-0 flex-col justify-between gap-3 lg:col-span-10">
             {/* 1. KHUNG TRÊN: MONACO CODE EDITOR */}
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border-subtle bg-surface-secondary">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-secondary">
               {/* Thanh Tab & Nút điều khiển Editor */}
-              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface px-3.5 py-2">
+              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface px-3 py-1.5">
                 <div className="flex items-center gap-2">
                   {/* Nút mở/thu gọn Problem Description Panel */}
                   <button
@@ -1088,9 +1088,9 @@ export function WorkspaceView({
                       setMobileTab("problem")
                     }}
                     className={cn(
-                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-semibold transition-all",
+                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-semibold transition-colors",
                       !isProblemCollapsed
-                        ? "border-cyan/50 bg-cyan/10 text-cyan shadow-[0_0_12px_rgba(125,207,255,0.18)]"
+                        ? "border-cyan/60 bg-cyan/10 text-cyan"
                         : "border-border-subtle bg-surface-secondary text-text-primary hover:border-cyan/60 hover:text-cyan"
                     )}
                     title={isProblemCollapsed ? "Expand Problem Description" : "Collapse Problem Description"}
@@ -1104,12 +1104,12 @@ export function WorkspaceView({
                   </button>
 
                   {/* Segmented Switch on smaller screens (< lg) */}
-                  <div className="inline-flex lg:hidden rounded-lg border border-border-subtle bg-surface-secondary p-0.5 text-[11px]">
+                  <div className="inline-flex lg:hidden rounded-md border border-border-subtle bg-surface-secondary p-0.5 text-[11px]">
                     <button
                       type="button"
                       onClick={() => setMobileTab("problem")}
                       className={cn(
-                        "rounded-md px-2 py-0.5 font-medium transition-colors",
+                        "rounded px-2 py-0.5 font-medium transition-colors",
                         mobileTab === "problem"
                           ? "bg-cyan/15 text-cyan font-bold"
                           : "text-text-muted hover:text-text-primary"
@@ -1121,7 +1121,7 @@ export function WorkspaceView({
                       type="button"
                       onClick={() => setMobileTab("code")}
                       className={cn(
-                        "rounded-md px-2 py-0.5 font-medium transition-colors",
+                        "rounded px-2 py-0.5 font-medium transition-colors",
                         mobileTab === "code"
                           ? "bg-primary/15 text-primary font-bold"
                           : "text-text-muted hover:text-text-primary"
@@ -1131,11 +1131,11 @@ export function WorkspaceView({
                     </button>
                   </div>
 
-                  <div className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-secondary px-3 py-1 text-xs font-medium text-text-primary">
+                  <div className="hidden sm:inline-flex items-center gap-2 rounded-md border border-border-subtle bg-surface-secondary px-2.5 py-1 text-xs font-medium text-text-primary">
                     <span className="font-mono text-[11px] font-bold text-cyan">
                       {taskDetail?.language || "C++"}
                     </span>
-                    <span>{taskDetail?.fileName || "solution.cpp"}</span>
+                    <span className="font-mono text-[11px]">{taskDetail?.fileName || "solution.cpp"}</span>
                     <X className="size-3 text-text-muted" />
                   </div>
                 </div>
@@ -1150,9 +1150,9 @@ export function WorkspaceView({
                       )
                     }
                     className={cn(
-                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-semibold transition-all",
+                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-semibold transition-colors",
                       activeTool === "visualization"
-                        ? "border-cyan bg-cyan/15 text-cyan shadow-[0_0_14px_rgba(125,207,255,0.22)]"
+                        ? "border-cyan/60 bg-cyan/10 text-cyan"
                         : "border-border-subtle bg-surface-secondary text-text-primary hover:border-cyan/60 hover:text-cyan"
                     )}
                   >
@@ -1162,7 +1162,7 @@ export function WorkspaceView({
 
                   <button
                     type="button"
-                    className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-border-subtle bg-surface-secondary px-2.5 font-mono text-[11px] text-text-primary"
+                    className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border-subtle bg-surface-secondary px-2.5 font-mono text-[11px] text-text-primary"
                   >
                     <span>{taskDetail?.language || "C++"}</span>
                     <ChevronDown className="size-3 text-text-muted" />
@@ -1172,15 +1172,9 @@ export function WorkspaceView({
                     type="button"
                     disabled={executionStatus === "running"}
                     onClick={handleRunCode}
-                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[11px] font-semibold text-text-primary transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[11px] font-semibold text-text-primary transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <Play
-                      className={`size-3 text-primary ${
-                        executionStatus === "running" && activeAction === "run"
-                          ? "animate-pulse"
-                          : ""
-                      }`}
-                    />
+                    <Play className="size-3 text-primary" />
                     <span>
                       {executionStatus === "running" && activeAction === "run"
                         ? "Running..."
@@ -1192,15 +1186,9 @@ export function WorkspaceView({
                     type="button"
                     disabled={executionStatus === "running"}
                     onClick={handleSubmitCode}
-                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[11px] font-bold text-surface-secondary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3.5 text-[11px] font-bold text-surface-secondary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <Send
-                      className={`size-3 ${
-                        executionStatus === "running" && activeAction === "submit"
-                          ? "animate-pulse"
-                          : ""
-                      }`}
-                    />
+                    <Send className="size-3" />
                     <span>
                       {executionStatus === "running" && activeAction === "submit"
                         ? "Submitting..."
@@ -1238,12 +1226,12 @@ export function WorkspaceView({
                 >
                   {/* Thanh chỉ báo mờ trỏ tới dòng code lỗi khi Run Code bị fail */}
                   {codeRunOutcome === "warning" && (
-                    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/35 bg-gradient-to-r from-danger/18 via-warning/10 to-transparent px-3.5 py-1.5 text-[11px]">
+                    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/30 bg-danger/10 px-3.5 py-1.5 text-[11px]">
                       <div className="flex min-w-0 items-center gap-2 text-warning">
-                        <span className="inline-flex items-center gap-1 rounded bg-danger/25 px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-primary">
+                        <span className="inline-flex items-center gap-1 rounded bg-danger/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-primary tabular-nums">
                           ↳ Line {socraticProfile.faultyLine.line}
                         </span>
-                        <span className="truncate font-mono text-[10.5px] text-text-primary/90">
+                        <span className="truncate font-mono text-[10.5px] text-text-primary">
                           {socraticProfile.faultyLine.codeToken}
                         </span>
                         <span className="hidden truncate text-warning/90 sm:inline">
@@ -1256,7 +1244,7 @@ export function WorkspaceView({
                         onClick={() =>
                           handleFocusFaultyLine(socraticProfile.faultyLine.line)
                         }
-                        className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-danger/50 bg-surface-secondary/85 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan transition-colors hover:border-cyan hover:text-text-primary"
+                        className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-danger/40 bg-surface px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan transition-colors hover:border-cyan hover:text-text-primary"
                       >
                         <Target className="size-3 text-danger" />
                         <span>
@@ -1330,7 +1318,7 @@ export function WorkspaceView({
       {activeMode === "coding" && activeTool === "visualization" && (
         <div
           className={cn(
-            "fixed top-[108px] right-6 z-50 flex flex-col rounded-2xl border border-border bg-surface-secondary/98 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.65)] backdrop-blur-xl transition-all duration-200 animate-in fade-in zoom-in-95",
+            "fixed top-[108px] right-6 z-50 flex flex-col rounded-xl border border-border-subtle bg-surface p-4 shadow-xl transition-all duration-150 animate-in fade-in zoom-in-95",
             isVisExpanded
               ? "w-[min(540px,calc(100vw-2rem))]"
               : "w-[min(450px,calc(100vw-2rem))]"

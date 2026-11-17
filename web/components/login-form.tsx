@@ -145,18 +145,9 @@ export function LoginForm({
       {...props}
     >
       {/* Hiệu ứng quầng sáng nền Tokyo Night */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[15%] left-[8%] h-[400px] w-[400px] rounded-full bg-primary/12 blur-[130px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute right-[10%] bottom-[12%] h-[420px] w-[420px] rounded-full bg-cyan/10 blur-[140px]"
-      />
-
       {/* ==================== KHUNG THẺ CHÍNH 2 CỘT CĂN GIỮA MÀN HÌNH ==================== */}
       <main className="relative z-10 mx-auto flex w-full max-w-[1100px] items-center justify-center">
-        <div className="grid w-full grid-cols-1 overflow-hidden rounded-2xl border border-border-subtle bg-surface/90 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md lg:grid-cols-12">
+        <div className="grid w-full grid-cols-1 overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-2xl lg:grid-cols-12">
           {/* -------------------- CỘT TRÁI: THƯƠNG HIỆU, THÔNG ĐIỆP & CÂY NHỊ PHÂN -------------------- */}
           <div className="flex flex-col justify-between border-b border-border-subtle bg-surface-secondary/45 p-6 sm:p-8 lg:col-span-6 lg:border-r lg:border-b-0 lg:px-10 lg:py-8">
             <div>
@@ -491,9 +482,9 @@ export function LoginForm({
                   aria-selected={activeTab === "login"}
                   onClick={() => handleTabSwitch("login")}
                   className={cn(
-                    "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
+                    "cursor-pointer rounded-md py-1.5 text-xs font-semibold transition-colors",
                     activeTab === "login"
-                      ? "bg-primary font-bold text-surface-secondary shadow-[0_0_20px_rgba(122,162,247,0.3)]"
+                      ? "bg-primary font-bold text-surface-secondary shadow-sm"
                       : "text-text-secondary hover:text-text-primary"
                   )}
                 >
@@ -505,9 +496,9 @@ export function LoginForm({
                   aria-selected={activeTab === "signup"}
                   onClick={() => handleTabSwitch("signup")}
                   className={cn(
-                    "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
+                    "cursor-pointer rounded-md py-1.5 text-xs font-semibold transition-colors",
                     activeTab === "signup"
-                      ? "bg-primary font-bold text-surface-secondary shadow-[0_0_20px_rgba(122,162,247,0.3)]"
+                      ? "bg-primary font-bold text-surface-secondary shadow-sm"
                       : "text-text-secondary hover:text-text-primary"
                   )}
                 >
@@ -715,7 +706,7 @@ export function LoginForm({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="mt-1 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-surface-secondary shadow-[0_0_25px_rgba(122,162,247,0.25)] transition-all hover:bg-primary-hover hover:shadow-[0_0_32px_rgba(122,162,247,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="mt-1 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-primary text-xs font-semibold text-surface-secondary shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isLoading && <Loader2 className="size-4 animate-spin" />}
                   <span>

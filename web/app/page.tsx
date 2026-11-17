@@ -234,19 +234,15 @@ export default function LandingPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary">
-      {/* Background Radial Glow */}
+      {/* 1. Architectural Background Grid with Subtle Radial Mask */}
       <div
+        className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_80%_70%_at_50%_40%,#000_60%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_80%_70%_at_50%_40%,#000_60%,transparent_100%)]"
         aria-hidden="true"
-        className="pointer-events-none absolute top-32 right-[-5%] h-[620px] w-[620px] rounded-full bg-primary/12 blur-[160px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[900px] left-[-8%] h-[580px] w-[580px] rounded-full bg-purple/10 blur-[160px]"
       />
 
-      {/* ==================== 1. STICKY FLOATING NAVBAR ==================== */}
-      <header className="sticky top-4 z-40 mx-auto w-full max-w-[1400px] px-4 shrink-0 transition-all sm:px-6 md:px-9">
-        <nav className="relative flex items-center justify-between rounded-xl border border-border-subtle bg-surface/95 px-5 py-2.5 shadow-xl backdrop-blur-md">
+      {/* ==================== 1. FULL-WIDTH EDGE-TO-EDGE HEADER ==================== */}
+      <header className="sticky top-0 z-50 w-full border-b border-border-subtle/80 bg-background/85 backdrop-blur-md">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
           {/* Logo & Slogan */}
           <div className="flex items-center">
             <Link
@@ -263,8 +259,8 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Centered Navbar Links: Fixed position in center */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-8 md:flex pointer-events-auto">
+          {/* Centered Navbar Links */}
+          <div className="hidden items-center gap-8 md:flex">
             <Link
               href={LANDING_LINKS.features}
               className="text-xs font-medium text-text-secondary transition-colors hover:text-text-primary"
@@ -280,7 +276,7 @@ export default function LandingPage() {
           </div>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <PwaInstallButton />
             <ThemeToggleButton />
             {isAuthenticated ? (
@@ -289,24 +285,24 @@ export default function LandingPage() {
               <>
                 <Link
                   href={LANDING_LINKS.login}
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-surface px-5 text-xs font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-elevated/60"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-surface px-4 text-xs font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-elevated"
                 >
                   Log In
                 </Link>
                 <Link
                   href={LANDING_LINKS.getStarted}
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-5 text-xs font-semibold text-white dark:text-[#15161E] transition-colors hover:bg-primary-hover"
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-xs font-semibold text-white dark:text-[#15161E] shadow-sm transition-colors hover:bg-primary-hover"
                 >
                   Get Started
                 </Link>
               </>
             )}
           </div>
-        </nav>
+        </div>
       </header>
 
       {/* ==================== 2. HERO SECTION (EXPANSIVE & SPACIOUS) ==================== */}
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-5.5rem)] w-full max-w-[1400px] flex-col justify-between px-5 pt-4 pb-6 md:px-9 lg:min-h-[calc(100vh-5.5rem)] lg:pt-6 lg:pb-8">
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col justify-between px-6 pt-6 pb-8">
         <div className="my-auto grid w-full grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-10 xl:gap-12">
         {/* LEFT COLUMN (6/12): Clear typography, relaxed spacing, balanced hierarchy */}
         <div className="flex flex-col justify-center lg:col-span-6">
@@ -317,18 +313,10 @@ export default function LandingPage() {
               <span>{BRAND.description}</span>
             </div>
 
-            {/* Headline */}
-            <h1 className="mt-5 text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl lg:text-[32px] xl:text-[38px] 2xl:text-[42px] leading-[1.18]">
-              <span className="block whitespace-nowrap">
-                <span className="text-cyan">Turn </span>
-                <span className="text-primary">Your Learning </span>
-                <span className="text-warning">Materials</span>
-              </span>
-              <span className="mt-1.5 block whitespace-nowrap">
-                <span className="text-cyan">Into </span>
-                <span className="text-primary">a Clear Path </span>
-                <span className="text-warning">Forward</span>
-              </span>
+            {/* Headline: Clean, unified typography with single accent */}
+            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl md:text-5xl lg:text-[42px] xl:text-[46px] leading-[1.15]">
+              Turn Your Learning Materials <br className="hidden sm:inline" />
+              Into <span className="text-primary">a Clear Path Forward.</span>
             </h1>
 
             {/* Description */}
@@ -342,14 +330,14 @@ export default function LandingPage() {
             <div className="flex flex-wrap items-center gap-3.5 sm:gap-4">
               <Link
                 href={LANDING_LINKS.exploreSkillTree}
-                className="inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-primary px-8 text-sm font-bold text-white dark:text-[#15161E] shadow-[0_0_30px_var(--color-primary-glow)] transition-all hover:bg-primary-hover hover:shadow-[0_0_40px_var(--color-primary-glow)] sm:text-base"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-semibold text-white dark:text-[#15161E] shadow-sm transition-colors hover:bg-primary-hover sm:text-base"
               >
                 <span>Explore Your Learning Path</span>
-                <ArrowRight className="size-4.5 stroke-[2.5]" />
+                <ArrowRight className="size-4 stroke-[2]" />
               </Link>
               <Link
                 href={LANDING_LINKS.howItWorks}
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-border bg-surface/80 px-6 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-elevated/60"
+                className="inline-flex h-11 items-center justify-center rounded-md border border-border-subtle bg-surface px-5 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-elevated"
               >
                 How It Works
               </Link>
@@ -414,13 +402,13 @@ export default function LandingPage() {
 
         {/* RIGHT COLUMN (6/12): Hero Interactive Learning Showcase */}
         <div className="relative select-none lg:col-span-6">
-          {/* Subtle Ambient Glow behind preview */}
+          {/* Subtle Ambient Depth Glow behind DAG mockup */}
           <div
+            className="pointer-events-none absolute -inset-6 -z-10 rounded-full bg-primary/[0.04] blur-[120px]"
             aria-hidden="true"
-            className="pointer-events-none absolute -inset-2 rounded-3xl bg-gradient-to-r from-primary/15 to-cyan/10 opacity-70 blur-2xl"
           />
 
-          <div className="relative rounded-3xl border border-border-subtle bg-surface/90 p-5 sm:p-6 lg:p-7 shadow-[0_24px_64px_var(--color-shadow)] backdrop-blur-md flex flex-col justify-between">
+          <div className="relative rounded-xl border border-border-subtle bg-surface p-5 sm:p-6 shadow-sm flex flex-col justify-between">
             {/* Top Bar of the Showcase Terminal */}
             <div className="flex items-center justify-between border-b border-border-subtle/80 pb-3">
               <div className="flex items-center gap-1.5">
@@ -433,73 +421,74 @@ export default function LandingPage() {
               </div>
 
               {/* Syllabus Pill */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-background px-3 py-1 text-[11px]">
+              <div className="inline-flex items-center gap-2 rounded-md border border-border-subtle bg-surface-secondary px-2.5 py-1 text-[11px]">
                 <span className="size-1.5 rounded-full bg-cyan" />
                 <span className="font-mono text-text-secondary">
                   CS101_Syllabus.pdf
                 </span>
                 <span className="text-border">→</span>
-                <span className="font-semibold text-primary">
+                <span className="font-semibold text-primary font-mono tabular-nums">
                   65% Mastered
                 </span>
               </div>
             </div>
 
-            {/* Skill Tree SVG - Spacious & Sharp */}
-            <div className="my-4 flex items-center justify-center">
+            {/* Skill Tree SVG Canvas with Architectural Dot Grid Background */}
+            <div className="relative my-3 flex items-center justify-center rounded-lg border border-border-subtle/70 bg-surface-secondary/40 bg-[radial-gradient(var(--dot-grid-color,rgba(255,255,255,0.08))_1px,transparent_1px)] [background-size:16px_16px] p-2.5 sm:p-3">
               <svg
-                viewBox="0 0 460 210"
+                viewBox="0 0 460 215"
                 className="h-[195px] w-full max-w-[520px] overflow-visible sm:h-[215px] xl:h-[235px]"
                 aria-label="DSA Skill Tree Roadmap"
               >
+                {/* Connecting Dependency Edges */}
                 {[
                   {
-                    x1: 255,
-                    y1: 28,
-                    r1: 20,
-                    x2: 155,
-                    y2: 100,
-                    r2: 19,
-                    color: "var(--color-primary)",
-                    dashed: false,
-                  },
-                  {
-                    x1: 255,
-                    y1: 28,
-                    r1: 20,
-                    x2: 355,
-                    y2: 100,
-                    r2: 19,
-                    color: "var(--color-primary)",
-                    dashed: false,
-                  },
-                  {
-                    x1: 155,
-                    y1: 100,
-                    r1: 19,
-                    x2: 95,
-                    y2: 172,
+                    x1: 230,
+                    y1: 32,
+                    r1: 18,
+                    x2: 130,
+                    y2: 102,
                     r2: 18,
+                    color: "var(--color-primary)",
+                    dashed: false,
+                  },
+                  {
+                    x1: 230,
+                    y1: 32,
+                    r1: 18,
+                    x2: 330,
+                    y2: 102,
+                    r2: 18,
+                    color: "var(--color-primary)",
+                    dashed: false,
+                  },
+                  {
+                    x1: 130,
+                    y1: 102,
+                    r1: 18,
+                    x2: 75,
+                    y2: 172,
+                    r2: 17,
                     color: "var(--color-border)",
                     dashed: true,
                   },
                   {
-                    x1: 355,
-                    y1: 100,
-                    r1: 19,
-                    x2: 285,
+                    x1: 330,
+                    y1: 102,
+                    r1: 18,
+                    x2: 230,
                     y2: 172,
-                    r2: 18,
+                    r2: 17,
                     color: "var(--color-warning)",
                     dashed: false,
                   },
                   {
-                    x1: 355,
-                    y1: 100,
-                    r1: 19,
-                    x2: 420,
+                    x1: 330,
+                    y1: 102,
+                    r1: 18,
+                    x2: 385,
                     y2: 172,
-                    r2: 18,
+                    r2: 17,
                     color: "var(--color-border)",
                     dashed: true,
                   },
@@ -524,129 +513,190 @@ export default function LandingPage() {
                   )
                 })}
 
+                {/* Structured Tech Nodes with Outer Ring & Status Badges */}
                 {[
                   {
-                    code: "✓",
+                    code: "01",
                     label: "Arrays & Big-O",
-                    x: 255,
-                    y: 28,
-                    r: 20,
-                    border: "var(--color-cyan)",
-                    textColor: "var(--color-text-primary)",
-                    codeColor: "var(--color-cyan)",
-                    labelSide: "right" as const,
+                    status: "DONE",
+                    x: 230,
+                    y: 32,
+                    r: 18,
+                    border: "var(--color-success)",
+                    codeColor: "var(--color-success)",
+                    badgeColor: "var(--color-success)",
+                    badgeBg: "rgba(16, 185, 129, 0.14)",
+                    badgeBorder: "rgba(16, 185, 129, 0.35)",
+                    badgeX: 256,
+                    badgeY: 28,
+                    badgeW: 36,
+                    labelX: 256,
+                    labelY: 21,
+                    labelAnchor: "start" as const,
                   },
                   {
-                    code: "✓",
+                    code: "02",
                     label: "Linked Lists",
-                    x: 155,
-                    y: 100,
-                    r: 19,
-                    border: "var(--color-primary)",
-                    textColor: "var(--color-text-primary)",
-                    codeColor: "var(--color-primary)",
-                    labelSide: "left" as const,
+                    status: "DONE",
+                    x: 130,
+                    y: 102,
+                    r: 18,
+                    border: "var(--color-success)",
+                    codeColor: "var(--color-success)",
+                    badgeColor: "var(--color-success)",
+                    badgeBg: "rgba(16, 185, 129, 0.14)",
+                    badgeBorder: "rgba(16, 185, 129, 0.35)",
+                    badgeX: 50,
+                    badgeY: 98,
+                    badgeW: 36,
+                    labelX: 104,
+                    labelY: 92,
+                    labelAnchor: "end" as const,
                   },
                   {
                     code: "03",
                     label: "Trees & Recursion",
-                    x: 355,
-                    y: 100,
-                    r: 19,
+                    status: "ACTIVE",
+                    x: 330,
+                    y: 102,
+                    r: 18,
                     border: "var(--color-primary)",
-                    textColor: "var(--color-text-primary)",
-                    codeColor: "var(--color-cyan)",
-                    labelSide: "bottom" as const,
+                    codeColor: "var(--color-primary)",
+                    badgeColor: "var(--color-primary)",
+                    badgeBg: "rgba(129, 140, 248, 0.14)",
+                    badgeBorder: "rgba(129, 140, 248, 0.35)",
+                    badgeX: 356,
+                    badgeY: 98,
+                    badgeW: 42,
+                    labelX: 356,
+                    labelY: 92,
+                    labelAnchor: "start" as const,
                   },
                   {
                     code: "04",
                     label: "Hash Tables",
-                    x: 95,
+                    status: "LOCKED",
+                    x: 75,
                     y: 172,
-                    r: 18,
+                    r: 17,
                     border: "var(--color-border)",
-                    textColor: "var(--color-text-muted)",
                     codeColor: "var(--color-text-muted)",
-                    labelSide: "bottom" as const,
+                    badgeColor: "var(--color-text-muted)",
+                    badgeBg: "var(--color-surface)",
+                    badgeBorder: "var(--color-border-subtle)",
+                    badgeX: 55,
+                    badgeY: 201,
+                    badgeW: 40,
+                    labelX: 75,
+                    labelY: 198,
+                    labelAnchor: "middle" as const,
                   },
                   {
-                    code: "BST",
+                    code: "05",
                     label: "Binary Search Tree",
-                    x: 285,
+                    status: "ACTIVE",
+                    x: 230,
                     y: 172,
-                    r: 18,
+                    r: 17,
                     border: "var(--color-warning)",
-                    textColor: "var(--color-warning)",
                     codeColor: "var(--color-warning)",
-                    labelSide: "bottom" as const,
+                    badgeColor: "var(--color-warning)",
+                    badgeBg: "rgba(245, 158, 11, 0.14)",
+                    badgeBorder: "rgba(245, 158, 11, 0.35)",
+                    badgeX: 209,
+                    badgeY: 201,
+                    badgeW: 42,
+                    labelX: 230,
+                    labelY: 198,
+                    labelAnchor: "middle" as const,
                   },
                   {
                     code: "06",
                     label: "Heaps & PQ",
-                    x: 420,
+                    status: "LOCKED",
+                    x: 385,
                     y: 172,
-                    r: 18,
+                    r: 17,
                     border: "var(--color-border)",
-                    textColor: "var(--color-text-muted)",
                     codeColor: "var(--color-text-muted)",
-                    labelSide: "bottom" as const,
+                    badgeColor: "var(--color-text-muted)",
+                    badgeBg: "var(--color-surface)",
+                    badgeBorder: "var(--color-border-subtle)",
+                    badgeX: 365,
+                    badgeY: 201,
+                    badgeW: 40,
+                    labelX: 385,
+                    labelY: 198,
+                    labelAnchor: "middle" as const,
                   },
                 ].map((node) => (
-                  <g
-                    key={node.label}
-                    transform={`translate(${node.x}, ${node.y})`}
-                  >
+                  <g key={node.label}>
+                    {/* Outer Ring */}
                     <circle
+                      cx={node.x}
+                      cy={node.y}
+                      r={node.r + 4}
+                      fill="var(--color-surface-elevated)"
+                      opacity="0.85"
+                    />
+
+                    {/* Main Node Body */}
+                    <circle
+                      cx={node.x}
+                      cy={node.y}
                       r={node.r}
                       fill="var(--color-surface)"
                       stroke={node.border}
                       strokeWidth="2"
                     />
+
+                    {/* Code Identifier */}
                     <text
-                      y="4"
+                      x={node.x}
+                      y={node.y + 3.5}
                       textAnchor="middle"
                       fill={node.codeColor}
-                      fontSize="10.5"
+                      fontSize="10"
                       fontWeight="700"
-                      className="font-mono"
+                      className="font-mono tabular-nums"
                     >
                       {node.code}
                     </text>
-                    {node.labelSide === "right" && (
-                      <text
-                        x={node.r + 8}
-                        y="4"
-                        textAnchor="start"
-                        fill={node.textColor}
-                        fontSize="11"
-                        fontWeight="600"
-                      >
-                        {node.label}
-                      </text>
-                    )}
-                    {node.labelSide === "left" && (
-                      <text
-                        x={-(node.r + 8)}
-                        y="4"
-                        textAnchor="end"
-                        fill={node.textColor}
-                        fontSize="11"
-                        fontWeight="600"
-                      >
-                        {node.label}
-                      </text>
-                    )}
-                    {node.labelSide === "bottom" && (
-                      <text
-                        y={node.r + 14}
-                        textAnchor="middle"
-                        fill={node.textColor}
-                        fontSize="10.5"
-                        fontWeight="600"
-                      >
-                        {node.label}
-                      </text>
-                    )}
+
+                    {/* Node Label */}
+                    <text
+                      x={node.labelX}
+                      y={node.labelY}
+                      textAnchor={node.labelAnchor}
+                      fill={node.status === "LOCKED" ? "var(--color-text-muted)" : "var(--color-text-primary)"}
+                      fontSize="10.5"
+                      fontWeight="600"
+                    >
+                      {node.label}
+                    </text>
+
+                    {/* Compact Tech Status Badge */}
+                    <rect
+                      x={node.badgeX}
+                      y={node.badgeY}
+                      width={node.badgeW}
+                      height="12"
+                      rx="3"
+                      fill={node.badgeBg}
+                      stroke={node.badgeBorder}
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={node.badgeX + node.badgeW / 2}
+                      y={node.badgeY + 8.5}
+                      textAnchor="middle"
+                      fill={node.badgeColor}
+                      fontSize="7.5"
+                      fontWeight="700"
+                      className="font-mono tracking-wider"
+                    >
+                      {node.status}
+                    </text>
                   </g>
                 ))}
               </svg>
@@ -719,26 +769,60 @@ export default function LandingPage() {
         </div>
       </div>
 
-        {/* Scroll cue smoothly bridging Hero to Features */}
-        <div className="flex justify-center pt-4 pb-2">
-          <a
-            href={LANDING_LINKS.features}
-            className="group inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface/60 px-4 py-1.5 text-xs text-text-muted backdrop-blur-sm transition-all hover:border-primary/50 hover:text-text-primary"
-          >
-            <span className="font-mono text-[11px] tracking-wider uppercase">Scroll to explore</span>
-            <ArrowRight className="size-3.5 rotate-90 text-primary transition-transform group-hover:translate-y-0.5" />
-          </a>
+        {/* ==================== 5. STRUCTURAL TECHNICAL METRICS STRIP ==================== */}
+        <div className="mt-10 w-full border-t border-border-subtle/80 pt-6 pb-2">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
+                <GitBranch className="size-4.5" />
+              </div>
+              <div className="leading-tight">
+                <p className="font-mono text-sm font-bold text-text-primary tabular-nums">10 Core DSA Modules</p>
+                <p className="text-[11px] text-text-muted">Structured Topic Graph</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 sm:border-l sm:border-border-subtle/60 sm:pl-6">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-cyan/30 bg-cyan/10 text-cyan">
+                <Code2 className="size-4.5" />
+              </div>
+              <div className="leading-tight">
+                <p className="font-mono text-sm font-bold text-text-primary tabular-nums">30 Interactive Tasks</p>
+                <p className="text-[11px] text-text-muted">Theory, Quiz &amp; Code</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 border-t border-border-subtle/60 pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-purple/30 bg-purple/10 text-purple">
+                <Shield className="size-4.5" />
+              </div>
+              <div className="leading-tight">
+                <p className="font-mono text-sm font-bold text-text-primary">RAG Syllabus Grounding</p>
+                <p className="text-[11px] text-text-muted">Context-Aware Alignment</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 border-t border-border-subtle/60 pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-warning/30 bg-warning/10 text-warning">
+                <BrainCircuit className="size-4.5" />
+              </div>
+              <div className="leading-tight">
+                <p className="font-mono text-sm font-bold text-text-primary">3-Tier Socratic Guardrails</p>
+                <p className="text-[11px] text-text-muted">Zero Spoiler Guidance</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ==================== 3. SECTION 1 – FEATURES ==================== */}
       <section
         id="features"
-        className="relative z-10 mx-auto w-full max-w-[1340px] scroll-mt-24 px-5 pt-10 pb-16 md:px-9 lg:pt-14 lg:pb-20"
+        className="relative z-10 mx-auto w-full max-w-7xl scroll-mt-24 px-6 pt-10 pb-16 lg:pt-14 lg:pb-20"
       >
         {/* Section Heading */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-surface px-4 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-primary">
+          <div className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-surface px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-primary">
             <span>WHY OFFBYONE</span>
           </div>
 
@@ -759,15 +843,15 @@ export default function LandingPage() {
             return (
               <div
                 key={card.id}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border-subtle bg-surface/90 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-surface hover:shadow-[0_12px_36px_rgba(0,0,0,0.35)]"
+                className="group relative flex flex-col justify-between rounded-xl border border-border-subtle bg-surface p-5 shadow-sm transition-colors duration-150 hover:border-border hover:bg-surface-elevated"
               >
                 <div>
                   {/* Top Bar: Icon + Step Index */}
                   <div className="flex items-center justify-between">
                     <div
-                      className={`flex size-12 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-105 ${card.iconBg}`}
+                      className={`flex size-10 items-center justify-center rounded-lg border ${card.iconBg}`}
                     >
-                      <Icon className={`size-6 ${card.iconColor}`} />
+                      <Icon className={`size-5 ${card.iconColor}`} />
                     </div>
                     <span className="font-mono text-xs font-semibold text-text-muted">
                       FEATURE {card.id}
@@ -775,7 +859,7 @@ export default function LandingPage() {
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className="mt-5 text-base font-bold text-text-primary transition-colors group-hover:text-cyan sm:text-lg">
+                  <h3 className="mt-4 text-base font-bold text-text-primary transition-colors group-hover:text-cyan sm:text-lg">
                     {card.title}
                   </h3>
                   <p className="mt-2.5 text-xs leading-relaxed text-text-secondary sm:text-sm">
@@ -817,7 +901,7 @@ export default function LandingPage() {
       {/* ==================== 4. SECTION 2 – HOW IT WORKS ==================== */}
       <section
         id="how-it-works"
-        className="relative z-10 mx-auto w-full max-w-[1340px] scroll-mt-24 px-5 py-14 md:px-9 lg:py-20"
+        className="relative z-10 mx-auto w-full max-w-7xl scroll-mt-24 px-6 py-14 lg:py-20"
       >
         {/* Section Heading */}
         <div className="text-center">
@@ -849,15 +933,15 @@ export default function LandingPage() {
               return (
                 <div
                   key={step.step}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-border-subtle bg-surface/85 p-5 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-surface"
+                  className="group relative flex flex-col justify-between rounded-xl border border-border-subtle bg-surface p-4 shadow-sm transition-colors duration-150 hover:border-border hover:bg-surface-elevated"
                 >
                   <div>
                     {/* Step Number + Icon Header */}
                     <div className="relative z-10 mb-4 flex items-center justify-between">
                       <div
-                        className={`flex size-10 items-center justify-center rounded-xl border font-mono text-xs font-bold transition-transform group-hover:scale-105 ${step.badgeColor}`}
+                        className={`flex size-9 items-center justify-center rounded-lg border font-mono text-xs font-bold ${step.badgeColor}`}
                       >
-                        <StepIcon className="size-5" />
+                        <StepIcon className="size-4" />
                       </div>
                       <span className="font-mono text-xs font-extrabold tracking-wider text-text-muted">
                         STEP {step.step}
@@ -885,18 +969,12 @@ export default function LandingPage() {
       </section>
 
       {/* ==================== 5. FINAL CALL TO ACTION (CTA) ==================== */}
-      <section className="relative z-10 mx-auto w-full max-w-[1340px] px-5 py-12 md:px-9 lg:py-16">
-        <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-b from-surface to-background p-8 text-center shadow-[0_20px_50px_var(--color-shadow)] sm:p-12 lg:p-16">
-          {/* Subtle Ambient Glow */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-24 left-1/2 h-56 w-96 -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]"
-          />
-
+      <section className="relative z-10 mx-auto w-full max-w-7xl px-6 py-12 lg:py-16">
+        <div className="relative overflow-hidden rounded-xl border border-border-subtle bg-surface p-8 text-center shadow-sm sm:p-12">
           <div className="relative z-10 mx-auto max-w-2xl">
             {/* Sparkle Icon */}
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-primary/35 bg-primary/12 text-cyan">
-              <Sparkles className="size-5" />
+            <div className="mx-auto mb-4 flex size-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-cyan">
+              <Sparkles className="size-4" />
             </div>
 
             {/* CTA Heading */}
@@ -905,7 +983,7 @@ export default function LandingPage() {
             </h2>
 
             {/* CTA Description */}
-            <p className="mt-3.5 text-xs leading-relaxed text-text-secondary sm:text-sm">
+            <p className="mt-3 text-xs leading-relaxed text-text-secondary sm:text-sm">
               Start your learning journey with a smarter, more structured approach.
             </p>
 
@@ -913,15 +991,15 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
                 href={LANDING_LINKS.getStarted}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-8 text-sm font-bold text-white dark:text-[#15161E] shadow-[0_0_30px_var(--color-primary-glow)] transition-all hover:bg-primary-hover hover:shadow-[0_0_36px_var(--color-primary-glow)]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-semibold text-white dark:text-[#15161E] shadow-sm transition-colors hover:bg-primary-hover"
               >
                 <span>Get Started</span>
-                <ArrowRight className="size-4 stroke-[2.5]" />
+                <ArrowRight className="size-4 stroke-[2]" />
               </Link>
 
               <Link
                 href={LANDING_LINKS.exploreSkillTree}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-elevated/60"
+                className="inline-flex h-11 items-center justify-center rounded-md border border-border-subtle bg-surface px-6 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-elevated"
               >
                 Explore Your Learning Path
               </Link>
@@ -931,8 +1009,8 @@ export default function LandingPage() {
       </section>
 
       {/* ==================== 6. CHÂN TRANG (FOOTER) ==================== */}
-      <footer className="relative z-10 border-t border-border-subtle/80 bg-background px-5 pt-10 pb-8 md:px-9">
-        <div className="mx-auto flex w-full max-w-[1340px] flex-col gap-8">
+      <footer className="relative z-10 border-t border-border-subtle/80 bg-background px-6 pt-10 pb-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
           {/* Top Row: Brand & Quick Navigation */}
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             {/* Brand Logo & Slogan */}

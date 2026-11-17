@@ -51,7 +51,7 @@ export function CodeAnalysisPanel({
     <div
       aria-label="Code Analysis & Test Results"
       className={cn(
-        "shrink-0 rounded-2xl border border-border-subtle bg-surface-secondary p-3.5 transition-all select-text",
+        "shrink-0 rounded-xl border border-border-subtle bg-surface-secondary p-4 transition-colors select-text",
         className
       )}
     >
@@ -75,14 +75,14 @@ export function CodeAnalysisPanel({
 
         <div className="flex items-center gap-2">
           {isRunning ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan/40 bg-cyan/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-cyan animate-pulse">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan/40 bg-cyan/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan">
               <Loader2 className="size-3 animate-spin text-cyan" />
               {activeAction === "submit"
                 ? "Submitting & evaluating test suite..."
                 : "Compiling & executing test cases..."}
             </span>
           ) : executionResult ? (
-            <div className="flex items-center gap-2 font-mono text-[10px]">
+            <div className="flex items-center gap-2 font-mono text-[10px] tabular-nums">
               {executionResult.status === "success" ? (
                 <span className="text-success font-semibold">
                   {executionResult.action === "submit" ? "Accepted" : "Passed"}
@@ -106,7 +106,7 @@ export function CodeAnalysisPanel({
               )}
             </div>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface px-2.5 py-0.5 font-mono text-[10px] text-text-muted">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface px-2 py-0.5 font-mono text-[10px] text-text-muted">
               <span className="size-1.5 rounded-full bg-cyan/60" />
               Ready to execute
             </span>
@@ -215,15 +215,14 @@ export function CodeAnalysisPanel({
         {isRunning && (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {/* Card 1: Complexity Estimation (Analyzing...) */}
-            <div className="flex min-h-[148px] flex-col justify-between rounded-xl border border-cyan/40 bg-surface/80 p-3 shadow-[0_0_20px_rgba(125,207,255,0.06)]">
+            <div className="flex min-h-[148px] flex-col justify-between rounded-lg border border-cyan/30 bg-surface p-3">
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
-                    <BarChart2 className="size-3.5 animate-pulse text-cyan" />
+                    <BarChart2 className="size-3.5 text-cyan" />
                     <span>Complexity Estimation</span>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan/40 bg-cyan/15 px-2 py-0.5 text-[10px] font-semibold text-cyan">
-                    <span className="size-1.5 rounded-full bg-cyan animate-ping" />
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan/40 bg-cyan/15 px-2 py-0.5 text-[10px] font-semibold text-cyan">
                     Analyzing...
                   </span>
                 </div>
@@ -231,30 +230,30 @@ export function CodeAnalysisPanel({
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-text-secondary">Time Complexity</span>
-                    <div className="h-3 w-16 rounded bg-cyan/20 animate-pulse" />
+                    <div className="h-3 w-16 rounded bg-cyan/20" />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-text-secondary">Space Complexity</span>
-                    <div className="h-3 w-14 rounded bg-cyan/20 animate-pulse" />
+                    <div className="h-3 w-14 rounded bg-cyan/20" />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-cyan/30 bg-cyan/10 px-2.5 py-1.5 text-[11px] text-cyan">
+              <div className="mt-2.5 flex items-center gap-2 rounded-md border border-cyan/30 bg-cyan/10 px-2.5 py-1.5 text-[11px] text-cyan">
                 <Sparkles className="size-3.5 shrink-0 animate-spin text-cyan" />
                 <span className="truncate">Parsing AST &amp; calculating asymptotic bounds...</span>
               </div>
             </div>
 
             {/* Card 2: Test Suite Verification (Executing...) */}
-            <div className="flex min-h-[148px] flex-col justify-between rounded-xl border border-primary/40 bg-surface/80 p-3 shadow-[0_0_20px_rgba(255,158,100,0.06)]">
+            <div className="flex min-h-[148px] flex-col justify-between rounded-lg border border-primary/30 bg-surface p-3">
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-text-primary">
-                    <Terminal className="size-3.5 animate-pulse text-primary" />
+                    <Terminal className="size-3.5 text-primary" />
                     <span>Test Suite Verification</span>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
                     <Loader2 className="size-2.5 animate-spin" />
                     {activeAction === "submit" ? "Grading Suite..." : "Executing Tests..."}
                   </span>
@@ -265,7 +264,7 @@ export function CodeAnalysisPanel({
                     <Check className="size-3" />
                     <span>Compiling with g++ (C++17, -O2)...</span>
                   </div>
-                  <div className="flex items-center gap-2 text-cyan animate-pulse">
+                  <div className="flex items-center gap-2 text-cyan">
                     <span className="size-1.5 rounded-full bg-cyan" />
                     <span className="truncate">
                       {activeAction === "submit"
@@ -282,7 +281,7 @@ export function CodeAnalysisPanel({
                   <span className="text-primary font-bold">In progress...</span>
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-secondary">
-                  <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-cyan via-primary to-cyan animate-pulse" />
+                  <div className="h-full w-3/4 rounded-full bg-primary" />
                 </div>
               </div>
             </div>

@@ -72,7 +72,7 @@ export function PwaInstallButton({
           // Tokyo Night themed styling
           isInstalled
             ? "border border-success/40 bg-success/10 text-xs text-success hover:bg-success/20 hover:border-success"
-            : "border border-primary/40 bg-background text-xs text-text-primary shadow-[0_0_15px_var(--color-primary-glow)] hover:border-primary hover:bg-primary/12 hover:text-cyan",
+            : "border border-border-subtle bg-surface text-xs text-text-primary hover:border-primary/60 hover:text-cyan shadow-sm",
           className
         )}
         {...props}
@@ -83,11 +83,10 @@ export function PwaInstallButton({
             <Check className="size-4 text-success shrink-0" />
           ) : (
             <div className="relative flex items-center justify-center">
-              <Download className="size-4 text-cyan transition-transform duration-200 group-hover:-translate-y-0.5 shrink-0" />
+              <Download className="size-4 text-cyan shrink-0" />
               {/* Chấm tín hiệu tinh tế khi sẵn sàng cài đặt PWA */}
               {isInstallable && (
                 <span className="absolute -top-1 -right-1 flex size-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan opacity-75" />
                   <span className="relative inline-flex size-2 rounded-full bg-primary" />
                 </span>
               )}
@@ -106,10 +105,10 @@ export function PwaInstallButton({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-overlay transition-opacity"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay transition-opacity"
         >
           <div
-            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border-subtle bg-surface-elevated p-6 shadow-2xl"
+            className="relative w-full max-w-md overflow-hidden rounded-xl border border-border-subtle bg-surface p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Background Glow */}
