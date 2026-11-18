@@ -488,9 +488,22 @@ export default function RoadmapPage() {
               </svg>
             )}
 
-            {/* HỘP THÔNG BÁO TRUNG TÂM KHI CHƯA CÓ PDF (EMPTY) */}
-            {flowState === "empty" && (
+            {/* HỘP THÔNG BÁO TRUNG TÂM KHI ĐANG LOAD PROGRESS HOẶC CHƯA CÓ PDF */}
+            {!isProgressLoaded && (
               <div className="absolute top-1/2 left-1/2 z-20 w-[90%] max-w-[400px] -translate-x-1/2 -translate-y-1/2">
+                <div className="flex flex-col items-center rounded-2xl border border-border-subtle bg-surface/95 px-7 py-7 text-center shadow-2xl animate-pulse">
+                  <div className="flex size-12 items-center justify-center rounded-xl bg-primary/15 text-cyan">
+                    <Sparkles className="size-6 animate-spin text-cyan" />
+                  </div>
+                  <div className="mt-4 h-4 w-44 rounded-md bg-border-subtle/80" />
+                  <div className="mt-2.5 h-3 w-60 rounded-md bg-border-subtle/50" />
+                  <div className="mt-1.5 h-3 w-36 rounded-md bg-border-subtle/30" />
+                </div>
+              </div>
+            )}
+
+            {isProgressLoaded && flowState === "empty" && (
+              <div className="absolute top-1/2 left-1/2 z-20 w-[90%] max-w-[400px] -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ease-out">
                 <div className="flex flex-col items-center rounded-2xl border-2 border-dashed border-border-subtle bg-surface/95 px-7 py-7 text-center shadow-2xl">
                   <div className="flex size-12 items-center justify-center rounded-xl bg-cyan/10 text-cyan">
                     <FileCode2 className="size-7" />
@@ -714,7 +727,17 @@ export default function RoadmapPage() {
             </div>
 
             <div className="mt-4">
-              {flowState === "empty" && (
+              {!isProgressLoaded && (
+                <div className="flex items-center gap-3.5 rounded-xl border border-border-subtle bg-surface p-4 animate-pulse">
+                  <div className="size-10 shrink-0 rounded-lg bg-border-subtle/60" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-32 rounded bg-border-subtle/60" />
+                    <div className="h-3 w-44 rounded bg-border-subtle/40" />
+                  </div>
+                </div>
+              )}
+
+              {isProgressLoaded && flowState === "empty" && (
                 <div className="flex items-center gap-3.5 rounded-xl border border-border-subtle bg-surface p-4">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-secondary text-text-muted">
                     <FileText className="size-5" />

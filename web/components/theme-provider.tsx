@@ -20,6 +20,18 @@ function ThemeSync() {
     const currentTheme = isLight ? themeConfig.light : themeConfig.dark
     const root = document.documentElement
 
+    // Ensure data-theme is synchronized on <html>
+    root.setAttribute("data-theme", isLight ? "light" : "dark")
+
+    // Ensure classList dark/light is synchronized for Tailwind & shadcn
+    if (isLight) {
+      root.classList.remove("dark")
+      root.classList.add("light")
+    } else {
+      root.classList.add("dark")
+      root.classList.remove("light")
+    }
+
     // Set all top-level semantic tokens (--color-background, --color-surface, etc.)
     Object.entries(currentTheme).forEach(([token, value]) => {
       if (typeof value === "string") {
@@ -98,9 +110,10 @@ function ThemeProvider({
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NextThemesProvider
-          attribute="class"
+          attribute="data-theme"
           defaultTheme="dark"
-          enableSystem
+          enableSystem={false}
+          storageKey="offbyone_theme"
           disableTransitionOnChange
           {...props}
         >

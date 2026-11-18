@@ -398,7 +398,7 @@ export function CodeAnalysisPanel({
                   )}
                 </button>
                 {showStdout && (
-                  <pre className="p-3 font-mono text-[11px] text-text-secondary bg-background overflow-x-auto whitespace-pre-wrap border-t border-border-subtle">
+                  <pre className="p-3 font-mono text-[11px] text-text-secondary bg-background max-h-48 overflow-y-auto overflow-x-auto whitespace-pre-wrap border-t border-border-subtle custom-scrollbar">
                     {executionResult.stdout}
                   </pre>
                 )}
@@ -407,8 +407,8 @@ export function CodeAnalysisPanel({
           </div>
         )}
 
-        {/* ==================== STATE D: FAILED ==================== */}
-        {!isRunning && !isIdle && executionResult?.status === "failed" && (
+        {/* ==================== STATE D: FAILED / RUNTIME / COMPILATION ERROR ==================== */}
+        {!isRunning && !isIdle && executionResult && executionResult.status !== "success" && (
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {/* Card 1: Error Diagnostic */}
@@ -426,7 +426,7 @@ export function CodeAnalysisPanel({
 
                   <div className="mt-2 text-[11px] leading-relaxed text-text-secondary">
                     <div className="font-medium text-text-primary">
-                      {executionResult.errorTitle}
+                      {executionResult.errorTitle || "Tests or compilation encountered an issue"}
                     </div>
                     {executionResult.errorMessage && (
                       <div className="mt-0.5 text-text-secondary">
@@ -477,9 +477,10 @@ export function CodeAnalysisPanel({
                   </div>
 
                   {(() => {
+                    const testCases = executionResult.testCases || []
                     const failedCase =
-                      executionResult.testCases.find((tc) => !tc.passed) ||
-                      executionResult.testCases[0]
+                      testCases.find((tc) => !tc.passed) ||
+                      testCases[0]
 
                     if (!failedCase) {
                       return (
@@ -490,7 +491,7 @@ export function CodeAnalysisPanel({
                     }
 
                     return (
-                      <div className="mt-2 space-y-1.5">
+                      <div className="mt-2 space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
                         <div className="text-[10.5px] font-sans font-medium text-text-muted">
                           {failedCase.label}
                         </div>
@@ -536,7 +537,7 @@ export function CodeAnalysisPanel({
                   )}
                 </button>
                 {showStdout && (
-                  <pre className="p-3 font-mono text-[11px] text-danger/90 bg-background overflow-x-auto whitespace-pre-wrap border-t border-border-subtle">
+                  <pre className="p-3 font-mono text-[11px] text-danger/90 bg-background max-h-48 overflow-y-auto overflow-x-auto whitespace-pre-wrap border-t border-border-subtle custom-scrollbar">
                     {executionResult.stdout}
                   </pre>
                 )}

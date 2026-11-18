@@ -204,6 +204,7 @@ export function saveQuizProgress(user, taskId, quizState) {
  */
 export function saveCodeProgress(user, taskId, codeState) {
   if (!taskId) return getUserProgress(user)
+
   return updateUserProgress(user, (prev) => ({
     ...prev,
     codeDrafts: {
@@ -242,6 +243,7 @@ export function saveHintsProgress(user, taskId, remaining) {
  */
 export function markTaskAsCompleted(user, taskId) {
   if (!taskId) return getUserProgress(user)
+
   return updateUserProgress(user, (prev) => ({
     ...prev,
     completedTasks: {

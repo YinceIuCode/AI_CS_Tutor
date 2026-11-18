@@ -117,28 +117,44 @@ export function ProblemDescriptionPanel({
     }, 1800)
   }
 
-  // Fallback if problem data is still loading
+  // Fallback / Skeleton if problem data is still loading
   if (!problem) {
     return (
-      <div
+      <aside
+        aria-label="Loading Problem Description"
         className={cn(
-          "flex h-full flex-col items-center justify-center p-6 text-center text-text-muted",
+          "flex h-full flex-col overflow-hidden bg-surface-secondary select-none animate-pulse",
           className
         )}
       >
-        <BookOpen className="size-8 text-cyan/50 animate-pulse mb-3" />
-        <p className="text-xs font-medium">Loading problem description...</p>
-      </div>
+        <div className="flex shrink-0 items-center justify-between border-b border-border-subtle bg-surface px-4 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="size-6 rounded-md bg-border-subtle/60" />
+            <div className="h-4 w-24 rounded bg-border-subtle/60" />
+            <div className="h-4 w-12 rounded-full bg-border-subtle/40" />
+          </div>
+        </div>
+        <div className="flex-1 space-y-4 p-4">
+          <div className="h-6 w-3/4 rounded bg-border-subtle/60" />
+          <div className="space-y-2">
+            <div className="h-3.5 w-full rounded bg-border-subtle/40" />
+            <div className="h-3.5 w-5/6 rounded bg-border-subtle/40" />
+            <div className="h-3.5 w-4/6 rounded bg-border-subtle/40" />
+          </div>
+          <div className="h-24 w-full rounded-xl border border-border-subtle/50 bg-surface/50" />
+          <div className="h-32 w-full rounded-xl border border-border-subtle/50 bg-surface/50" />
+        </div>
+      </aside>
     )
   }
 
-  const badge = getDifficultyBadge(problem.difficulty)
+  const badge = getDifficultyBadge(problem.difficulty || "Medium")
 
   return (
     <aside
       aria-label="Problem Description"
       className={cn(
-        "flex h-full flex-col overflow-hidden bg-surface-secondary select-text",
+        "flex h-full flex-col overflow-hidden bg-surface-secondary select-text transition-all duration-200 ease-out",
         className
       )}
     >
@@ -186,32 +202,40 @@ export function ProblemDescriptionPanel({
 
         {/* Description Body */}
         <div className="space-y-2.5">
-          {problem.description.split("\n\n").map((para, i) => (
-            <p key={i} className="text-text-secondary leading-relaxed">
-              {renderFormattedInlineText(para)}
-            </p>
-          ))}
+          {(problem.description || "No description provided.")
+            .split("\n\n")
+            .map((para, i) => (
+              <p key={i} className="text-text-secondary leading-relaxed">
+                {renderFormattedInlineText(para)}
+              </p>
+            ))}
         </div>
 
         {/* Input & Output Format */}
-        <div className="space-y-2.5 rounded-xl border border-border-subtle bg-surface/60 p-3.5">
-          <div>
-            <span className="font-semibold text-text-primary text-[11px] uppercase tracking-wider block mb-1">
-              Input Format
-            </span>
-            <div className="text-text-secondary leading-relaxed text-[12px]">
-              {renderFormattedInlineText(problem.inputFormat)}
-            </div>
+        {(problem.inputFormat || problem.outputFormat) && (
+          <div className="space-y-2.5 rounded-xl border border-border-subtle bg-surface/60 p-3.5">
+            {problem.inputFormat && (
+              <div>
+                <span className="font-semibold text-text-primary text-[11px] uppercase tracking-wider block mb-1">
+                  Input Format
+                </span>
+                <div className="text-text-secondary leading-relaxed text-[12px]">
+                  {renderFormattedInlineText(problem.inputFormat)}
+                </div>
+              </div>
+            )}
+            {problem.outputFormat && (
+              <div className={cn(problem.inputFormat && "border-t border-border-subtle/70 pt-2.5")}>
+                <span className="font-semibold text-text-primary text-[11px] uppercase tracking-wider block mb-1">
+                  Output Format
+                </span>
+                <div className="text-text-secondary leading-relaxed text-[12px]">
+                  {renderFormattedInlineText(problem.outputFormat)}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="border-t border-border-subtle/70 pt-2.5">
-            <span className="font-semibold text-text-primary text-[11px] uppercase tracking-wider block mb-1">
-              Output Format
-            </span>
-            <div className="text-text-secondary leading-relaxed text-[12px]">
-              {renderFormattedInlineText(problem.outputFormat)}
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Examples Section */}
         {problem.examples && problem.examples.length > 0 && (

@@ -6,7 +6,6 @@ import { getWorkspaceTaskDetail } from "@/mocks/workspaceTasks"
 import { applyUserProgressToNodes } from "@/services/progressService"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
-const USE_MOCK_DATA = !API_BASE_URL
 
 /**
  * Compute aggregate roadmap statistics from the list of nodes.
@@ -57,7 +56,7 @@ export function mergeRoadmapWithUserProgress(roadmapPayload, userProgress) {
 
 /**
  * Fetch the generated DSA Skill Tree Roadmap.
- * Uses native browser Fetch API when `NEXT_PUBLIC_API_URL` is set; otherwise resolves Mock Data.
+ * Prioritizes direct Supabase queries, then REST API, then local Mock Data fallback.
  */
 export async function fetchRoadmapData(options = {}) {
   const {
@@ -65,31 +64,30 @@ export async function fetchRoadmapData(options = {}) {
     fileSize = INITIAL_KNOWLEDGE_BASE_DOC.size,
   } = options
 
-  if (!USE_MOCK_DATA) {
-    const response = await fetch(`${API_BASE_URL}/api/roadmap`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+  // 1. Primary: Fetch from FastAPI Backend
+  if (API_BASE_URL) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roadmap`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      })
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch roadmap data (HTTP ${response.status})`)
+      if (response.ok) {
+        const json = await response.json()
+        return json
+      }
+    } catch (err) {
+      console.warn("[RoadmapService] FastAPI backend unreachable, falling back to mock:", err.message)
     }
-
-    const json = await response.json()
-    return json
   }
 
-  // Simulated async response from Mock Data
-  await new Promise((resolve) => setTimeout(resolve, 180))
-
+  // 2. Offline Fallback from Mock Data
+  await new Promise((resolve) => setTimeout(resolve, 150))
   const documentMeta = {
     ...INITIAL_KNOWLEDGE_BASE_DOC,
     name: fileName,
     size: fileSize,
   }
-
   return buildRoadmapPayload(MOCK_ROADMAP_NODES, documentMeta)
 }
 
@@ -169,4 +167,49 @@ export function resolveWorkspaceSession(nodeId, taskId, userProgress = null) {
     activeTask,
     taskDetail,
   }
+}
+
+/**
+ * Async version of resolveWorkspaceSession that attempts to fetch dynamic task content from Supabase.
+ */
+export async function resolveWorkspaceSessionAsync(
+  nodeId,
+  taskId,
+  userProgress = null
+) {
+  const baseSession = resolveWorkspaceSession(nodeId, taskId, userProgress)
+  if (API_BASE_URL) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/tasks/${encodeURIComponent(baseSession.activeTask.id)}`)
+      if (res.ok) {
+        const json = await res.json()
+        return {
+          ...baseSession,
+          taskDetail: json,
+        }
+      }
+    } catch (err) {
+      console.warn("[RoadmapService] Backend task detail fetch failed:", err)
+    }
+  }
+  return baseSession
+}
+
+/**
+ * Evaluate Quiz answer on the server (Protected grading).
+ */
+export async function evaluateQuizAnswer(taskId, selectedOption) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/quiz/evaluate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId, selectedOption }),
+    })
+    if (res.ok) {
+      return await res.json()
+    }
+  } catch (err) {
+    console.warn("[RoadmapService] Quiz evaluate API unreachable:", err.message)
+  }
+  return null
 }
