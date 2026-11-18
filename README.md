@@ -151,9 +151,7 @@ This project is developed as a group assignment for the Computational Thinking c
 | Phạm Trần Minh Tuấn | Member |
 | Trương Hoàng Long | Member |
 
-For major changes, please discuss the proposed modifications with the team before submitting a pull request.
-
-Make sure that changes are tested appropriately and that existing functionality is not broken.
+For major changes, please discuss the proposed modifications with the team before submitting a pull request. Make sure that changes are tested appropriately and that existing functionality is not broken.
 
 ## License
 
