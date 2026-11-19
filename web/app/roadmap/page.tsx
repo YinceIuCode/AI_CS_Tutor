@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation"
 import {
   AlertTriangle,
   ArrowRight,
+  BarChart2,
+  BookOpen,
   Check,
+  CheckCircle2,
   CloudUpload,
   Database,
   FileCode2,
@@ -14,8 +17,11 @@ import {
   GitBranch,
   Lock,
   Map,
+  Plus,
+  Radio,
   RotateCcw,
   Search,
+  Shield,
   Sparkles,
   Trash2,
   X,
@@ -24,18 +30,21 @@ import RoadmapCanvas from "@/components/roadmap/RoadmapCanvas"
 import { UserProfileMenu } from "@/components/user-profile-menu"
 import { BRAND } from "@/config/brand"
 import { BrandLogo } from "@/components/brand-logo"
-import { PwaInstallButton } from "@/components/pwa-install-button"
 import { ThemeToggleButton } from "@/components/theme-toggle-button"
 import { useAuth } from "@/hooks/useAuth"
 import { useRoadmap } from "@/hooks/useRoadmap"
 import { useUserProgress } from "@/hooks/useUserProgress"
 import {
-  EMPTY_PLACEHOLDER_EDGES,
-  EMPTY_PLACEHOLDER_SLOTS,
+  SAMPLE_COURSES,
+  MOCK_ROADMAP_NODES,
+  MOCK_OOP_ROADMAP_NODES,
 } from "@/mocks/roadmapData"
+import { recordUploadedDocument, fetchTableData } from "@/services/adminService"
+import { applyUserProgressToNodes } from "@/services/progressService"
 import {
+  buildRoadmapPayload,
   getRoadmapNodeById,
-  mergeRoadmapWithUserProgress,
+  getWorkspaceRouteForNode,
 } from "@/services/roadmapService"
 
 /**
@@ -50,33 +59,6 @@ export const ROADMAP_LINKS = {
 } as const
 
 type FlowState = "empty" | "loading" | "ready"
-
-/**
- * Hàm tính toán tọa độ 2 đầu mút của đoạn thẳng nối tâm 2 đường tròn cho trạng thái Empty/Loading placeholder.
- */
-function getCircleEdge(
-  x1: number,
-  y1: number,
-  r1: number,
-  x2: number,
-  y2: number,
-  r2: number
-) {
-  const dx = x2 - x1
-  const dy = y2 - y1
-  const dist = Math.hypot(dx, dy)
-  if (dist === 0) return { x1, y1, x2, y2 }
-  const ux = dx / dist
-  const uy = dy / dist
-  return {
-    x1: x1 + ux * r1,
-    y1: y1 + uy * r1,
-    x2: x2 - ux * r2,
-    y2: y2 - uy * r2,
-  }
-}
-
-const NODE_RADIUS = 30
 
 const LOADING_STEPS = [
   "Parsing PDF layout & course syllabus sections...",
@@ -106,34 +88,55 @@ export default function RoadmapPage() {
   const [isOverlayFadingOut, setIsOverlayFadingOut] = React.useState(false)
   const [isDraggingFile, setIsDraggingFile] = React.useState(false)
   const [uploadError, setUploadError] = React.useState<string | null>(null)
+
+  // Danh sách đa tài liệu PDF (hỗ trợ lưu và hiển thị từ 1 đến 5 files)
+  const [documents, setDocuments] = React.useState<any[]>(() => SAMPLE_COURSES)
+  const [activeDocId, setActiveDocId] = React.useState<string>(SAMPLE_COURSES[0].id)
+
+  // Tab chuyển đổi bên cột phải: "progress" (Tiến độ & Resume) | "rag" (Quản lý tài liệu & Upload)
+  const [rightSidebarTab, setRightSidebarTab] = React.useState<"progress" | "rag">("progress")
+  // Bộ lọc Node trong tab Learning Progress: "in_progress" | "completed" | "all"
+  const [nodeFilter, setNodeFilter] = React.useState<"in_progress" | "completed" | "all">("in_progress")
+
   const [simulatedFileMeta, setSimulatedFileMeta] = React.useState({
     fileName: "CS101_DSA_Syllabus_HCMUS.pdf",
     fileSize: "2.4 MB",
   })
 
   // ID của Node đang mở Pop-up Screen (null = đóng Pop-up)
-  const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(
-    null
-  )
+  const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null)
 
-  // Protected Route: Yêu cầu phiên người dùng hoặc Guest
+  // ID của Node đang được chọn trong danh sách "IN PROGRESS NODES" ở cột phải
+  const [selectedResumeNodeId, setSelectedResumeNodeId] = React.useState<string | null>(null)
+
+  // Protected Route: Yêu cầu phiên người dùng hoặc Guest. Admin redirect về /admin.
   React.useEffect(() => {
     if (!isInitializing && !isAuthenticated) {
       router.replace("/auth")
+      return
     }
-  }, [isInitializing, isAuthenticated, router])
+    if (!isInitializing && isAuthenticated && currentUser?.role === "admin") {
+      router.replace("/admin")
+    }
+  }, [isInitializing, isAuthenticated, currentUser, router])
 
   // Khôi phục trạng thái Roadmap & file PDF đã upload khi refresh hoặc đăng nhập lại
   React.useEffect(() => {
     if (!isProgressLoaded) return
     if (userProgress.roadmapFlowState === "ready") {
+      setDocuments((prev) => (prev.length > 0 ? prev : SAMPLE_COURSES))
+      setActiveDocId((prev) => prev || SAMPLE_COURSES[0].id)
       setSimulatedFileMeta({
         fileName: userProgress.fileName || "CS101_DSA_Syllabus_HCMUS.pdf",
         fileSize: userProgress.fileSize || "2.4 MB",
       })
       setFlowState((prev) => (prev === "loading" ? prev : "ready"))
+      setRightSidebarTab("progress")
     } else if (userProgress.roadmapFlowState === "empty") {
+      setDocuments([])
+      setActiveDocId("")
       setFlowState((prev) => (prev === "loading" ? prev : "empty"))
+      setRightSidebarTab("rag")
     }
   }, [
     isProgressLoaded,
@@ -142,28 +145,234 @@ export default function RoadmapPage() {
     userProgress.fileSize,
   ])
 
-  // TanStack Query quản lý việc lấy dữ liệu Roadmap khi hoàn tất bước Processing
+  // Đồng bộ danh sách tài liệu từ Supabase hoặc SAMPLE_COURSES
+  React.useEffect(() => {
+    let isMounted = true
+    async function syncDocuments() {
+      try {
+        const res = await fetchTableData("knowledge_documents")
+        if (!isMounted) return
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          const mapped = res.data.map((d: any) => {
+            const isOop =
+              String(d.id).includes("oop") ||
+              String(d.id).includes("0002") ||
+              String(d.name || "").toLowerCase().includes("oop") ||
+              String(d.file_name || "").toLowerCase().includes("oop") ||
+              String(d.title || "").toLowerCase().includes("oop")
+            const sample = isOop ? SAMPLE_COURSES[1] : SAMPLE_COURSES[0]
+            const docName =
+              d.name ||
+              d.file_name ||
+              d.title ||
+              (isOop ? "CS102_OOP_Cpp_Syllabus_HCMUS.pdf" : "CS101_DSA_Syllabus_HCMUS.pdf")
+            return {
+              id: d.id,
+              name: docName,
+              size: d.file_size || sample.size,
+              chunks: d.chunks_count || d.content?.totalPages || sample.chunks,
+              status: "indexed",
+              courseTitle: isOop
+                ? "CS102 - Object-Oriented Programming (HCMUS)"
+                : "CS101 - Data Structures & Algorithms (HCMUS)",
+              nodes: isOop ? MOCK_OOP_ROADMAP_NODES : MOCK_ROADMAP_NODES,
+            }
+          })
+          setDocuments(mapped)
+          return
+        }
+      } catch {}
+      if (isMounted) {
+        setDocuments(SAMPLE_COURSES)
+      }
+    }
+
+    if (flowState === "ready" || userProgress.roadmapFlowState === "ready") {
+      syncDocuments()
+    }
+    return () => {
+      isMounted = false
+    }
+  }, [flowState, userProgress.roadmapFlowState])
+
+  // Loại bỏ các bản ghi trùng lặp theo Course Code hoặc File Name
+  const dedupedDocuments = React.useMemo(() => {
+    const seen = new Set<string>()
+    return documents.filter((doc) => {
+      const normName = String(doc.name || doc.file_name || doc.title || doc.id).trim().toLowerCase()
+      const cleanKey =
+        normName.includes("oop") || normName.includes("cs102") || String(doc.id).includes("0002")
+          ? "cs102-oop"
+          : "cs101-dsa"
+      if (seen.has(cleanKey)) return false
+      seen.add(cleanKey)
+      return true
+    })
+  }, [documents])
+
+  // Phân biệt tài liệu OOP C++ vs DSA
+  const isOopActive = React.useMemo(() => {
+    const idStr = String(activeDocId || "").toLowerCase()
+    return (
+      idStr === "doc-oop-syllabus" ||
+      idStr === "00000005-0000-4000-8000-000000000002" ||
+      idStr.includes("oop") ||
+      idStr.includes("0002")
+    )
+  }, [activeDocId])
+
+  // Phân giải tài liệu đang Active
+  const activeDocument = React.useMemo(() => {
+    if (!dedupedDocuments.length) return null
+    // 1. Exact ID match
+    const exact = dedupedDocuments.find((d) => d.id === activeDocId)
+    if (exact) return exact
+
+    // 2. Course match (OOP vs DSA)
+    const matched = dedupedDocuments.find((d) => {
+      const isDocOop =
+        String(d.id).includes("oop") ||
+        String(d.id).includes("0002") ||
+        String(d.name).toLowerCase().includes("oop")
+      return isOopActive === isDocOop
+    })
+    return matched || dedupedDocuments[0] || null
+  }, [dedupedDocuments, activeDocId, isOopActive])
+
+  // TanStack Query lấy dữ liệu Roadmap backend nếu có API URL
   const {
     data: rawRoadmapData,
     isLoading: isQueryLoading,
     isError: isQueryError,
-    isSuccess: isQuerySuccess,
     error: queryError,
     refetch,
   } = useRoadmap({
     enabled: flowState === "ready",
-    fileName: simulatedFileMeta.fileName,
-    fileSize: simulatedFileMeta.fileSize,
+    fileName: activeDocument?.name || (isOopActive ? "CS102_OOP_Cpp_Syllabus_HCMUS.pdf" : "CS101_DSA_Syllabus_HCMUS.pdf"),
+    fileSize: activeDocument?.size || (isOopActive ? "1.8 MB" : "2.4 MB"),
+    documentId: activeDocId,
   })
 
-  // Đồng bộ tiến độ các Task đã hoàn thành của User vào cây Skill Tree
-  const roadmapData = React.useMemo(
-    () => mergeRoadmapWithUserProgress(rawRoadmapData, userProgress),
-    [rawRoadmapData, userProgress]
-  )
+  // Lắng nghe sự kiện preset thay đổi từ Admin Console để làm mới dữ liệu
+  React.useEffect(() => {
+    const handleProgressUpdate = () => {
+      refetch()
+    }
+    window.addEventListener("algopath:progress-updated", handleProgressUpdate)
+    return () => {
+      window.removeEventListener("algopath:progress-updated", handleProgressUpdate)
+    }
+  }, [refetch])
+
+  // Lấy danh sách Node gốc của tài liệu đang Active (LỌC NGHIÊM NGẶT THEO activeDocumentId)
+  const rawActiveNodes = React.useMemo(() => {
+    let candidateNodes: any[] = []
+
+    if (isOopActive) {
+      if (rawRoadmapData?.nodes && rawRoadmapData.nodes.some((n: any) => String(n.id).startsWith("oop-"))) {
+        candidateNodes = rawRoadmapData.nodes
+      } else {
+        candidateNodes = MOCK_OOP_ROADMAP_NODES
+      }
+    } else {
+      if (rawRoadmapData?.nodes && rawRoadmapData.nodes.length > 0) {
+        candidateNodes = rawRoadmapData.nodes
+      } else {
+        candidateNodes = activeDocument?.nodes || MOCK_ROADMAP_NODES
+      }
+    }
+
+    // QUY TẮC BẤT BIẾN: Chỉ lấy đúng các node thuộc về môn học đang active!
+    if (isOopActive) {
+      return candidateNodes.filter((node: any) => {
+        const docId = String(node.document_id || "")
+        return (
+          docId === "00000005-0000-4000-8000-000000000002" ||
+          docId === "doc-oop-syllabus" ||
+          docId.includes("0002") ||
+          String(node.id).startsWith("oop-")
+        )
+      })
+    } else {
+      return candidateNodes.filter((node: any) => {
+        const nodeId = String(node.id || "")
+        return !nodeId.startsWith("oop-")
+      })
+    }
+  }, [activeDocument, isOopActive, rawRoadmapData])
+
+  // Đồng bộ tiến độ User vào từng Node của tài liệu đang chọn
+  const mergedActiveNodes = React.useMemo(() => {
+    if (!rawActiveNodes.length) return []
+    return applyUserProgressToNodes(rawActiveNodes, userProgress)
+  }, [rawActiveNodes, userProgress])
+
+  // Lọc tất cả các Node có trạng thái hoàn thành (status === 'completed')
+  const completedNodes = React.useMemo(() => {
+    if (!mergedActiveNodes || !mergedActiveNodes.length) return []
+    return mergedActiveNodes.filter((node: any) => node.status === "completed")
+  }, [mergedActiveNodes])
+
+  // Tổng hợp Payload Roadmap đầy đủ (Cây DAG, thống kê %, knowledgeBase)
+  const roadmapData = React.useMemo(() => {
+    if (!activeDocument || !mergedActiveNodes.length) return null
+    return buildRoadmapPayload(mergedActiveNodes, {
+      id: activeDocument.id,
+      name: activeDocument.name,
+      size: activeDocument.size,
+      chunks: activeDocument.chunks || 48,
+      status: "indexed",
+      indexedAt: activeDocument.indexedAt || new Date().toISOString(),
+    })
+  }, [activeDocument, mergedActiveNodes])
+
+  // Lọc tất cả các Node có trạng thái đang học (status === 'current')
+  const inProgressNodes: any[] = React.useMemo(() => {
+    if (!mergedActiveNodes || !mergedActiveNodes.length) return []
+    return mergedActiveNodes.filter((node: any) => node.status === "current")
+  }, [mergedActiveNodes])
+
+  // Lọc danh sách Node theo filter đang chọn (In Progress | Completed | All)
+  const displayedNodes = React.useMemo(() => {
+    if (!mergedActiveNodes.length) return []
+    if (nodeFilter === "in_progress") {
+      return inProgressNodes.length > 0 ? inProgressNodes : mergedActiveNodes.filter((n: any) => n.status !== "locked")
+    }
+    if (nodeFilter === "completed") {
+      return completedNodes
+    }
+    return mergedActiveNodes
+  }, [mergedActiveNodes, inProgressNodes, completedNodes, nodeFilter])
+
+  // Tự động giữ Node được chọn đồng bộ khi đổi tài liệu hoặc thay đổi tiến trình
+  React.useEffect(() => {
+    if (inProgressNodes.length > 0) {
+      if (!inProgressNodes.some((n: any) => n.id === selectedResumeNodeId)) {
+        setSelectedResumeNodeId((inProgressNodes[0] as any)?.id || null)
+      }
+    } else if (mergedActiveNodes.length > 0) {
+      const fallback: any =
+        mergedActiveNodes.find((n: any) => n.status !== "locked") ||
+        mergedActiveNodes[0]
+      setSelectedResumeNodeId(fallback?.id || null)
+    } else {
+      setSelectedResumeNodeId(null)
+    }
+  }, [inProgressNodes, mergedActiveNodes, selectedResumeNodeId])
+
+  // Node mục tiêu để gắn vào nút "Resume Workspace" (chỉ chọn node đã mở khóa: current hoặc completed)
+  const targetResumeNode: any = React.useMemo(() => {
+    if (!mergedActiveNodes.length) return null
+    return (
+      mergedActiveNodes.find((n: any) => n.id === selectedResumeNodeId && n.status !== "locked") ||
+      inProgressNodes[0] ||
+      mergedActiveNodes.find((n: any) => n.status !== "locked") ||
+      null
+    )
+  }, [mergedActiveNodes, selectedResumeNodeId, inProgressNodes])
 
   const isGeneratedReady =
-    flowState === "ready" && isQuerySuccess && Boolean(roadmapData)
+    flowState === "ready" && Boolean(roadmapData && roadmapData.nodes && roadmapData.nodes.length)
   const isProcessingOrFetching =
     flowState === "loading" || (flowState === "ready" && isQueryLoading)
 
@@ -209,32 +418,56 @@ export default function RoadmapPage() {
     return getRoadmapNodeById(roadmapData.nodes, selectedNodeId)
   }, [isGeneratedReady, selectedNodeId, roadmapData])
 
-  const triggerSimulation = React.useCallback(
-    (fileName = "CS101_DSA_Syllabus_HCMUS.pdf", fileSize = "2.4 MB") => {
+  // Hàm thêm nhanh tài liệu mẫu từ danh sách SAMPLE_COURSES
+  const handleAddSample = React.useCallback(
+    (sampleId?: string) => {
+      if (documents.length >= 5) {
+        setUploadError("Max 5/5 documents reached.")
+        return
+      }
       setUploadError(null)
-      setSimulatedFileMeta({ fileName, fileSize })
+
+      let picked = SAMPLE_COURSES.find((s) => s.id === sampleId)
+      if (!picked) {
+        picked =
+          SAMPLE_COURSES.find((s) => !documents.some((d) => d.id === s.id)) ||
+          SAMPLE_COURSES[documents.length % SAMPLE_COURSES.length]
+      }
+
+      const uniqueId = `doc-${picked.id}-${Date.now()}`
+      const newDoc = {
+        ...picked,
+        id: documents.some((d) => d.id === picked.id) ? uniqueId : picked.id,
+      }
+
       setFlowState("loading")
       setLoadingStepIndex(0)
-      setSelectedNodeId(null)
+      setSimulatedFileMeta({ fileName: newDoc.name, fileSize: newDoc.size })
 
-      // Thời gian chờ phản hồi từ pipeline phân tích PDF (sẵn sàng thay bằng await uploadSyllabusPdf(file))
       const timer = window.setTimeout(() => {
+        setDocuments((prev) => [...prev, newDoc])
+        setActiveDocId(newDoc.id)
         setFlowState("ready")
         saveRoadmapState({
           roadmapFlowState: "ready",
-          fileName,
-          fileSize,
+          fileName: newDoc.name,
+          fileSize: newDoc.size,
         })
-      }, 2800)
+        recordUploadedDocument(newDoc, currentUser).catch(() => {})
+      }, 1200)
 
       return () => window.clearTimeout(timer)
     },
-    [saveRoadmapState]
+    [documents, saveRoadmapState]
   )
 
   const processSelectedPdfFile = React.useCallback(
     (file: File | null | undefined) => {
       if (!file) return
+      if (documents.length >= 5) {
+        setUploadError("Max 5/5 documents reached. Remove a file to upload another.")
+        return
+      }
       const isPdf =
         file.type === "application/pdf" ||
         file.name.toLowerCase().endsWith(".pdf")
@@ -247,13 +480,43 @@ export default function RoadmapPage() {
         return
       }
       const formattedSize = formatPdfFileSize(file.size)
-      triggerSimulation(file.name, formattedSize)
+      setUploadError(null)
+
+      // Chọn mẫu lộ trình tương ứng cho tài liệu vừa nạp
+      const template = SAMPLE_COURSES[documents.length % SAMPLE_COURSES.length]
+      const newDoc = {
+        id: `doc-custom-${Date.now()}`,
+        name: file.name,
+        size: formattedSize,
+        chunks: Math.floor(Math.random() * 25) + 35,
+        status: "indexed",
+        courseTitle: file.name.replace(/\.pdf$/i, "").replace(/_/g, " "),
+        nodes: template.nodes,
+      }
+
+      setFlowState("loading")
+      setLoadingStepIndex(0)
+      setSimulatedFileMeta({ fileName: newDoc.name, fileSize: newDoc.size })
+
+      const timer = window.setTimeout(() => {
+        setDocuments((prev) => [...prev, newDoc])
+        setActiveDocId(newDoc.id)
+        setFlowState("ready")
+        saveRoadmapState({
+          roadmapFlowState: "ready",
+          fileName: newDoc.name,
+          fileSize: newDoc.size,
+        })
+        recordUploadedDocument(newDoc, currentUser).catch(() => {})
+      }, 1800)
+
+      return () => window.clearTimeout(timer)
     },
-    [triggerSimulation]
+    [documents, saveRoadmapState]
   )
 
   const handleOpenFileDialog = () => {
-    if (isProcessingOrFetching) return
+    if (isProcessingOrFetching || documents.length >= 5) return
     fileInputRef.current?.click()
   }
 
@@ -268,17 +531,42 @@ export default function RoadmapPage() {
   const handleDropPdf = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDraggingFile(false)
-    if (isProcessingOrFetching) return
+    if (isProcessingOrFetching || documents.length >= 5) return
     const file = e.dataTransfer.files?.[0]
     if (file) {
       processSelectedPdfFile(file)
     }
   }
 
+  const handleDeleteDoc = React.useCallback(
+    (docIdToDelete: string, e: React.MouseEvent) => {
+      e.stopPropagation()
+      setDocuments((prev) => {
+        const next = prev.filter((d) => d.id !== docIdToDelete)
+        if (next.length === 0) {
+          setFlowState("empty")
+          setActiveDocId("")
+          setSelectedNodeId(null)
+          setSelectedResumeNodeId(null)
+          saveRoadmapState({
+            roadmapFlowState: "empty",
+          })
+        } else if (activeDocId === docIdToDelete) {
+          setActiveDocId(next[0].id)
+        }
+        return next
+      })
+    },
+    [activeDocId, saveRoadmapState]
+  )
+
   const handleReset = () => {
+    setDocuments([])
+    setActiveDocId("")
     setFlowState("empty")
     setUploadError(null)
     setSelectedNodeId(null)
+    setSelectedResumeNodeId(null)
     saveRoadmapState({
       roadmapFlowState: "empty",
     })
@@ -302,115 +590,107 @@ export default function RoadmapPage() {
   }
 
   return (
-    <div className="relative flex min-h-svh flex-col justify-between overflow-x-hidden bg-surface-secondary px-4 py-3 font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary md:px-7 md:py-4 lg:h-svh lg:overflow-hidden">
+    <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-background p-2.5 font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary md:p-3">
       {/* Quầng sáng nền nhẹ chuẩn Tokyo Night */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-[30%] left-[25%] h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-[140px]"
+        className="pointer-events-none absolute top-[30%] left-[25%] h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[140px]"
       />
 
-      {/* ==================== THANH ĐIỀU HƯỚNG TRÊN CÙNG (TOP NAVBAR) ==================== */}
-      <header className="relative z-40 mx-auto w-full max-w-[1480px] shrink-0">
-        <nav className="flex items-center justify-between gap-4 rounded-xl border border-border-subtle bg-surface px-4 py-2 shadow-sm">
-          <Link
-            href={ROADMAP_LINKS.brand}
-            className="group flex shrink-0 items-center transition-opacity hover:opacity-95"
-          >
-            <BrandLogo size="sm" priority />
-          </Link>
-
-          <div className="hidden max-w-[460px] flex-1 items-center justify-between rounded-md border border-border-subtle bg-surface-secondary px-3.5 py-1.5 text-xs text-text-muted transition-colors focus-within:border-primary/60 md:flex">
-            <div className="flex flex-1 items-center gap-2.5">
-              <Search className="size-4 shrink-0 text-text-muted" />
-              <input
-                type="text"
-                placeholder="Search concepts, algorithms, or problems..."
-                className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
-              />
-            </div>
-            <kbd className="rounded border border-border-subtle bg-surface px-1.5 py-0.5 font-mono text-[10px] font-medium text-text-secondary">
-              Ctrl + K
-            </kbd>
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <PwaInstallButton />
-            <ThemeToggleButton />
-            <UserProfileMenu />
-          </div>
-        </nav>
-      </header>
-
-      {/* ==================== KHÔNG GIAN LÀM VIỆC CHÍNH 2 CỘT (MAIN WORKSPACE) ==================== */}
-      <main className="relative z-10 mx-auto mt-3 grid min-h-0 w-full max-w-[1480px] flex-1 grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* -------------------- CỘT TRÁI (9/12): KHUNG CHỨA HORIZONTAL ROADMAP TREE -------------------- */}
-        <section className="flex min-h-0 flex-col justify-between rounded-xl border border-border-subtle bg-surface-secondary p-4 shadow-sm lg:col-span-8 xl:col-span-9">
-          {/* 1. Thanh Banner Thông Tin Roadmap */}
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-lg border border-border-subtle bg-surface px-4 py-2.5">
+      {/* ==================== KHÔNG GIAN LÀM VIỆC CHÍNH 2 CỘT (MAIN WORKSPACE 100VH) ==================== */}
+      <main className="relative z-10 grid h-full min-h-0 w-full flex-1 grid-cols-1 gap-2.5 lg:grid-cols-12 overflow-hidden">
+        {/* -------------------- CỘT TRÁI (9/12): KHỐI UNIFIED ROADMAP CONTAINER -------------------- */}
+        <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm lg:col-span-8 xl:col-span-9">
+          {/* 1. Header Hàng Đầu Gộp Toàn Bộ: Brand Logo + Tiêu đề + Search (Ctrl+K) + Tiến Trình + Theme + User */}
+          <div className="flex h-13 shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface px-4">
+            {/* Left: Brand Logo + Roadmap Title */}
             <div className="flex items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-cyan">
-                <Map className="size-4" />
+              <Link
+                href={ROADMAP_LINKS.brand}
+                className="group flex shrink-0 items-center transition-opacity hover:opacity-95"
+              >
+                <BrandLogo size="sm" priority />
+              </Link>
+
+              <div className="hidden h-5 w-px bg-border-subtle sm:block" />
+
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold tracking-wider text-text-primary uppercase">
+                  Learning Roadmap
+                </span>
               </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xs font-bold tracking-wider text-text-primary uppercase sm:text-sm">
-                    YOUR LEARNING ROADMAP
-                  </h1>
-                  <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[9px] font-medium text-cyan">
-                    CURRENT DEMO: DATA STRUCTURES &amp; ALGORITHMS
+            </div>
+
+            {/* Middle: Compact Search Bar (Ctrl+K) */}
+            <div className="hidden max-w-[320px] flex-1 items-center justify-between rounded-md border border-border-subtle bg-surface-secondary px-3 py-1.5 text-xs text-text-muted transition-colors focus-within:border-primary/60 md:flex">
+              <div className="flex flex-1 items-center gap-2">
+                <Search className="size-3.5 shrink-0 text-text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search concepts, algorithms..."
+                  className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+                />
+              </div>
+              <kbd className="rounded border border-border-subtle bg-surface px-1.5 py-0.5 font-mono text-[9px] text-text-muted">
+                Ctrl K
+              </kbd>
+            </div>
+
+            {/* Right: Progress Indicator + Theme Toggle + User Profile */}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-2">
+                <div className="relative flex size-8 items-center justify-center">
+                  <svg className="size-8 -rotate-90" viewBox="0 0 32 32">
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="13"
+                      fill="none"
+                      stroke="var(--color-border-subtle)"
+                      strokeWidth="2.75"
+                    />
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="13"
+                      fill="none"
+                      stroke="var(--color-cyan)"
+                      strokeWidth="2.75"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 13}
+                      strokeDashoffset={
+                        2 * Math.PI * 13 * (1 - completionPercent / 100)
+                      }
+                      className="transition-all duration-500"
+                    />
+                  </svg>
+                  <span className="absolute font-mono text-[9px] font-bold text-text-primary tabular-nums">
+                    {completionPercent}%
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs text-text-secondary">
-                  {isGeneratedReady && indexedDocs[0]
-                    ? `Generated from ${indexedDocs[0].name} • Hold Left/Right Click to pan • Click any node to open tasks.`
-                    : "Upload your course syllabus (PDF) to generate your horizontal skill tree."}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="relative flex size-11 items-center justify-center">
-                <svg className="size-11 -rotate-90" viewBox="0 0 44 44">
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r="18"
-                    fill="none"
-                    stroke="var(--color-border-subtle)"
-                    strokeWidth="3.5"
-                  />
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r="18"
-                    fill="none"
-                    stroke="var(--color-cyan)"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 18}
-                    strokeDashoffset={
-                      2 * Math.PI * 18 * (1 - completionPercent / 100)
-                    }
-                    className="transition-all duration-500"
-                  />
-                </svg>
-                <span className="absolute text-[11px] font-bold text-text-primary">
-                  {completionPercent}%
+                <span className="hidden font-mono text-xs text-text-secondary sm:inline-block">
+                  {unlockedCount}/{totalCount}
                 </span>
               </div>
 
-              <div className="text-xs text-text-secondary">
-                Unlocked:{" "}
-                <span className="font-bold text-text-primary">
-                  {unlockedCount} / {totalCount}
-                </span>{" "}
-                Nodes
-              </div>
+              <div className="h-5 w-px bg-border-subtle" />
+              {(currentUser?.role === "admin" || currentUser?.role === "tutor") && (
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#bb9af7]/40 bg-[#bb9af7]/10 px-2.5 py-1 text-xs font-semibold text-[#bb9af7] transition-all hover:bg-[#bb9af7]/20 hover:border-[#bb9af7]/60 shadow-sm"
+                  title="Open Admin Console"
+                >
+                  <Shield className="size-3.5 text-[#bb9af7]" />
+                  <span className="hidden md:inline">Admin Console</span>
+                </Link>
+              )}
+              <ThemeToggleButton />
+              <UserProfileMenu />
             </div>
           </div>
 
-          {/* 2. Canvas Đồ Thị Cây Ngang (Horizontal React Flow + Dagre) */}
-          <div className="relative my-2.5 flex min-h-[450px] flex-1 flex-col items-center justify-center overflow-hidden rounded-xl border border-border-subtle/50 bg-surface-secondary/65 select-none">
+          {/* 2. Vùng Canvas Đồ Thị Cây Ngang Chấm Bi (Fill hết chiều cao còn lại) */}
+          <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-secondary/40 select-none">
             {isGeneratedReady && roadmapData?.nodes ? (
               <RoadmapCanvas
                 roadmapNodes={roadmapData.nodes}
@@ -418,74 +698,85 @@ export default function RoadmapPage() {
                 onSelectNode={(nodeId: string) => setSelectedNodeId(nodeId)}
               />
             ) : (
-              <svg
-                viewBox="0 0 900 415"
-                className="h-full max-h-[440px] w-full"
-                preserveAspectRatio="xMidYMid meet"
-                aria-label="DSA Skill Tree Placeholder"
-              >
-                {EMPTY_PLACEHOLDER_EDGES.map((edge) => {
-                  const n1 = EMPTY_PLACEHOLDER_SLOTS.find(
-                    (n) => n.id === edge.from
-                  )!
-                  const n2 = EMPTY_PLACEHOLDER_SLOTS.find(
-                    (n) => n.id === edge.to
-                  )!
-                  const isVertical = n1.x === n2.x
-                  const startOffset = isVertical
-                    ? NODE_RADIUS + 26
-                    : NODE_RADIUS
-                  const pts = getCircleEdge(
-                    n1.x,
-                    n1.y,
-                    startOffset,
-                    n2.x,
-                    n2.y,
-                    NODE_RADIUS
-                  )
-                  return (
-                    <line
-                      key={`${edge.from}-${edge.to}`}
-                      x1={pts.x1}
-                      y1={pts.y1}
-                      x2={pts.x2}
-                      y2={pts.y2}
-                      stroke={
-                        isProcessingOrFetching ? "var(--color-primary)" : "var(--color-border-subtle)"
-                      }
-                      strokeOpacity={isProcessingOrFetching ? 0.5 : 0.85}
-                      strokeWidth="1.75"
-                      strokeDasharray="5 5"
-                    />
-                  )
-                })}
+              /* ARCHITECTURAL CANVAS BACKGROUND (3 LỚP CHIỀU SÂU KỸ THUẬT KHI CHƯA CÓ ROADMAP) */
+              <div className="pointer-events-none absolute inset-0 select-none overflow-hidden">
+                {/* Lớp 1: Dot Matrix Grid với Radial Mask */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-[radial-gradient(#292e42_1.25px,transparent_1.25px)] [background-size:20px_20px] [mask-image:radial-gradient(ellipse_75%_70%_at_50%_50%,#000_40%,transparent_100%)] opacity-80"
+                />
 
-                {EMPTY_PLACEHOLDER_SLOTS.map((slot) => (
-                  <g
-                    key={slot.id}
-                    transform={`translate(${slot.x}, ${slot.y})`}
-                  >
-                    <circle
-                      r={NODE_RADIUS}
-                      fill="var(--color-surface-secondary)"
-                      stroke={
-                        isProcessingOrFetching ? "var(--color-primary)" : "var(--color-border-subtle)"
-                      }
-                      strokeWidth="2"
-                      strokeDasharray="6 5"
-                    />
-                    <text
-                      y={NODE_RADIUS + 20}
-                      textAnchor="middle"
-                      fill="var(--color-text-muted)"
-                      fontSize="13"
-                      fontWeight="500"
-                    >
-                      {slot.slotLabel}
-                    </text>
+                {/* Lớp 2: Ambient Subtle Glow ở tâm sau Card */}
+                <div
+                  aria-hidden="true"
+                  className="absolute top-1/2 left-1/2 h-[320px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7aa2f7]/[0.04] blur-[100px]"
+                />
+
+                {/* Lớp 3: Blueprint DAG Wireframe (Bản vẽ kỹ thuật nhánh cây DAG mảnh, nét đứt sắc nét) */}
+                <svg
+                  viewBox="0 0 1000 460"
+                  className="absolute inset-0 size-full opacity-35"
+                  preserveAspectRatio="xMidYMid meet"
+                  aria-hidden="true"
+                >
+                  {/* DAG Blueprint Edges (stroke #292e42, dashed 4 4, strokeWidth 1.5) */}
+                  <g stroke="#292e42" strokeWidth="1.5" strokeDasharray="4 4" fill="none">
+                    {/* Root (110, 230) -> Col 1 */}
+                    <path d="M 132 230 C 185 230, 215 130, 268 130" />
+                    <path d="M 132 230 L 268 230" />
+                    <path d="M 132 230 C 185 230, 215 330, 268 330" />
+
+                    {/* Col 1 -> Col 2 */}
+                    <path d="M 312 130 L 468 130" />
+                    <path d="M 312 230 L 468 230" />
+                    <path d="M 312 330 L 468 330" />
+
+                    {/* Col 2 -> Col 3 */}
+                    <path d="M 512 130 C 565 130, 595 180, 668 180" />
+                    <path d="M 512 230 C 565 230, 595 180, 668 180" />
+                    <path d="M 512 230 C 565 230, 595 280, 668 280" />
+                    <path d="M 512 330 C 565 330, 595 280, 668 280" />
+
+                    {/* Col 3 -> Col 4 Leaf */}
+                    <path d="M 712 180 C 765 180, 795 230, 868 230" />
+                    <path d="M 712 280 C 765 280, 795 230, 868 230" />
                   </g>
-                ))}
-              </svg>
+
+                  {/* Blueprint Nodes (w-11 h-11 = r: 22, border border-[#292e42]/60, bg-[#1a1b26]/30) */}
+                  {[
+                    { cx: 110, cy: 230 },
+                    { cx: 290, cy: 130 },
+                    { cx: 290, cy: 230 },
+                    { cx: 290, cy: 330 },
+                    { cx: 490, cy: 130 },
+                    { cx: 490, cy: 230 },
+                    { cx: 490, cy: 330 },
+                    { cx: 690, cy: 180 },
+                    { cx: 690, cy: 280 },
+                    { cx: 890, cy: 230 },
+                  ].map((node, i) => (
+                    <g key={i}>
+                      <circle
+                        cx={node.cx}
+                        cy={node.cy}
+                        r="22"
+                        fill="#1a1b26"
+                        fillOpacity="0.3"
+                        stroke="#292e42"
+                        strokeOpacity="0.6"
+                        strokeWidth="1.5"
+                      />
+                      <circle
+                        cx={node.cx}
+                        cy={node.cy}
+                        r="3.5"
+                        fill="#3b4261"
+                        fillOpacity="0.8"
+                      />
+                    </g>
+                  ))}
+                </svg>
+              </div>
             )}
 
             {/* HỘP THÔNG BÁO TRUNG TÂM KHI ĐANG LOAD PROGRESS HOẶC CHƯA CÓ PDF */}
@@ -503,18 +794,69 @@ export default function RoadmapPage() {
             )}
 
             {isProgressLoaded && flowState === "empty" && (
-              <div className="absolute top-1/2 left-1/2 z-20 w-[90%] max-w-[400px] -translate-x-1/2 -translate-y-1/2 transition-colors duration-150 ease-out">
-                <div className="flex flex-col items-center rounded-xl border border-dashed border-border-subtle bg-surface p-6 text-center shadow-md">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-cyan/10 text-cyan">
-                    <FileCode2 className="size-5" />
+              <div className="absolute top-1/2 left-1/2 z-20 w-[92%] max-w-md -translate-x-1/2 -translate-y-1/2">
+                {/* Khung Card ngoài cùng: gọn gàng, bo tròn 2xl, backdrop-blur */}
+                <div className="w-full rounded-2xl border border-[#292e42] bg-[#16161e]/95 p-3 shadow-[0_24px_64px_rgba(0,0,0,0.65)] backdrop-blur-md">
+                  {/* Box bo góc lồng bên trong có viền nét đứt: Vùng Dropzone & Upload trực tiếp */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      if (!isProcessingOrFetching) setIsDraggingFile(true)
+                    }}
+                    onDragLeave={() => setIsDraggingFile(false)}
+                    onDrop={handleDropPdf}
+                    onClick={handleOpenFileDialog}
+                    className={`flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
+                      isDraggingFile
+                        ? "border-[#7aa2f7] bg-[#7aa2f7]/10"
+                        : "border-[#3b4261] bg-[#1a1b26]/70 hover:border-[#7aa2f7]/60 hover:bg-[#1a1b26]"
+                    }`}
+                  >
+                    {/* 1. Icon đám mây upload trong khung bo góc nhẹ */}
+                    <div className="mb-4 flex size-11 items-center justify-center rounded-xl border border-[#7aa2f7]/25 bg-[#7aa2f7]/10 text-[#7aa2f7] shadow-sm">
+                      <CloudUpload className="size-5.5 stroke-[1.75]" />
+                    </div>
+
+                    {/* 2. Tiêu đề gọn, sắc nét */}
+                    <h2 className="mb-1.5 text-base font-bold text-[#c0caf5] tracking-tight">
+                      Generate Your Interactive Skill Tree
+                    </h2>
+
+                    {/* 3. Mô tả ngắn gọn (2 dòng) */}
+                    <p className="mb-5 max-w-xs text-xs leading-relaxed text-[#787c99]">
+                      Drag &amp; drop your course syllabus (PDF) here, or click below to extract topics and build your learning path.
+                    </p>
+
+                    {/* 4. Nút bấm chính (Primary Button - không bị gãy dòng) */}
+                    <button
+                      type="button"
+                      disabled={isProcessingOrFetching}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenFileDialog()
+                      }}
+                      className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#7aa2f7] hover:bg-[#89b4fa] px-5 py-2 text-xs font-semibold whitespace-nowrap text-[#16161e] shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <CloudUpload className="size-3.5 stroke-[2]" />
+                      <span>Choose Syllabus PDF</span>
+                    </button>
+
+                    {/* 5. Nút Load Sample chuyển thành dòng chữ nhỏ ngay bên dưới */}
+                    <p className="mt-3.5 text-xs text-[#787c99]">
+                      Or try with{" "}
+                      <button
+                        type="button"
+                        disabled={isProcessingOrFetching}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddSample("doc-dsa-syllabus")
+                        }}
+                        className="cursor-pointer font-mono text-xs text-[#7aa2f7] underline underline-offset-4 transition-colors hover:text-[#89b4fa] disabled:pointer-events-none disabled:opacity-50"
+                      >
+                        sample CS101_DSA_Syllabus_HCMUS.pdf
+                      </button>
+                    </p>
                   </div>
-                  <h2 className="mt-3.5 text-sm font-bold text-text-primary">
-                    No Skill Tree Generated Yet
-                  </h2>
-                  <p className="mt-2 text-xs leading-relaxed text-text-secondary">
-                    Upload your course syllabus or lecture slides on the right
-                    panel to extract topics and build your learning path.
-                  </p>
                 </div>
               </div>
             )}
@@ -592,239 +934,476 @@ export default function RoadmapPage() {
             )}
           </div>
 
-          {/* 3. Chú Thích Trạng Thái (Bottom Legend Pill) + Thanh gợi ý mở Pop-up */}
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-5 rounded-full border border-border-subtle bg-surface px-5 py-1.5 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-success" />
-                <span className="text-text-secondary">Completed</span>
+          {/* 3. Thanh Legend & Thao Tác Dưới Cùng (Unified Bottom Bar) */}
+          <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-t border-border-subtle bg-surface px-4 text-xs">
+            {/* Legend Pills */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-success" />
+                <span className="text-[11px] text-text-secondary">Completed</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-cyan" />
-                <span className="text-text-secondary">Current</span>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-cyan" />
+                <span className="text-[11px] text-text-secondary">Current</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="size-2.5 rounded-full bg-border" />
-                <span className="text-text-secondary">Locked</span>
+              <div className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-border" />
+                <span className="text-[11px] text-text-secondary">Locked</span>
               </div>
             </div>
 
+            {/* Quick Actions */}
             {isGeneratedReady && (
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setSelectedNodeId("avl-tree")}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-primary/40 bg-primary/12 px-3.5 py-1.5 text-[11px] font-semibold text-cyan transition-colors hover:bg-primary/20"
-                >
-                  <span>Preview &ldquo;AVL Tree&rdquo; Pop-up</span>
-                </button>
-
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border-subtle bg-surface px-3.5 py-1.5 text-[11px] font-medium text-text-secondary transition-colors hover:border-border hover:text-text-primary"
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-[11px] font-medium text-text-muted transition-colors hover:text-text-primary"
                 >
                   <RotateCcw className="size-3 text-primary" />
-                  <span>Reset to Empty State</span>
+                  <span>Reset</span>
                 </button>
               </div>
             )}
           </div>
         </section>
 
-        {/* -------------------- CỘT PHẢI (3/12): UPLOAD PANEL & ACTIVE KNOWLEDGE BASE -------------------- */}
-        <aside className="flex min-h-0 flex-col gap-4 lg:col-span-4 xl:col-span-3">
-          {/* KHUNG TRÊN: Upload your study material (PDF/Syllabus) */}
-          <div className="rounded-xl border border-border-subtle bg-surface-secondary p-4 shadow-sm">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={handleFileInputChange}
-              className="hidden"
-            />
-
-            <div
-              onDragOver={(e) => {
-                e.preventDefault()
-                if (!isProcessingOrFetching) setIsDraggingFile(true)
-              }}
-              onDragLeave={() => setIsDraggingFile(false)}
-              onDrop={handleDropPdf}
-              onClick={handleOpenFileDialog}
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border-subtle bg-surface p-5 text-center transition-colors ${
-                isDraggingFile
-                  ? "border-primary bg-primary/10"
-                  : "hover:border-primary/60 hover:bg-surface-elevated"
-              }`}
-            >
-              <CloudUpload className="size-9 stroke-[1.75] text-cyan" />
-
-              <p className="mt-2.5 text-xs font-medium text-text-primary">
-                Upload your study material (PDF/Syllabus)
-              </p>
-
-              <button
-                type="button"
-                disabled={isProcessingOrFetching}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleOpenFileDialog()
-                }}
-                className="mt-3 inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-5 text-xs font-semibold text-surface-secondary shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        {/* -------------------- CỘT PHẢI: UNIFIED RIGHT DOCK PANEL -------------------- */}
+        <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[#292e42] bg-[#1a1b26] lg:col-span-4 xl:col-span-3 shadow-xl">
+          {/* ==================== 1. ĐỈNH PANEL: COMPACT DOCUMENT SWITCHER & TAB BAR ==================== */}
+          <div className="shrink-0 border-b border-[#292e42] bg-[#16161e]/70 p-3.5">
+            {/* Active Syllabus Bar */}
+            <div className="flex items-center justify-between gap-2.5">
+              <div
+                onClick={() => setRightSidebarTab((prev) => (prev === "rag" ? "progress" : "rag"))}
+                className="flex items-center gap-2.5 min-w-0 cursor-pointer group"
+                title="Click to toggle between Learning Progress and RAG Sources"
               >
-                <FileText className="size-3.5 stroke-[2]" />
-                <span>
-                  {isProcessingOrFetching ? "Analyzing PDF..." : "Choose File"}
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#7aa2f7]/15 text-[#7aa2f7] border border-[#7aa2f7]/30 group-hover:scale-105 transition-transform">
+                  <FileText className="size-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block truncate text-xs font-bold text-white group-hover:text-[#7aa2f7] transition-colors">
+                    {activeDocument?.name || simulatedFileMeta.fileName}
+                  </span>
+                  <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[10.5px] text-[#565f89]">
+                    <span>{activeDocument?.size || simulatedFileMeta.fileSize}</span>
+                    <span>•</span>
+                    <span className="text-[#7aa2f7]">
+                      {activeDocument?.chunks || 48} chunks
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-[#24283b] text-[#bb9af7] border border-[#bb9af7]/30">
+                  {dedupedDocuments.length}/5 Docs
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setRightSidebarTab((prev) => (prev === "rag" ? "progress" : "rag"))}
+                  className={`size-7 rounded-md border flex items-center justify-center transition-colors cursor-pointer ${
+                    rightSidebarTab === "rag"
+                      ? "border-[#7aa2f7] bg-[#7aa2f7]/20 text-[#7aa2f7]"
+                      : "border-[#292e42] bg-[#16161e] text-[#565f89] hover:text-[#c0caf5] hover:border-[#3b4261]"
+                  }`}
+                  title={rightSidebarTab === "rag" ? "Back to Learning Progress" : "Switch / Upload PDF"}
+                >
+                  <CloudUpload className="size-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* 2 Segmented Tabs */}
+            <div className="mt-3 grid grid-cols-2 rounded-lg border border-[#292e42] bg-[#16161e] p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setRightSidebarTab("progress")}
+                className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                  rightSidebarTab === "progress"
+                    ? "bg-[#7aa2f7] text-[#16161e] shadow-sm"
+                    : "text-[#565f89] hover:text-[#c0caf5]"
+                }`}
+              >
+                <BarChart2 className="size-3.5" />
+                <span>Learning Progress</span>
               </button>
 
               <button
                 type="button"
-                disabled={isProcessingOrFetching}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  triggerSimulation("CS101_DSA_Syllabus_HCMUS.pdf", "2.4 MB")
-                }}
-                className="mt-2 cursor-pointer font-mono text-[11px] font-medium text-cyan underline decoration-cyan/40 underline-offset-4 transition-colors hover:text-text-primary disabled:pointer-events-none disabled:opacity-50"
+                onClick={() => setRightSidebarTab("rag")}
+                className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                  rightSidebarTab === "rag"
+                    ? "bg-[#bb9af7] text-[#16161e] shadow-sm"
+                    : "text-[#565f89] hover:text-[#c0caf5]"
+                }`}
               >
-                Or use sample CS101_DSA_Syllabus_HCMUS.pdf
+                <Database className="size-3.5" />
+                <span>RAG Sources ({dedupedDocuments.length}/5)</span>
               </button>
-
-              {uploadError && (
-                <p className="mt-2 text-[11px] font-medium text-danger">
-                  {uploadError}
-                </p>
-              )}
-
-              <p className="mt-2 text-[10.5px] text-text-muted">
-                {currentUser?.accountType === "guest"
-                  ? "Select any PDF from your device or drag & drop here"
-                  : "Supported format: PDF (Max 10MB) • Drag & drop supported"}
-              </p>
             </div>
           </div>
 
-          {/* KHUNG DƯỚI: Active Knowledge Base (RAG) */}
-          <div className="flex flex-1 flex-col rounded-xl border border-border-subtle bg-surface-secondary p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Database className="size-4 text-primary" />
-                <h2 className="text-xs font-bold text-text-primary">
-                  Active Knowledge Base (RAG)
-                </h2>
+          {/* ==================== 2. NỘI DUNG TAB 1: LEARNING PROGRESS ==================== */}
+          {rightSidebarTab === "progress" && (
+            <div className="flex flex-1 flex-col min-h-0 px-4 py-3 overflow-hidden">
+              {/* Khối tiến độ tổng */}
+              <div className="shrink-0 mb-3 rounded-xl border border-[#292e42] bg-[#16161e]/60 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-[#565f89] uppercase tracking-wider">
+                    Tree Mastery
+                  </span>
+                  <span className="font-mono text-base font-extrabold text-[#7aa2f7] tabular-nums">
+                    {completionPercent}%
+                  </span>
+                </div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#16161e] border border-[#292e42]">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#60a5fa] to-[#7aa2f7] transition-all duration-500 shadow-[0_0_8px_rgba(122,162,247,0.4)]"
+                    style={{ width: `${completionPercent}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-[#565f89]">
+                  <span>Progress Overview</span>
+                  <span className="font-mono font-bold text-white tabular-nums">
+                    {unlockedCount}/{totalCount} Nodes Unlocked
+                  </span>
+                </div>
               </div>
-              {isGeneratedReady && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
-                  <span className="size-1.5 rounded-full bg-success" />
-                  Indexed
+
+              {/* Bộ lọc danh sách Node: In Progress | Completed | All */}
+              <div className="shrink-0 mb-2.5 flex items-center justify-between gap-1">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#565f89]">
+                  Select Node To Resume
                 </span>
-              )}
-            </div>
-
-            <div className="mt-4">
-              {!isProgressLoaded && (
-                <div className="flex items-center gap-3.5 rounded-xl border border-border-subtle bg-surface p-4 animate-pulse">
-                  <div className="size-10 shrink-0 rounded-lg bg-border-subtle/60" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 w-32 rounded bg-border-subtle/60" />
-                    <div className="h-3 w-44 rounded bg-border-subtle/40" />
-                  </div>
+                <div className="flex items-center gap-1 bg-[#16161e] p-0.5 rounded-lg border border-[#292e42]">
+                  <button
+                    type="button"
+                    onClick={() => setNodeFilter("in_progress")}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded font-mono transition-colors cursor-pointer ${
+                      nodeFilter === "in_progress"
+                        ? "bg-[#7aa2f7] text-[#16161e]"
+                        : "text-[#565f89] hover:text-[#c0caf5]"
+                    }`}
+                  >
+                    Active ({inProgressNodes.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNodeFilter("completed")}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded font-mono transition-colors cursor-pointer ${
+                      nodeFilter === "completed"
+                        ? "bg-emerald-500 text-[#16161e]"
+                        : "text-[#565f89] hover:text-[#c0caf5]"
+                    }`}
+                  >
+                    Done ({completedNodes.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNodeFilter("all")}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded font-mono transition-colors cursor-pointer ${
+                      nodeFilter === "all"
+                        ? "bg-[#bb9af7] text-[#16161e]"
+                        : "text-[#565f89] hover:text-[#c0caf5]"
+                    }`}
+                  >
+                    All ({mergedActiveNodes.length})
+                  </button>
                 </div>
-              )}
+              </div>
 
-              {isProgressLoaded && flowState === "empty" && (
-                <div className="flex items-center gap-3.5 rounded-xl border border-border-subtle bg-surface p-4">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-secondary text-text-muted">
-                    <FileText className="size-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-text-primary">
-                      0 Documents Indexed
-                    </div>
-                    <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
-                      Your uploaded PDFs will appear here for RAG citations.
-                    </p>
-                  </div>
-                </div>
-              )}
+              {/* Danh sách thẻ Node cuộn thoải mái, không bị đè */}
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 custom-description-scrollbar">
+                {displayedNodes.length > 0 ? (
+                  displayedNodes.map((node: any) => {
+                    const isSelected = node.id === selectedResumeNodeId
+                    const isCompleted = node.status === "completed"
+                    const isCurrent = node.status === "current"
 
-              {isProcessingOrFetching && (
-                <div className="rounded-xl border border-primary/40 bg-surface p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-cyan">
-                      <FileText className="size-5 animate-pulse" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-bold text-text-primary">
-                        {simulatedFileMeta.fileName}
+                    return (
+                      <div
+                        key={node.id}
+                        onClick={() => {
+                          setSelectedResumeNodeId(node.id)
+                          setSelectedNodeId(node.id)
+                        }}
+                        className={`group flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer border ${
+                          isSelected
+                            ? "border-[#7aa2f7] bg-[#24283b] shadow-md ring-1 ring-[#7aa2f7]/50"
+                            : isCompleted
+                            ? "border-emerald-500/20 bg-[#16161e]/80 hover:border-emerald-500/40 hover:bg-[#1a1b26]"
+                            : isCurrent
+                            ? "border-[#60a5fa]/30 bg-[#16161e]/80 hover:border-[#60a5fa]/60 hover:bg-[#1a1b26]"
+                            : "border-[#292e42] bg-[#16161e]/40 hover:border-[#3b4261] opacity-75"
+                        }`}
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          {/* Node shortCode badge */}
+                          <div
+                            className={`flex size-8 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-extrabold ${
+                              isCompleted
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                : isCurrent
+                                ? "bg-[#60a5fa]/20 text-[#60a5fa] border border-[#60a5fa]/40"
+                                : "bg-[#24283b] text-[#565f89] border border-[#292e42]"
+                            }`}
+                          >
+                            {node.shortCode || "01"}
+                          </div>
+
+                          <div className="min-w-0">
+                            <h4
+                              className={`text-xs font-bold leading-snug line-clamp-1 ${
+                                isSelected
+                                  ? "text-white"
+                                  : isCompleted
+                                  ? "text-[#c0caf5]"
+                                  : isCurrent
+                                  ? "text-white"
+                                  : "text-[#565f89]"
+                              }`}
+                              title={node.label}
+                            >
+                              {node.label}
+                            </h4>
+                            <div className="mt-1 flex items-center gap-2 text-[10.5px] font-mono">
+                              <span
+                                className={
+                                  isCompleted
+                                    ? "text-emerald-400 font-semibold"
+                                    : isCurrent
+                                    ? "text-[#60a5fa] font-semibold"
+                                    : "text-[#565f89]"
+                                }
+                              >
+                                {node.target_complexity || node.complexity || "O(1)"}
+                              </span>
+                              <span className="text-[#565f89]">•</span>
+                              <span className="text-[#565f89]">
+                                {node.completedTasks}/{node.totalTasks || 3} Tasks
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status Icon Indicator */}
+                        <div className="ml-2 shrink-0">
+                          {isCompleted ? (
+                            <CheckCircle2 className="size-4 text-emerald-400" />
+                          ) : isCurrent ? (
+                            isSelected ? (
+                              <div className="flex size-4 items-center justify-center rounded-full bg-[#7aa2f7] text-[#16161e]">
+                                <Check className="size-3 stroke-[3]" />
+                              </div>
+                            ) : (
+                              <div className="size-4 rounded-full border-2 border-[#60a5fa] animate-pulse" />
+                            )
+                          ) : (
+                            <Lock className="size-3.5 text-[#565f89]" />
+                          )}
+                        </div>
                       </div>
-                      <p className="mt-0.5 text-[11px] text-cyan">
-                        Chunking &amp; embedding PDF into vector store...
-                      </p>
-                    </div>
+                    )
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center text-xs text-[#565f89]">
+                    <p>No nodes match current filter.</p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            </div>
+          )}
 
-              {isGeneratedReady &&
-                indexedDocs.map(
-                  (doc: {
-                    id: string
-                    name: string
-                    size: string
-                    chunks: number
-                  }) => (
+          {/* ==================== 3. NỘI DUNG TAB 2: RAG DOCUMENTS ==================== */}
+          {rightSidebarTab === "rag" && (
+            <div className="flex flex-1 flex-col min-h-0 px-4 py-3 overflow-hidden">
+              {/* Dropzone Upload Box */}
+              <div className="shrink-0 mb-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                />
+
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    if (!isProcessingOrFetching && dedupedDocuments.length < 5) setIsDraggingFile(true)
+                  }}
+                  onDragLeave={() => setIsDraggingFile(false)}
+                  onDrop={handleDropPdf}
+                  onClick={() => {
+                    if (dedupedDocuments.length < 5) handleOpenFileDialog()
+                  }}
+                  className={`rounded-xl border-2 border-dashed p-3 transition-all flex flex-col items-center text-center cursor-pointer ${
+                    dedupedDocuments.length >= 5
+                      ? "border-[#3b4261] bg-[#16161e]/40 opacity-60 cursor-not-allowed"
+                      : isDraggingFile
+                      ? "border-[#bb9af7] bg-[#bb9af7]/10"
+                      : "border-[#3b4261] hover:border-[#bb9af7]/70 bg-[#16161e]/70"
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[#bb9af7]/15 border border-[#bb9af7]/30 text-[#bb9af7] flex items-center justify-center mb-1.5">
+                    <CloudUpload className="size-4.5 stroke-[1.75]" />
+                  </div>
+
+                  <p className="text-xs font-bold text-white mb-0.5">
+                    Drop syllabus or lecture PDF here
+                  </p>
+                  <p className="text-[10.5px] text-[#565f89] mb-2.5">
+                    Max 10MB • Up to 5 documents
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isProcessingOrFetching || dedupedDocuments.length >= 5}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenFileDialog()
+                      }}
+                      className="px-3 py-1.5 rounded-md bg-[#bb9af7] hover:bg-[#bb9af7]/90 text-[#16161e] font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <FileText className="size-3.5 stroke-[2]" />
+                      <span>Choose PDF</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isProcessingOrFetching || dedupedDocuments.length >= 5}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAddSample()
+                      }}
+                      className="px-2.5 py-1.5 rounded-md bg-[#24283b] hover:bg-[#292e42] text-[#c0caf5] border border-[#3b4261] text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+                    >
+                      <Plus className="size-3" />
+                      <span>+ Add Sample</span>
+                    </button>
+                  </div>
+
+                  {uploadError && (
+                    <p className="mt-1.5 text-[10.5px] font-semibold text-red-400">
+                      {uploadError}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Section Header */}
+              <div className="shrink-0 mb-2 flex items-center justify-between">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#565f89]">
+                  Indexed Knowledge Documents
+                </span>
+                <span className="font-mono text-[10px] text-emerald-400 flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {dedupedDocuments.length} Indexed
+                </span>
+              </div>
+
+              {/* Danh sách PDF thoáng đãng, không bị cắt chữ */}
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 custom-description-scrollbar">
+                {dedupedDocuments.map((doc) => {
+                  const isDocOop =
+                    String(doc.id).includes("oop") ||
+                    String(doc.id).includes("0002") ||
+                    String(doc.name).toLowerCase().includes("oop")
+                  const isActive = doc.id === activeDocId || isDocOop === isOopActive
+                  return (
                     <div
                       key={doc.id}
-                      className="rounded-xl border border-primary/40 bg-surface p-4"
+                      onClick={() => {
+                        setActiveDocId(doc.id)
+                        setSelectedNodeId(null)
+                      }}
+                      className={`group rounded-xl p-3 transition-all cursor-pointer border ${
+                        isActive
+                          ? "bg-[#24283b] border-[#7aa2f7] ring-1 ring-[#7aa2f7]/50 shadow-md"
+                          : "bg-[#16161e]/70 border-[#292e42] hover:border-[#3b4261] hover:bg-[#1a1b26]"
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-2.5">
                         <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/16 text-cyan">
-                            <FileText className="size-5" />
+                          <div
+                            className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
+                              isActive
+                                ? "bg-[#7aa2f7]/25 text-[#7aa2f7] border border-[#7aa2f7]/40"
+                                : "bg-[#24283b] text-[#565f89] border border-[#292e42]"
+                            }`}
+                          >
+                            <FileText className="size-4.5" />
                           </div>
+
                           <div className="min-w-0">
-                            <div
-                              className="truncate text-xs font-bold text-text-primary"
+                            <span
+                              className={`block text-xs font-bold leading-tight line-clamp-1 ${
+                                isActive ? "text-white" : "text-[#c0caf5]"
+                              }`}
                               title={doc.name}
                             >
                               {doc.name}
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-2 text-[11px] text-text-muted">
-                              <span>{doc.size}</span>
+                            </span>
+
+                            <div className="mt-1 flex items-center gap-2 text-[10.5px] font-mono text-[#565f89]">
+                              <span>{doc.size || "2.4 MB"}</span>
                               <span>•</span>
-                              <span className="text-primary">
-                                {doc.chunks} chunks
+                              <span className={isActive ? "text-[#7aa2f7] font-semibold" : "text-[#565f89]"}>
+                                {doc.chunks || 48} chunks
                               </span>
+                              {isActive && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-emerald-400 font-bold uppercase text-[9.5px]">
+                                    ACTIVE
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
 
                         <button
                           type="button"
-                          onClick={handleReset}
-                          title="Remove PDF & reset roadmap"
-                          className="cursor-pointer rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface-secondary hover:text-warning"
+                          onClick={(e) => handleDeleteDoc(doc.id, e)}
+                          title="Remove this PDF"
+                          className="cursor-pointer rounded-md p-1.5 text-[#565f89] hover:bg-red-500/15 hover:text-red-400 transition-colors"
                         >
-                          <Trash2 className="size-4" />
+                          <Trash2 className="size-3.5" />
                         </button>
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between border-t border-border-subtle pt-2.5 text-[10px] text-text-secondary">
-                        <span>
-                          {roadmapData?.knowledgeBase?.totalDocuments ?? 1}{" "}
-                          Document Indexed
-                        </span>
-                        <span className="font-mono text-success">
-                          {roadmapData?.knowledgeBase?.ragStatus ??
-                            "RAG Citations Active"}
-                        </span>
                       </div>
                     </div>
                   )
-                )}
+                })}
+              </div>
             </div>
+          )}
+
+          {/* ==================== 4. CHÂN PANEL CỐ ĐỊNH ==================== */}
+          <div className="shrink-0 p-3.5 border-t border-[#292e42] bg-[#16161e]/90">
+            {isGeneratedReady && targetResumeNode ? (
+              <Link
+                href={getWorkspaceRouteForNode(targetResumeNode)}
+                className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#7aa2f7] hover:bg-[#89b4fa] px-3 text-xs font-bold text-[#16161e] shadow-md transition-all hover:scale-[1.01] active:scale-[0.99]"
+              >
+                <span className="truncate">
+                  Resume: {targetResumeNode.shortCode ? `${targetResumeNode.shortCode} ` : ""}{targetResumeNode.label}
+                </span>
+                <ArrowRight className="size-4 stroke-[2.2] shrink-0" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[#24283b] px-3 text-xs font-semibold text-[#565f89] opacity-40 cursor-not-allowed shadow-none"
+              >
+                <span>Resume Workspace</span>
+                <ArrowRight className="size-3.5" />
+              </button>
+            )}
           </div>
         </aside>
       </main>
@@ -885,9 +1464,9 @@ export default function RoadmapPage() {
                     >
                       {popupNode.status}
                     </span>
-                    {popupNode.complexity && (
+                    {(popupNode.target_complexity || popupNode.complexity) && (
                       <span className="rounded-md border border-border-subtle bg-surface-secondary px-2 py-0.5 font-mono text-[10px] text-cyan">
-                        {popupNode.complexity}
+                        {popupNode.target_complexity || popupNode.complexity}
                       </span>
                     )}
                   </div>

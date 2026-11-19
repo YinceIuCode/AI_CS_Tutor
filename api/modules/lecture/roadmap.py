@@ -1,4 +1,5 @@
 import copy
+from typing import Dict, Any, Optional
 from fastapi import APIRouter, status
 from modules.common.request import QuizEvaluateRequest
 from modules.common.response import success_response, error_response
@@ -7,9 +8,20 @@ from services.database.database import DatabaseService
 router = APIRouter(prefix="/api", tags=["Roadmap & Lectures"])
 
 @router.get("/roadmap")
-def get_roadmap():
-    nodes = DatabaseService.get_roadmap_nodes()
+def get_roadmap(document_id: Optional[str] = None):
+    raw_nodes = DatabaseService.get_roadmap_nodes()
     tasks = DatabaseService.get_tasks_for_roadmap()
+
+    # Filter nodes strictly according to document_id
+    if document_id:
+        doc_str = str(document_id).lower()
+        if "oop" in doc_str or "0002" in doc_str:
+            nodes = [n for n in raw_nodes if n.get("document_id") == "00000005-0000-4000-8000-000000000002" or str(n.get("id", "")).startswith("oop-")]
+        else:
+            nodes = [n for n in raw_nodes if not str(n.get("id", "")).startswith("oop-")]
+    else:
+        # Default to CS101 DSA
+        nodes = [n for n in raw_nodes if not str(n.get("id", "")).startswith("oop-")]
 
     # Map tasks to nodes
     tasks_by_node = {}
@@ -113,3 +125,35 @@ def evaluate_quiz(request: QuizEvaluateRequest):
         "explanation": explanation if is_correct else "Chưa chính xác. Hãy xem xét lại định nghĩa và cấu trúc dữ liệu."
     }
     return success_response(result)
+
+@router.get("/progress/{user_id}")
+def get_user_progress(user_id: str):
+    progress = DatabaseService.get_user_progress(user_id)
+    if not progress:
+        return success_response({
+            "userId": user_id,
+            "completedTasks": {},
+            "quizAnswers": {},
+            "codeDrafts": {},
+            "hintsRemaining": {}
+        })
+    return success_response({
+        "userId": progress.get("user_id"),
+        "completedTasks": progress.get("completed_tasks") or {},
+        "quizAnswers": progress.get("quiz_answers") or {},
+        "codeDrafts": progress.get("code_drafts") or {},
+        "hintsRemaining": progress.get("hints_remaining") or {},
+        "updatedAt": progress.get("updated_at")
+    })
+
+@router.put("/progress/{user_id}")
+def update_user_progress(user_id: str, payload: Dict[str, Any]):
+    progress_data = {
+        "user_id": user_id,
+        "completed_tasks": payload.get("completedTasks", {}),
+        "quiz_answers": payload.get("quizAnswers", {}),
+        "code_drafts": payload.get("codeDrafts", {}),
+        "hints_remaining": payload.get("hintsRemaining", {}),
+    }
+    DatabaseService.upsert_user_progress(progress_data)
+    return success_response({"status": "synced", "userId": user_id})

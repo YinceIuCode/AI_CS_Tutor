@@ -2,8 +2,13 @@ import uuid
 from fastapi import APIRouter, Response, status
 from modules.common.request import SignupRequest
 from modules.common.response import success_response, error_response
-from modules.authenticate.login import create_jwt_token
-from modules.common.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from modules.authenticate.security import (
+    hash_password,
+    create_access_token,
+    create_refresh_token,
+    REFRESH_TOKEN_EXPIRE_SECONDS,
+    ACCESS_TOKEN_EXPIRE_SECONDS,
+)
 from services.database.database import DatabaseService
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
@@ -13,26 +18,26 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 def signup(request: SignupRequest, response: Response):
     # 1. Validation
     if not request.fullName or not request.fullName.strip():
-        return error_response("Vui lòng nhập họ và tên.", status_code=status.HTTP_400_BAD_REQUEST)
+        return error_response("Please enter your full name.", status_code=status.HTTP_400_BAD_REQUEST)
 
     norm_email = request.email.strip().lower()
     if not norm_email or "@" not in norm_email:
-        return error_response("Email không hợp lệ.", status_code=status.HTTP_400_BAD_REQUEST)
+        return error_response("Please enter a valid email address.", status_code=status.HTTP_400_BAD_REQUEST)
 
     if len(request.password) < 8:
-        return error_response("Mật khẩu phải chứa ít nhất 8 ký tự.", status_code=status.HTTP_400_BAD_REQUEST)
+        return error_response("Password must contain at least 8 characters.", status_code=status.HTTP_400_BAD_REQUEST)
 
     if request.confirmPassword and request.password != request.confirmPassword:
-        return error_response("Mật khẩu xác nhận không khớp.", status_code=status.HTTP_400_BAD_REQUEST)
+        return error_response("Password confirmation does not match.", status_code=status.HTTP_400_BAD_REQUEST)
 
     # 2. Check if email already exists
     existing = DatabaseService.get_user_by_email(norm_email)
     if existing:
-        return error_response("Email này đã được đăng ký tài khoản.", status_code=status.HTTP_400_BAD_REQUEST)
+        return error_response("An account with this email already exists.", status_code=status.HTTP_400_BAD_REQUEST)
 
-    # 3. Create user in Supabase
+    # 3. Create user in Supabase with Bcrypt Hash
     new_user_id = str(uuid.uuid4())
-    password_hash = f"offbyone_demo_hash::{norm_email}::{request.password}"
+    password_hash = hash_password(request.password)
 
     new_user = {
         "id": new_user_id,
@@ -45,7 +50,7 @@ def signup(request: SignupRequest, response: Response):
 
     created = DatabaseService.create_user(new_user)
     if not created:
-        return error_response("Không thể tạo tài khoản trên máy chủ CSDL.", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return error_response("Could not create user account on database.", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # 4. Initialize empty user_progress
     DatabaseService.upsert_user_progress({
@@ -56,15 +61,27 @@ def signup(request: SignupRequest, response: Response):
         "hints_remaining": 3
     })
 
-    # 5. Issue token & set cookie
-    token = create_jwt_token(new_user_id, norm_email, "student")
+    # 5. Dual Token Generation (Access 15m, Refresh 7d)
+    access_token = create_access_token(new_user_id, norm_email, "student", "registered")
+    refresh_token = create_refresh_token(new_user_id)
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        max_age=REFRESH_TOKEN_EXPIRE_SECONDS,
+        samesite="lax",
+        secure=False,
+        path="/"
+    )
     response.set_cookie(
         key="access_token",
-        value=token,
+        value=access_token,
         httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
         samesite="lax",
-        secure=False
+        secure=False,
+        path="/"
     )
 
     public_user = {
@@ -73,6 +90,14 @@ def signup(request: SignupRequest, response: Response):
         "fullName": request.fullName.strip(),
         "role": "student",
         "accountType": "registered",
-        "token": token
+        "token": access_token
     }
-    return success_response({"user": public_user}, message="Đăng ký tài khoản thành công!", status_code=status.HTTP_201_CREATED)
+
+    return success_response(
+        {
+            "user": public_user,
+            "accessToken": access_token
+        },
+        message="Account created successfully!",
+        status_code=status.HTTP_201_CREATED
+    )

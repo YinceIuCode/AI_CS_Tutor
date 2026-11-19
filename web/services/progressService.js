@@ -1,3 +1,5 @@
+import { syncTaskProgressToSupabase } from "./adminService"
+
 /**
  * @typedef {Object} QuizProgressItem
  * @property {string | null} selectedOption
@@ -60,7 +62,8 @@ export function createDefaultProgress(userId, accountType = "registered") {
  * @param { { id?: string; accountType?: "registered" | "guest" } | null | undefined } user
  */
 function getStorageTarget(user) {
-  if (typeof window === "undefined" || !user?.id) {
+  // Admin là quản trị viên hệ thống, không lưu tiến độ học tập
+  if (typeof window === "undefined" || !user?.id || user?.role === "admin") {
     return null
   }
   const isGuest = user.accountType === "guest"
@@ -183,7 +186,7 @@ export function saveRoadmapFlowState(user, payload) {
  */
 export function saveQuizProgress(user, taskId, quizState) {
   if (!taskId) return getUserProgress(user)
-  return updateUserProgress(user, (prev) => ({
+  const next = updateUserProgress(user, (prev) => ({
     ...prev,
     quizAnswers: {
       ...prev.quizAnswers,
@@ -193,6 +196,14 @@ export function saveQuizProgress(user, taskId, quizState) {
       },
     },
   }))
+
+  if (user?.id) {
+    try {
+      syncTaskProgressToSupabase(user.id, taskId, undefined, quizState).catch(() => {})
+    } catch {}
+  }
+
+  return next
 }
 
 /**
@@ -210,7 +221,11 @@ export function saveCodeProgress(user, taskId, codeState) {
     codeDrafts: {
       ...prev.codeDrafts,
       [taskId]: {
-        ...(prev.codeDrafts[taskId] || {}),
+        ...(typeof prev.codeDrafts[taskId] === "object" && prev.codeDrafts[taskId] !== null
+          ? prev.codeDrafts[taskId]
+          : typeof prev.codeDrafts[taskId] === "string"
+          ? { code: prev.codeDrafts[taskId] }
+          : {}),
         ...codeState,
       },
     },
@@ -244,13 +259,21 @@ export function saveHintsProgress(user, taskId, remaining) {
 export function markTaskAsCompleted(user, taskId) {
   if (!taskId) return getUserProgress(user)
 
-  return updateUserProgress(user, (prev) => ({
+  const next = updateUserProgress(user, (prev) => ({
     ...prev,
     completedTasks: {
       ...prev.completedTasks,
       [taskId]: true,
     },
   }))
+
+  if (user?.id) {
+    try {
+      syncTaskProgressToSupabase(user.id, taskId, true, null).catch(() => {})
+    } catch {}
+  }
+
+  return next
 }
 
 /**
@@ -288,95 +311,227 @@ export function clearGuestProgress(guestId) {
  * @param {UserProgressData | null | undefined} [userProgress]
  * @returns {Array<T>}
  */
-export function applyUserProgressToNodes(baseNodes = [], userProgress = null) {
-  const completedMap = userProgress?.completedTasks || {}
+/**
+ * Sanitize completedTasks by purging any taskId belonging to a node that is currently LOCKED.
+ * Enforces the strict DAG invariant: a node cannot have completed tasks if its prerequisites are not met.
+ *
+ * @param {Array} baseNodes
+ * @param {Record<string, boolean>} rawCompletedTasks
+ * @returns {Record<string, boolean>}
+ */
+export function sanitizeUserProgress(baseNodes = [], rawCompletedTasks = {}) {
+  if (!rawCompletedTasks || typeof rawCompletedTasks !== "object") {
+    return {}
+  }
 
-  // Pass 1: Update tasks and node completion percentages
-  const updatedNodes = baseNodes.map((node) => {
-    const rawTasks = Array.isArray(node.tasks) ? node.tasks : []
-    let foundCurrent = false
+  const completedMap = { ...rawCompletedTasks }
 
-    const nextTasks = rawTasks.map((task) => {
-      const isDone =
-        task.status === "completed" || Boolean(completedMap[task.id])
-      if (isDone) {
-        return { ...task, status: "completed" }
-      }
-      if (!foundCurrent && node.status !== "locked") {
-        foundCurrent = true
-        return { ...task, status: "current" }
-      }
-      return {
-        ...task,
-        status: task.status === "current" ? "current" : "locked",
-      }
-    })
+  // Fixed-point topological resolution of unlocked nodes
+  const completedNodeIds = new Set()
+  const unlockedNodeIds = new Set()
 
-    const totalTasks = nextTasks.length || node.totalTasks || 3
-    const completedTasksCount = nextTasks.filter(
-      (t) => t.status === "completed"
-    ).length
-    const progress =
-      totalTasks > 0 ? Math.round((completedTasksCount / totalTasks) * 100) : 0
+  let changed = true
+  let iterations = 0
+  const maxIterations = Math.max(10, baseNodes.length * 2)
 
-    let nextNodeStatus = node.status
-    if (completedTasksCount >= totalTasks && totalTasks > 0) {
-      nextNodeStatus = "completed"
-    }
+  while (changed && iterations < maxIterations) {
+    changed = false
+    iterations++
 
-    return {
-      ...node,
-      status: nextNodeStatus,
-      completedTasks: completedTasksCount,
-      totalTasks,
-      progress,
-      tasks: nextTasks,
-    }
-  })
+    for (const node of baseNodes) {
+      if (completedNodeIds.has(node.id)) continue
 
-  // Pass 2: Enforce the strict prerequisite rule across the entire DAG:
-  // - If all tasks in the node are completed -> "completed" (Green)
-  // - Else if ALL prerequisite nodes on the left are "completed" (Green) -> "current" (Blue)
-  // - Else (at least 1 prerequisite node is NOT "completed", i.e. "current" or "locked") -> "locked"
-  const nodeById = new Map(updatedNodes.map((n) => [n.id, n]))
+      const prereqs = Array.isArray(node.prerequisites) ? node.prerequisites : []
+      // Rule 1: EVERY prerequisite must be 100% completed
+      const allPrereqsDone =
+        prereqs.length === 0 ||
+        prereqs.every((pId) => completedNodeIds.has(pId))
 
-  return updatedNodes.map((node) => {
-    const prereqs = Array.isArray(node.prerequisites) ? node.prerequisites : []
-    const allPrereqsCompleted =
-      prereqs.length === 0 ||
-      prereqs.every(
-        (prereqId) => nodeById.get(prereqId)?.status === "completed"
-      )
-
-    if (node.completedTasks >= node.totalTasks && node.totalTasks > 0) {
-      return { ...node, status: "completed" }
-    }
-
-    if (allPrereqsCompleted) {
-      let assignedCurrent = false
-      const unlockedTasks = (node.tasks || []).map((t) => {
-        if (t.status === "completed") return t
-        if (!assignedCurrent) {
-          assignedCurrent = true
-          return { ...t, status: "current" }
+      if (allPrereqsDone) {
+        if (!unlockedNodeIds.has(node.id)) {
+          unlockedNodeIds.add(node.id)
+          changed = true
         }
-        return { ...t, status: "locked" }
+
+        const nodeTasks = Array.isArray(node.tasks) ? node.tasks : []
+        const totalTasks = nodeTasks.length || node.totalTasks || 3
+        const doneTasks = nodeTasks.filter((t) => Boolean(completedMap[t.id]))
+
+        if (doneTasks.length >= totalTasks && totalTasks > 0) {
+          completedNodeIds.add(node.id)
+          changed = true
+        }
+      }
+    }
+  }
+
+  // Any node NOT in unlockedNodeIds is LOCKED.
+  // Purge any orphan/stale completed tasks belonging to locked nodes!
+  for (const node of baseNodes) {
+    if (!unlockedNodeIds.has(node.id)) {
+      const nodeTasks = Array.isArray(node.tasks) ? node.tasks : []
+      nodeTasks.forEach((t) => {
+        delete completedMap[t.id]
       })
+      delete completedMap[`${node.id}-task-1`]
+      delete completedMap[`${node.id}-task-2`]
+      delete completedMap[`${node.id}-task-3`]
+      if (node.id === "sorting-algorithms") {
+        delete completedMap["sorting-task-1"]
+        delete completedMap["sorting-task-2"]
+        delete completedMap["sorting-task-3"]
+      }
+      if (node.id === "graph-algorithms") {
+        delete completedMap["graph-task-1"]
+        delete completedMap["graph-task-2"]
+        delete completedMap["graph-task-3"]
+      }
+      if (node.id === "binary-search-tree") {
+        delete completedMap["bst-task-1"]
+        delete completedMap["bst-task-2"]
+        delete completedMap["bst-task-3"]
+      }
+    }
+  }
+
+  return completedMap
+}
+
+/**
+ * Compute the strict DAG state for all nodes in the skill tree based on user progress.
+ *
+ * Implements 5 Strict Invariants:
+ * 1. EVERY prerequisite must be 100% completed (`status === 'completed'`) for a node to unlock.
+ * 2. Priority 1: If !isUnlocked -> STRICTLY `status = 'locked'`, `completedTasks = 0`, `progress = 0`, all tasks locked.
+ * 3. Priority 2: If isUnlocked:
+ *    - if doneCount >= totalTasks -> `status = 'completed'` (100%)
+ *    - else -> `status = 'current'` (Active / In Progress)
+ *
+ * @template T
+ * @param {Array<T>} baseNodes
+ * @param {UserProgressData | null | undefined} [userProgress]
+ * @returns {Array<T>}
+ */
+export function applyUserProgressToNodes(baseNodes = [], userProgress = null) {
+  if (!Array.isArray(baseNodes) || baseNodes.length === 0) {
+    return []
+  }
+
+  const rawCompletedMap = userProgress?.completedTasks || {}
+
+  // 1. Sanitize orphaned completed tasks belonging to locked nodes
+  const sanitizedCompletedMap = sanitizeUserProgress(baseNodes, rawCompletedMap)
+
+  // 2. Fixed-point topological resolution of node states
+  const completedNodeIds = new Set()
+  const unlockedNodeIds = new Set()
+
+  let changed = true
+  let iterations = 0
+  const maxIterations = Math.max(10, baseNodes.length * 2)
+
+  while (changed && iterations < maxIterations) {
+    changed = false
+    iterations++
+
+    for (const node of baseNodes) {
+      if (completedNodeIds.has(node.id)) continue
+
+      const prereqs = Array.isArray(node.prerequisites) ? node.prerequisites : []
+      // Rule 1: EVERY prerequisite must be completed (Array.prototype.every)
+      const allPrereqsDone =
+        prereqs.length === 0 ||
+        prereqs.every((pId) => completedNodeIds.has(pId))
+
+      if (allPrereqsDone) {
+        if (!unlockedNodeIds.has(node.id)) {
+          unlockedNodeIds.add(node.id)
+          changed = true
+        }
+
+        const nodeTasks = Array.isArray(node.tasks) ? node.tasks : []
+        const totalTasks = nodeTasks.length || node.totalTasks || 3
+        const doneTasks = nodeTasks.filter(
+          (t) => Boolean(sanitizedCompletedMap[t.id])
+        )
+
+        if (doneTasks.length >= totalTasks && totalTasks > 0) {
+          completedNodeIds.add(node.id)
+          changed = true
+        }
+      }
+    }
+  }
+
+  // 3. Map final node states with strict Priority 1 (!isUnlocked) and Priority 2 (isUnlocked)
+  return baseNodes.map((node) => {
+    const isUnlocked = unlockedNodeIds.has(node.id)
+    const nodeTasks = Array.isArray(node.tasks) ? node.tasks : []
+    const totalTasks = nodeTasks.length || node.totalTasks || 3
+
+    // ==================== PRIORITY 1: LOCKED ====================
+    // If not unlocked, STRICTLY locked: 0/3 tasks, 0% progress, all tasks locked!
+    if (!isUnlocked) {
+      const lockedTasks = nodeTasks.map((t) => ({
+        ...t,
+        status: "locked",
+      }))
       return {
         ...node,
-        status: "current",
-        tasks: unlockedTasks,
+        status: "locked",
+        completedTasks: 0,
+        totalTasks,
+        progress: 0,
+        tasks: lockedTasks,
       }
     }
 
-    // At least 1 prerequisite is not completed -> lock this node
-    const lockedTasks = (node.tasks || []).map((t) =>
-      t.status === "completed" ? t : { ...t, status: "locked" }
-    )
+    // ==================== PRIORITY 2: UNLOCKED ====================
+    const doneTasksCount = nodeTasks.filter(
+      (t) => Boolean(sanitizedCompletedMap[t.id])
+    ).length
+    const isAllDone = doneTasksCount >= totalTasks && totalTasks > 0
+
+    if (isAllDone) {
+      // Completed node (100%)
+      const completedTasks = nodeTasks.map((t) => ({
+        ...t,
+        status: "completed",
+      }))
+      return {
+        ...node,
+        status: "completed",
+        completedTasks: totalTasks,
+        totalTasks,
+        progress: 100,
+        tasks: completedTasks,
+      }
+    }
+
+    // In Progress node (current, 0 to < totalTasks)
+    let assignedCurrent = false
+    const currentTasks = nodeTasks.map((t) => {
+      const isTaskDone = Boolean(sanitizedCompletedMap[t.id])
+      if (isTaskDone) {
+        return { ...t, status: "completed" }
+      }
+      if (!assignedCurrent) {
+        assignedCurrent = true
+        return { ...t, status: "current" }
+      }
+      return { ...t, status: "locked" }
+    })
+
+    const progress =
+      totalTasks > 0 ? Math.round((doneTasksCount / totalTasks) * 100) : 0
+
     return {
       ...node,
-      status: "locked",
-      tasks: lockedTasks,
+      status: "current",
+      completedTasks: doneTasksCount,
+      totalTasks,
+      progress,
+      tasks: currentTasks,
     }
   })
 }

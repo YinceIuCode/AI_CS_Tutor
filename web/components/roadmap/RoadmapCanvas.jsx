@@ -54,9 +54,9 @@ function RoadmapFlowInner({
     if (!roadmapNodes.length) return
     const timer = window.setTimeout(() => {
       fitView({
-        padding: 0.08,
-        minZoom: 0.65,
-        maxZoom: 1.1,
+        padding: 0.1,
+        minZoom: 0.35,
+        maxZoom: 1.05,
         duration: 260,
       })
     }, 50)
@@ -159,9 +159,9 @@ function RoadmapFlowInner({
             type="button"
             onClick={() =>
               fitView({
-                padding: 0.06,
-                minZoom: 0.78,
-                maxZoom: 1.15,
+                padding: 0.1,
+                minZoom: 0.35,
+                maxZoom: 1.05,
                 duration: 240,
               })
             }

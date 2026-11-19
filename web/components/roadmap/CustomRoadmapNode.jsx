@@ -69,38 +69,31 @@ function CustomRoadmapNode({ data }) {
 
   const ringStroke =
     status === "completed"
-      ? "var(--color-success, #9ECE6A)"
+      ? "#10b981"
       : status === "current"
-        ? "var(--color-cyan, #7DCFFF)"
-        : "var(--color-border-subtle, #292E42)"
+        ? "#60a5fa"
+        : "#414868"
 
   const coreStyle =
     status === "completed"
-      ? "border-2 border-success bg-surface text-success shadow-sm"
+      ? "border-[2.5px] border-[#10b981] bg-[#0d2822] shadow-[0_0_12px_rgba(16,185,129,0.25)]"
       : status === "current"
-        ? "border-2 border-primary bg-surface text-cyan shadow-sm"
-        : "border border-border-subtle bg-surface-secondary text-text-muted"
+        ? "border-[3px] border-[#60a5fa] bg-[#172544] shadow-[0_0_14px_rgba(59,130,246,0.3)]"
+        : "border-2 border-dashed border-[#414868] bg-[#1a1b26]"
 
   const portColor =
     status === "completed"
-      ? "!border-success !bg-surface-secondary"
+      ? "!border-[#10b981] !bg-[#0d2822]"
       : status === "current"
-        ? "!border-cyan !bg-surface-secondary"
-        : "!border-border !bg-surface-secondary"
-
-  const pillBorder =
-    status === "completed"
-      ? "border-success/45 group-hover:border-success"
-      : status === "current"
-        ? "border-cyan/60 group-hover:border-cyan"
-        : "border-border-subtle group-hover:border-border"
+        ? "!border-[#60a5fa] !bg-[#172544]"
+        : "!border-[#414868] !bg-[#1a1b26]"
 
   const complexityColor =
     status === "completed"
-      ? "text-success"
+      ? "text-[#34d399] font-mono font-medium text-[11px]"
       : status === "current"
-        ? "text-cyan"
-        : "text-text-muted"
+        ? "text-[#60a5fa] font-mono font-medium text-[11px]"
+        : "text-[#787c99] font-mono text-[11px]"
 
   const statusLabel =
     status === "completed"
@@ -111,16 +104,18 @@ function CustomRoadmapNode({ data }) {
 
   const statusBadgeClass =
     status === "completed"
-      ? "border-success/40 bg-success/15 text-success"
+      ? "border-[#10b981]/40 bg-[#10b981]/15 text-[#34d399]"
       : status === "current"
-        ? "border-cyan/40 bg-cyan/15 text-cyan"
-        : "border-border bg-surface-secondary text-text-muted"
+        ? "border-[#60a5fa]/40 bg-[#60a5fa]/15 text-[#60a5fa]"
+        : "border-[#414868] bg-[#24283b] text-[#787c99]"
 
   return (
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="group relative flex w-[184px] cursor-pointer flex-col items-center select-none"
+      className={`group relative flex w-[184px] cursor-pointer flex-col items-center select-none transition-opacity ${
+        status === "locked" ? "opacity-85" : "opacity-100"
+      }`}
     >
       {/* ==================== HOVER PREVIEW CARD (450ms DELAY, COMPACT SUMMARY ONLY) ==================== */}
       {showHoverPreview && !isSelected && (
@@ -221,8 +216,8 @@ function CustomRoadmapNode({ data }) {
             cy="38"
             r={radius}
             fill="none"
-            stroke="var(--color-border-subtle, #292E42)"
-            strokeWidth="3"
+            stroke={status === "locked" ? "#414868" : status === "completed" ? "rgba(16, 185, 129, 0.2)" : "rgba(96, 165, 250, 0.2)"}
+            strokeWidth={status === "locked" ? "2" : "2.5"}
             strokeDasharray={status === "locked" ? "4 4" : undefined}
           />
           {/* Dynamic Mastery Arc */}
@@ -244,64 +239,36 @@ function CustomRoadmapNode({ data }) {
 
         {/* Inner Core Medallion (56x56px) */}
         <div
-          className={`relative z-10 flex size-[56px] items-center justify-center rounded-full border-[2px] transition-transform duration-200 group-hover:scale-108 ${coreStyle}`}
+          className={`relative z-10 flex size-[56px] items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 ${coreStyle}`}
         >
           {status === "completed" && (
-            <Check className="size-6 stroke-[2.75] text-success" />
+            <Check className="size-6 text-[#34d399]" strokeWidth={2.5} />
           )}
           {status === "current" && (
-            <span className="font-mono text-[15px] font-extrabold tracking-tight text-cyan">
+            <span className="font-mono text-sm font-bold text-white tracking-tight">
               {data?.shortCode || "01"}
             </span>
           )}
           {status === "locked" && (
-            <Lock className="size-4.5 stroke-[2] text-text-muted" />
+            <Lock className="size-4.5 text-[#787c99]" strokeWidth={2} />
           )}
-        </div>
-
-        {/* 3 Mini Task Mastery Pips (Theory • Quiz • Code) perched on the bottom rim of the Orb */}
-        <div className="absolute -bottom-1 z-20 flex items-center gap-1 rounded-full border border-border-subtle bg-surface-secondary px-2 py-0.5 shadow-md">
-          {[0, 1, 2].map((idx) => {
-            const taskStatus = tasks[idx]?.status
-            const isPipDone =
-              taskStatus === "completed" || idx < completedTasks
-            const isPipCurrent =
-              !isPipDone &&
-              status !== "locked" &&
-              (taskStatus === "current" || idx === completedTasks)
-
-            return (
-              <span
-                key={idx}
-                className={`size-1.5 rounded-full transition-colors ${
-                  isPipDone
-                    ? "bg-success"
-                    : isPipCurrent
-                      ? "bg-cyan"
-                      : "bg-border"
-                }`}
-              />
-            )
-          })}
         </div>
       </div>
 
       {/* ==================== 2. FLOATING NAMEPLATE PILL ==================== */}
-      <div
-        className={`relative z-10 mt-2 flex flex-col items-center rounded-md border bg-surface px-2.5 py-1 text-center shadow-sm transition-colors ${pillBorder}`}
-      >
-        <span
-          className={`line-clamp-1 text-[12px] leading-tight font-bold ${
-            status === "locked" ? "text-text-muted" : "text-text-primary"
-          }`}
-        >
+      <div className="relative z-10 mt-2 flex flex-col items-center rounded-lg border border-slate-300 dark:border-[#3b4261] bg-white dark:bg-[#1f2335] px-3 py-2 text-center shadow-md dark:shadow-lg transition-colors max-w-[185px]">
+        <span className="line-clamp-2 text-[12px] font-bold tracking-tight leading-snug text-slate-900 dark:text-[#ffffff]">
           {data?.label}
         </span>
-        <span
-          className={`mt-0.5 font-mono text-[10px] font-semibold tabular-nums ${complexityColor}`}
-        >
-          {data?.complexity || `${completedTasks}/${totalTasks} Mastered`}
-        </span>
+        <div className="mt-1 flex items-center gap-1.5 font-mono text-[11px] tabular-nums">
+          <span className={complexityColor}>
+            {data?.target_complexity || data?.complexity || "O(N)"}
+          </span>
+          <span className="text-text-muted opacity-50">•</span>
+          <span className="rounded bg-slate-100 dark:bg-[#292e42] px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-700 dark:text-[#c0caf5]">
+            {completedTasks}/{totalTasks}
+          </span>
+        </div>
       </div>
     </div>
   )

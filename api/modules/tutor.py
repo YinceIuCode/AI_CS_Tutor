@@ -32,23 +32,4 @@ def tutor_chat(request: TutorChatRequest):
 def save_draft(request: SaveDraftRequest):
     return success_response({"taskId": request.taskId, "saved": True}, message="Bản nháp đã lưu an toàn.")
 
-# Endpoints đồng bộ tiến độ học viên giữa thiết bị và server
-@router.put("/progress/{user_id}")
-def sync_user_progress(user_id: str, payload: Dict[str, Any] = Body(...)):
-    completed_tasks = payload.get("completedTasks", {})
-    quiz_answers = payload.get("quizAnswers", {})
-    code_drafts = payload.get("codeDrafts", {})
 
-    DatabaseService.upsert_user_progress({
-        "user_id": user_id,
-        "completed_tasks": completed_tasks,
-        "quiz_answers": quiz_answers,
-        "code_drafts": code_drafts,
-        "hints_remaining": payload.get("hintsRemaining", 3)
-    })
-    return success_response({"synced": True}, message="Tiến độ học viên đã được đồng bộ.")
-
-@router.get("/progress/{user_id}")
-def get_user_progress(user_id: str):
-    prog = DatabaseService.get_user_progress(user_id)
-    return success_response({"progress": prog or {}})

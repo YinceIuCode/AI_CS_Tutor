@@ -26,9 +26,9 @@ export interface ProblemExample {
 export interface ProblemDetail {
   title: string
   difficulty: "Easy" | "Medium" | "Hard"
-  description: string
-  inputFormat: string
-  outputFormat: string
+  description: string | any
+  inputFormat?: string
+  outputFormat?: string
   examples: ProblemExample[]
   constraints: string[]
   notes?: string
@@ -47,7 +47,7 @@ export interface ProblemDescriptionPanelProps {
  * into styled semantic tokens without bringing in heavy markdown parsers.
  */
 function renderFormattedInlineText(text: string) {
-  if (!text) return null
+  if (!text || typeof text !== "string") return null
   const parts = text.split(/(`[^`]+`)/g)
   return parts.map((part, index) => {
     if (part.startsWith("`") && part.endsWith("`")) {
@@ -161,11 +161,11 @@ export function ProblemDescriptionPanel({
       {/* 1. Header Bar */}
       <div className="flex shrink-0 items-center justify-between border-b border-border-subtle bg-surface px-4 py-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[#7aa2f7]/15 text-[#7aa2f7]">
             <BookOpen className="size-3.5" />
           </div>
           <span className="text-xs font-bold text-text-primary uppercase tracking-wider truncate">
-            Description
+            Problem Description
           </span>
           <span
             className={cn(
@@ -184,7 +184,7 @@ export function ProblemDescriptionPanel({
             onClick={onToggleCollapse}
             title="Collapse Problem Description"
             aria-label="Collapse Problem Description"
-            className="hidden lg:inline-flex size-6 cursor-pointer items-center justify-center rounded-md border border-border-subtle bg-surface-secondary text-text-muted transition-colors hover:border-cyan/50 hover:text-cyan"
+            className="inline-flex size-6 cursor-pointer items-center justify-center rounded-md border border-border-subtle bg-surface-secondary text-text-muted transition-colors hover:border-[#7aa2f7]/50 hover:text-[#7aa2f7]"
           >
             <PanelLeftClose className="size-3.5" />
           </button>
@@ -192,7 +192,7 @@ export function ProblemDescriptionPanel({
       </div>
 
       {/* 2. Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 text-text-secondary text-xs sm:text-[13px] leading-relaxed custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 text-text-secondary text-xs sm:text-[13px] leading-relaxed custom-description-scrollbar">
         {/* Title */}
         <div>
           <h2 className="text-sm sm:text-base font-extrabold text-text-primary tracking-tight">
@@ -202,9 +202,23 @@ export function ProblemDescriptionPanel({
 
         {/* Description Body */}
         <div className="space-y-2.5">
-          {(problem.description || "No description provided.")
+          {(typeof problem.description === "string"
+            ? problem.description
+            : typeof (problem.description as any)?.paragraph1 === "string"
+            ? [
+                (problem.description as any).paragraph1,
+                (problem.description as any).paragraph2,
+              ]
+                .filter(Boolean)
+                .join("\n\n")
+            : typeof (problem.description as any)?.description === "string"
+            ? (problem.description as any).description
+            : typeof (problem.description as any)?.summaryLead === "string"
+            ? (problem.description as any).summaryLead
+            : String(problem.description || "No description provided.")
+          )
             .split("\n\n")
-            .map((para, i) => (
+            .map((para: string, i: number) => (
               <p key={i} className="text-text-secondary leading-relaxed">
                 {renderFormattedInlineText(para)}
               </p>

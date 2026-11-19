@@ -58,6 +58,19 @@ class DatabaseService:
         return results[0] if results and len(results) > 0 else None
 
     @classmethod
+    def get_user_by_id(cls, user_id: str) -> Optional[Dict[str, Any]]:
+        if supabase_client:
+            try:
+                res = supabase_client.table("users").select("*").eq("id", user_id).limit(1).execute()
+                if res.data and len(res.data) > 0:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[Supabase] Error get_user_by_id: {e}")
+
+        results = cls._rest_request(f"users?id=eq.{user_id}&limit=1")
+        return results[0] if results and len(results) > 0 else None
+
+    @classmethod
     def create_user(cls, user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         if supabase_client:
             try:
@@ -68,6 +81,18 @@ class DatabaseService:
 
         results = cls._rest_request("users", method="POST", body=user_data)
         return results[0] if results and len(results) > 0 else user_data
+
+    @classmethod
+    def update_user_password(cls, user_id: str, new_password_hash: str) -> bool:
+        if supabase_client:
+            try:
+                res = supabase_client.table("users").update({"password_hash": new_password_hash}).eq("id", user_id).execute()
+                return bool(res.data)
+            except Exception as e:
+                print(f"[Supabase] Error update_user_password: {e}")
+
+        results = cls._rest_request(f"users?id=eq.{user_id}", method="PATCH", body={"password_hash": new_password_hash})
+        return results is not None
 
     # 2. ROADMAP & TASKS QUERIES
     @classmethod

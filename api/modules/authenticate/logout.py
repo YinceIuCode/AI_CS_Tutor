@@ -5,5 +5,6 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/logout")
 def logout(response: Response):
+    response.delete_cookie(key="refresh_token", path="/")
     response.delete_cookie(key="access_token", path="/")
-    return success_response(message="Đăng xuất thành công!")
+    return success_response(message="Logged out successfully.")
