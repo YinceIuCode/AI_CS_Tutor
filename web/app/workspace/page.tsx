@@ -316,6 +316,18 @@ export function WorkspaceView({
 
   // Dynamic Theory Reference Snippet & Dry-run State Trace
   const theorySnippet = React.useMemo(() => {
+    if (taskDetail?.snippet?.code) {
+      return {
+        title: taskDetail.snippet.title || `${node.label} Reference Implementation`,
+        code: taskDetail.snippet.code,
+        traceSteps: taskDetail.snippet.traceSteps || [
+          { label: "Step 1: Invariant Initialization", desc: "Validates base structure invariants and memory layout." },
+          { label: "Step 2: Pointer / State Transition", desc: "Performs atomic state transitions according to theoretical bounds." },
+          { label: "Step 3: Post-Condition Guard", desc: "Restores balance invariants and bounds execution time." },
+        ],
+        complexityNote: taskDetail.snippet.complexityNote || "Operations verified against complexity bounds."
+      }
+    }
     if (node.id === "avl-tree") {
       return {
         title: "AVL O(1) Right Rotation (LL Imbalance)",
@@ -425,6 +437,15 @@ bool verifyInvariant(Node* root) {
 
   // 3-Question assessment suite for Task 2
   const quizQuestions = React.useMemo(() => {
+    if (Array.isArray(taskDetail?.questions) && taskDetail.questions.length > 0) {
+      return taskDetail.questions.map((q: any, idx: number) => ({
+        prompt: q.prompt || q.questionPrompt || `Question ${idx + 1} for ${node.label}`,
+        options: q.options || [],
+        explanation: q.explanation || q.hints?.correct || `Correct! Option properly satisfies ${node.label} invariants.`,
+        clue: q.hint || q.clue || q.hints?.incorrect || "Review how this data structure enforces local vs global invariants.",
+      }))
+    }
+
     const q1 = {
       prompt: taskDetail?.questionPrompt || `Which invariant strictly defines ${node.label}?`,
       options: taskDetail?.options || [
@@ -476,7 +497,7 @@ bool verifyInvariant(Node* root) {
   const isCurrentQCorrect = currentQState.isCorrect
 
   const correctQuizQuestionsCount = React.useMemo(() => {
-    return quizQuestions.filter((_, idx) => quizQuestionsMap[`Q${idx + 1}`]?.isCorrect === true).length
+    return quizQuestions.filter((_: any, idx: number) => quizQuestionsMap[`Q${idx + 1}`]?.isCorrect === true).length
   }, [quizQuestions, quizQuestionsMap])
 
   const isQuizFullyCompleted = correctQuizQuestionsCount === quizQuestions.length // 3/3 Correct
@@ -748,7 +769,7 @@ bool verifyInvariant(Node* root) {
     setQuizQuestionsMap(nextMap)
 
     const all3Correct = quizQuestions.every(
-      (_, idx) => nextMap[`Q${idx + 1}`]?.isCorrect === true
+      (_: any, idx: number) => nextMap[`Q${idx + 1}`]?.isCorrect === true
     )
 
     saveQuizAnswer(activeTask.id, {
@@ -1438,7 +1459,7 @@ bool verifyInvariant(Node* root) {
                     </span>
 
                     <div className="flex items-center gap-1.5">
-                      {quizQuestions.map((_, qIdx) => {
+                      {quizQuestions.map((_: any, qIdx: number) => {
                         const qK = `Q${qIdx + 1}`
                         const qRecord = quizQuestionsMap[qK]
                         const isQCorrect = qRecord?.isCorrect === true
@@ -1586,7 +1607,7 @@ bool verifyInvariant(Node* root) {
                           </div>
 
                           <div className="space-y-2 pt-1">
-                            {theorySnippet.traceSteps.map((step, sIdx) => (
+                            {theorySnippet.traceSteps.map((step: any, sIdx: number) => (
                               <div key={sIdx} className="rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-xs">
                                 <div className="font-mono text-[10.5px] font-bold text-[#7aa2f7]">{step.label}</div>
                                 <div className="mt-0.5 text-[11px] text-text-secondary">{step.desc}</div>
@@ -1796,7 +1817,7 @@ bool verifyInvariant(Node* root) {
                         ) : isCurrentQChecked && isCurrentQCorrect ? (
                           (() => {
                             const nextUnfinishedIdx = quizQuestions.findIndex(
-                              (_, idx) => !quizQuestionsMap[`Q${idx + 1}`]?.isCorrect
+                              (_: any, idx: number) => !quizQuestionsMap[`Q${idx + 1}`]?.isCorrect
                             )
                             if (nextUnfinishedIdx !== -1) {
                               return (

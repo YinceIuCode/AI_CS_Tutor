@@ -33,6 +33,7 @@ import {
   Search,
   Shield,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Terminal,
   Trash2,
@@ -41,6 +42,14 @@ import {
   Users,
   X,
   Zap,
+  Play,
+  BookMarked,
+  Flame,
+  Square,
+  CheckSquare,
+  Cpu,
+  Tag,
+  Sliders,
 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { BrandLogo } from "@/components/brand-logo"
@@ -64,6 +73,85 @@ import { MOCK_ROADMAP_NODES } from "@/mocks/roadmapData"
 import { WORKSPACE_TASK_DETAILS } from "@/mocks/workspaceTasks"
 
 type AdminTab = "database" | "curriculum" | "users" | "submissions"
+
+
+/**
+ * Tokyo Night Code Editor with Line Numbers Gutter and Indentation Support.
+ */
+function TokyoNightCodeEditor({
+  value,
+  onChange,
+  readOnly = false,
+  minHeight = "320px",
+  placeholder = "// Enter C++ code here...",
+}: {
+  value: string
+  onChange?: (val: string) => void
+  readOnly?: boolean
+  minHeight?: string
+  placeholder?: string
+}) {
+  const lineCount = React.useMemo(() => {
+    return Math.max(1, (value || "").split("\n").length)
+  }, [value])
+
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
+  const gutterRef = React.useRef<HTMLDivElement>(null)
+
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (gutterRef.current) {
+      gutterRef.current.scrollTop = e.currentTarget.scrollTop
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Tab") {
+      e.preventDefault()
+      if (!onChange) return
+      const start = e.currentTarget.selectionStart
+      const end = e.currentTarget.selectionEnd
+      const nextVal = (value || "").substring(0, start) + "    " + (value || "").substring(end)
+      onChange(nextVal)
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 4
+        }
+      }, 0)
+    }
+  }
+
+  return (
+    <div
+      className="relative flex overflow-hidden rounded-xl border border-[#24283b] bg-[#13141c] font-mono text-xs shadow-inner"
+      style={{ minHeight }}
+    >
+      {/* Line Numbers Gutter */}
+      <div
+        ref={gutterRef}
+        className="shrink-0 select-none overflow-hidden border-r border-[#24283b] bg-[#16161e] py-3 px-3 text-right text-[11px] font-medium text-[#414868]"
+      >
+        {Array.from({ length: lineCount }).map((_, i) => (
+          <div key={i} className="leading-5">
+            {i + 1}
+          </div>
+        ))}
+      </div>
+
+      {/* Code Textarea */}
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange && onChange(e.target.value)}
+        onScroll={handleScroll}
+        onKeyDown={handleKeyDown}
+        readOnly={readOnly}
+        placeholder={placeholder}
+        spellCheck={false}
+        className="flex-1 resize-none bg-transparent py-3 px-4 leading-5 text-[#c0caf5] outline-none placeholder:text-[#414868] selection:bg-[#283457]"
+      />
+    </div>
+  )
+}
 
 export default function AdminPage() {
   const router = useRouter()
@@ -112,37 +200,145 @@ export default function AdminPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Tab 2 state (Curriculum Builder)
-  const [selectedNodeId, setSelectedNodeId] = React.useState<string>("avl-tree")
-  const [activeLessonType, setActiveLessonType] = React.useState<"theory" | "quiz" | "coding">("theory")
-  const [nodeFormData, setNodeFormData] = React.useState<any>({
+  // ==================== TAB 2: COURSE & LESSON STUDIO STATE ====================
+  const [allTasksList, setAllTasksList] = React.useState<any[]>([])
+  const [curriculumDocId, setCurriculumDocId] = React.useState<string>("00000005-0000-4000-8000-000000000001")
+  const [curriculumNodeId, setCurriculumNodeId] = React.useState<string>("avl-tree")
+  const [curriculumActiveTab, setCurriculumActiveTab] = React.useState<"theory" | "quiz" | "coding" | "guardrails">("theory")
+  const [isCurriculumDirty, setIsCurriculumDirty] = React.useState<boolean>(false)
+  const [isSavingCurriculum, setIsSavingCurriculum] = React.useState<boolean>(false)
+  const [isNewNodeModalOpen, setIsNewNodeModalOpen] = React.useState<boolean>(false)
+  const [newNodeData, setNewNodeData] = React.useState({
+    label: "",
+    shortCode: "",
+    targetComplexity: "O(log N)",
+    description: "",
+  })
+
+  // Node Metadata & DAG Prerequisites
+  const [nodeMeta, setNodeMeta] = React.useState({
     label: "AVL Tree",
     shortCode: "08",
-    complexity: "O(log N)",
+    targetComplexity: "O(log N)",
+    slideReference: "Slide 14 (PDF)",
     description: "Self-balancing binary search tree bounding height variance <= 1.",
-    primarySlideReference: "Slide 14 (PDF)",
-    documentId: "doc-cs101-hcmus",
+    prerequisites: ["binary-search-tree"] as string[],
   })
-  const [theoryContent, setTheoryContent] = React.useState<any>({
+
+  // Theory Tab state
+  const [theoryState, setTheoryState] = React.useState({
     headerTitle: "CORE THEORY: AVL TREE & BIG-O COMPLEXITY",
     summaryLead: "An AVL Tree is a self-balancing Binary Search Tree where the difference between heights of left and right subtrees (the Balance Factor) cannot exceed 1 for any node.",
+    complexityStrip: {
+      best: "O(log N)",
+      average: "O(log N)",
+      worst: "O(log N)",
+      space: "O(N)",
+    },
+    invariantsList: [
+      { id: "1", title: "AVL Balance Factor Invariant", tag: "Invariant", detail: "Balance Factor (BF) = Height(Left Subtree) - Height(Right Subtree). Every node must strictly satisfy BF in {-1, 0, +1}." },
+      { id: "2", title: "Left-Heavy Imbalance (BF = +2)", tag: "LL Rotation", detail: "When inserting into left-left subtree causes BF = +2, single Right Rotation restores balance in O(1)." },
+      { id: "3", title: "Right-Heavy Imbalance (BF = -2)", tag: "RR Rotation", detail: "When inserting into right-right subtree causes BF = -2, single Left Rotation restores balance in O(1)." },
+      { id: "4", title: "Guaranteed O(log N) Bound", tag: "Big-O Guaranteed", detail: "By bounding tree height to ~1.44 log2(N), AVL trees prevent degenerate O(N) skewed chains on sorted inputs." },
+    ],
+    snippetTitle: "C++ AVL Rotation Invariant",
+    snippetCode: "// Local O(1) rotation pointers\nNode* rightRotate(Node* y) {\n    Node* x = y->left;\n    Node* T2 = x->right;\n    x->right = y;\n    y->left = T2;\n    y->height = std::max(height(y->left), height(y->right)) + 1;\n    x->height = std::max(height(x->left), height(x->right)) + 1;\n    return x;\n}",
     socraticCheck: "Notice how the Balance Factor only depends on the height of direct child subtrees. Why do we only need O(1) local pointer updates during a rotation instead of rebuilding the entire tree?",
+    showLivePreview: false,
   })
-  const [quizContent, setQuizContent] = React.useState<any>({
-    headerTitle: "QUIZ: AVL TREE INVARIANTS",
-    questionPrompt: "Given an AVL Tree node N with Left Subtree Height = 3 and Right Subtree Height = 1. What is the Balance Factor of node N, and does it require a rotation?",
-    optionA: "Balance Factor = +2 (Requires Right Rotation)",
-    optionB: "Balance Factor = -1 (Balanced, no rotation)",
-    optionC: "Balance Factor = +3 (Degenerates into Linked List)",
-    optionD: "Balance Factor = 0 (Perfect binary tree)",
-    correctOption: "A",
+
+  // Quiz Tab state
+  const [quizQuestions, setQuizQuestions] = React.useState<Array<{
+    id: string
+    prompt: string
+    options: string[]
+    correctIndex: number
+    explanation: string
+    socraticHint: string
+  }>>([
+    {
+      id: "q1",
+      prompt: "Given an AVL Tree node N with Left Subtree Height = 3 and Right Subtree Height = 1. What is the Balance Factor of node N, and does it require a rotation?",
+      options: [
+        "Balance Factor = +2 (Requires Right Rotation)",
+        "Balance Factor = +2 (Requires Left Rotation)",
+        "Balance Factor = -2 (Requires Right Rotation)",
+        "Balance Factor = +1 (Tree is already balanced)",
+      ],
+      correctIndex: 0,
+      explanation: "Balance Factor is Height(Left) - Height(Right) = 3 - 1 = +2. Since the left subtree is heavy, a Right Rotation restores balance in O(1).",
+      socraticHint: "Focus on the definition: BF = Left Height - Right Height. Which side has excess weight?",
+    },
+    {
+      id: "q2",
+      prompt: "In an AVL tree with N nodes, what is the strict upper bound on its height h?",
+      options: [
+        "h <= 1.44 * log2(N + 2) - 0.328",
+        "h = N (same as unbalanced BST)",
+        "h <= log10(N)",
+        "h is unbounded on random inserts",
+      ],
+      correctIndex: 0,
+      explanation: "Fibonacci trees represent the minimally populated AVL tree, yielding worst-case height bounded strictly at ~1.44 log2(N).",
+      socraticHint: "Consider the worst-case sparse tree where every node has BF = 1.",
+    },
+    {
+      id: "q3",
+      prompt: "What is the time complexity of recomputing heights along the ancestor path after an insertion and at most two rotations?",
+      options: [
+        "O(log N)",
+        "O(N)",
+        "O(N log N)",
+        "O(1)",
+      ],
+      correctIndex: 0,
+      explanation: "Since the tree height is bounded by O(log N), traversing from the inserted leaf back to the root inspects at most O(log N) nodes.",
+      socraticHint: "How many ancestors can a node have in a tree whose height is bounded by O(log N)?",
+    },
+  ])
+  const [activeQuizIndex, setActiveQuizIndex] = React.useState<number>(0)
+  const [liveQuizSelectedOption, setLiveQuizSelectedOption] = React.useState<number | null>(null)
+  const [liveQuizShowHint, setLiveQuizShowHint] = React.useState<boolean>(false)
+
+  // Coding Tab state
+  const [codingState, setCodingState] = React.useState({
+    taskTitle: "Implement AVL Rotations & Insertion",
+    difficulty: "Medium" as "Easy" | "Medium" | "Hard",
+    problemStatement: "Implement rightRotate and leftRotate helper functions to maintain AVL balance factor <= 1 after inserting a sequence of integers.",
+    inputFormat: "Sequence of integer keys to insert into the AVL tree.",
+    outputFormat: "Pre-order traversal of the balanced AVL tree.",
+    testCases: [
+      { id: "tc-1", label: "Right-Right (RR) Left Rotation", input: "[10, 20, 30]", expected: "Rotated Left, Root is 20", isHidden: false },
+      { id: "tc-2", label: "Left-Left (LL) Right Rotation", input: "[30, 20, 10]", expected: "Rotated Right, Root is 20", isHidden: false },
+      { id: "tc-3", label: "Hidden Stress Test (Random Sequence)", input: "[15, 10, 20, 8, 12, 18, 25, 5]", expected: "Balanced AVL Height <= 4", isHidden: true },
+    ],
+    starterCode: "#include <iostream>\n#include <algorithm>\n\nstruct Node {\n    int key;\n    Node *left = nullptr;\n    Node *right = nullptr;\n    int height = 1;\n};\n\nint getHeight(Node *N) {\n    return N ? N->height : 0;\n}\n\nint getBalanceFactor(Node *N) {\n    return N ? getHeight(N->left) - getHeight(N->right) : 0;\n}\n\n// TODO: Implement Right Rotation (LL Rotation)\nNode* rightRotate(Node *y) {\n    Node *x = y->left;\n    Node *T2 = x->right;\n    x->right = y;\n    y->left = T2;\n    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;\n    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;\n    return x;\n}\n\nint main() {\n    std::cout << \"AVL Rotations Ready!\" << std::endl;\n    return 0;\n}",
+    solutionCode: "#include <iostream>\n#include <algorithm>\n\nstruct Node {\n    int key;\n    Node *left = nullptr;\n    Node *right = nullptr;\n    int height = 1;\n};\n\nint getHeight(Node *N) {\n    return N ? N->height : 0;\n}\n\nint getBalanceFactor(Node *N) {\n    return N ? getHeight(N->left) - getHeight(N->right) : 0;\n}\n\nNode* rightRotate(Node *y) {\n    Node *x = y->left;\n    Node *T2 = x->right;\n    x->right = y;\n    y->left = T2;\n    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;\n    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;\n    return x;\n}\n\nNode* leftRotate(Node *x) {\n    Node *y = x->right;\n    Node *T2 = y->left;\n    y->left = x;\n    x->right = T2;\n    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;\n    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;\n    return y;\n}\n\nint main() {\n    std::cout << \"AVL Rotations Optimal O(log N) Verified!\" << std::endl;\n    return 0;\n}",
   })
-  const [codingContent, setCodingContent] = React.useState<any>({
-    headerTitle: "TASK: IMPLEMENT AVL NODE INSERTION & ROTATION",
-    initialCode: `#include <iostream>\n#include <algorithm>\n\nstruct Node {\n    int key;\n    Node *left = nullptr;\n    Node *right = nullptr;\n    int height = 1;\n};\n\nint getHeight(Node *N) {\n    return N ? N->height : 0;\n}\n\nint getBalanceFactor(Node *N) {\n    return N ? getHeight(N->left) - getHeight(N->right) : 0;\n}\n\n// TODO: Implement Right Rotation (LL Rotation)\nNode* rightRotate(Node *y) {\n    Node *x = y->left;\n    Node *T2 = x->right;\n    x->right = y;\n    y->left = T2;\n    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;\n    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;\n    return x;\n}\n\nint main() {\n    std::cout << "AVL Rotations Ready!" << std::endl;\n    return 0;\n}`,
-    testCasesInput: "[10, 20, 30]",
-    testCasesExpected: "Rotated Left, Root is 20",
+  const [activeCodingEditorTab, setActiveCodingEditorTab] = React.useState<"starter" | "solution">("starter")
+  const [editorCopied, setEditorCopied] = React.useState<boolean>(false)
+
+  // Socratic Guardrails state
+  const [guardrailsState, setGuardrailsState] = React.useState({
+    keyInvariants: [
+      "Every node height difference <= 1 (|Left Height - Right Height| <= 1)",
+      "Standard BST order property holds: Left < Root < Right",
+      "Rotations preserve in-order traversal ordering exactly",
+    ],
+    commonMisconceptions: [
+      "Assuming height balance factor is simply subtree size difference instead of depth height",
+      "Forgetting to update heights of modified nodes after rotation",
+      "Attempting single rotation on zigzag (LR / RL) cases without double rotation",
+    ],
+    hintsLadder: {
+      tier1: "Step back and observe which subtree grew taller. Does this form a straight line (LL/RR) or a zigzag (LR/RL)?",
+      tier2: "Inspect the child of the unbalanced node. If the child is right-heavy while the parent is left-heavy, a single rotation cannot restore balance.",
+      tier3: "Perform a pre-rotation on the child node first to straighten the zigzag into a straight line, then rotate the parent.",
+    },
+    zeroSpoilerMode: true,
   })
+  const [newInvariantInput, setNewInvariantInput] = React.useState<string>("")
+  const [newMisconceptionInput, setNewMisconceptionInput] = React.useState<string>("")
 
   // Tab 3 state (Users)
   const [isResettingProgress, setIsResettingProgress] = React.useState<boolean>(false)
@@ -176,6 +372,7 @@ export default function AdminPage() {
       setDocumentsList(Array.from(new Map((dRes.data || []).map((d: any) => [d.id, d])).values()))
       setNodesList(Array.from(new Map((nRes.data || []).map((n: any) => [n.id, n])).values()))
       setTasksCount((tRes.data || []).length || 45)
+      setAllTasksList(Array.from(new Map((tRes.data || []).map((t: any) => [t.id, t])).values()))
       setProgressList(Array.from(new Map((pRes.data || []).map((p: any) => [p.id, p])).values()))
       setSubmissionsList(Array.from(new Map((sRes.data || []).map((s: any) => [s.id, s])).values()))
     } catch {}
@@ -264,43 +461,7 @@ export default function AdminPage() {
     }
   }, [activeTab, selectedTable, loadTableData, loadRelationalContext, loadSubmissions])
 
-  // Sync Node data when changing selectedNodeId in Curriculum Builder
-  React.useEffect(() => {
-    const node = nodesList.find((n) => n.id === selectedNodeId) || MOCK_ROADMAP_NODES.find((n) => n.id === selectedNodeId)
-    if (node) {
-      setNodeFormData({
-        label: node.label,
-        shortCode: node.short_code || node.shortCode,
-        complexity: node.target_complexity || node.complexity || "O(log N)",
-        description: node.description,
-        primarySlideReference: `Slide 14 (${node.label}.pdf)`,
-        documentId: node.document_id || "doc-cs101-hcmus",
-      })
-
-      const details = (WORKSPACE_TASK_DETAILS as Record<string, any>)[node.id] || {}
-      const t1 = details[`${node.id}-task-1`]
-      if (t1) {
-        setTheoryContent({
-          headerTitle: t1.headerTitle || `CORE THEORY: ${node.label.toUpperCase()}`,
-          summaryLead: t1.summaryLead || `Comprehensive breakdown of ${node.label}.`,
-          socraticCheck: t1.socraticCheck || "How does the invariant preserve efficiency?",
-        })
-      }
-
-      const t2 = details[`${node.id}-task-2`]
-      if (t2) {
-        setQuizContent({
-          headerTitle: t2.headerTitle || `QUIZ: ${node.label.toUpperCase()}`,
-          questionPrompt: t2.questionPrompt || `What is the operational bound of ${node.label}?`,
-          optionA: t2.options?.[0]?.text || "Option A",
-          optionB: t2.options?.[1]?.text || "Option B",
-          optionC: t2.options?.[2]?.text || "Option C",
-          optionD: t2.options?.[3]?.text || "Option D",
-          correctOption: t2.options?.find((o: any) => o.isCorrect)?.id || "A",
-        })
-      }
-    }
-  }, [selectedNodeId, nodesList])
+  // Obsolete sync effect superseded by Studio loader
 
   // Map tra cứu Document ID -> Friendly Document Name
   const docMap = React.useMemo(() => {
@@ -584,63 +745,283 @@ export default function AdminPage() {
     loadRelationalContext()
   }
 
-  // Handle Curriculum Save
-  const handleSaveCurriculum = async () => {
-    const tasksList = [
-      {
-        id: `${selectedNodeId}-task-1`,
-        type: "theory",
-        title: theoryContent.headerTitle,
-        description: theoryContent.summaryLead,
-        content: {
-          nodeId: selectedNodeId,
-          taskId: `${selectedNodeId}-task-1`,
-          type: "theory",
-          headerTitle: theoryContent.headerTitle,
-          summaryLead: theoryContent.summaryLead,
-          socraticCheck: theoryContent.socraticCheck,
-        },
-      },
-      {
-        id: `${selectedNodeId}-task-2`,
-        type: "quiz",
-        title: quizContent.headerTitle,
-        description: quizContent.questionPrompt,
-        content: {
-          nodeId: selectedNodeId,
-          taskId: `${selectedNodeId}-task-2`,
-          type: "quiz",
-          headerTitle: quizContent.headerTitle,
-          questionPrompt: quizContent.questionPrompt,
-          options: [
-            { id: "A", text: quizContent.optionA, isCorrect: quizContent.correctOption === "A" },
-            { id: "B", text: quizContent.optionB, isCorrect: quizContent.correctOption === "B" },
-            { id: "C", text: quizContent.optionC, isCorrect: quizContent.correctOption === "C" },
-            { id: "D", text: quizContent.optionD, isCorrect: quizContent.correctOption === "D" },
-          ],
-        },
-      },
-      {
-        id: `${selectedNodeId}-task-3`,
-        type: "coding",
-        title: codingContent.headerTitle,
-        description: "Practice algorithmic implementation.",
-        content: {
-          nodeId: selectedNodeId,
-          taskId: `${selectedNodeId}-task-3`,
-          type: "coding",
-          headerTitle: codingContent.headerTitle,
-          initialCode: codingContent.initialCode,
-          testCases: [
-            { id: 1, input: codingContent.testCasesInput, expected: codingContent.testCasesExpected },
-          ],
-        },
-      },
-    ]
+  // ==================== COURSE & LESSON STUDIO HOOKS & LOGIC ====================
+  // Check DAG cycle in real-time for curriculum studio node
+  const curriculumDagCycle = React.useMemo(() => {
+    return detectDagCycle(nodesList, curriculumNodeId, nodeMeta.prerequisites)
+  }, [nodesList, curriculumNodeId, nodeMeta.prerequisites])
 
-    await saveCurriculumNodeAndTasks(selectedNodeId, nodeFormData, tasksList)
-    showToast(`Curriculum updated! Changes are live on Roadmap & Workspace.`)
-    loadRelationalContext()
+  // Scoped nodes for active document in studio
+  const studioDocNodes = React.useMemo(() => {
+    return nodesList.filter((n) => matchDocId(n.document_id, curriculumDocId, n.id))
+  }, [nodesList, curriculumDocId, matchDocId])
+
+  // Keep curriculumNodeId valid when active document changes
+  React.useEffect(() => {
+    if (!studioDocNodes.length) return
+    const exists = studioDocNodes.some((n) => n.id === curriculumNodeId)
+    if (!exists) {
+      setCurriculumNodeId(studioDocNodes[0].id)
+    }
+  }, [curriculumDocId, studioDocNodes, curriculumNodeId])
+
+  // Populate Course & Lesson Studio when curriculumNodeId changes
+  React.useEffect(() => {
+    if (!curriculumNodeId || !nodesList.length) return
+    const node = nodesList.find((n) => n.id === curriculumNodeId) || nodesList[0]
+    if (!node) return
+
+    const socraticProf = node.socratic_profile || {}
+    const prereqs = Array.isArray(node.prerequisites) ? node.prerequisites : []
+
+    setNodeMeta({
+      label: node.label || "Untitled Node",
+      shortCode: node.short_code || node.shortCode || "01",
+      targetComplexity: node.target_complexity || node.complexity || "O(log N)",
+      slideReference: socraticProf.primarySlideReference || socraticProf.slideReference || "Slide 14 (PDF)",
+      description: node.description || "",
+      prerequisites: prereqs,
+    })
+
+    const nodeTasks = allTasksList.filter((t) => t.node_id === node.id || t.nodeId === node.id)
+    const theoryTask = nodeTasks.find((t) => t.task_type === "theory" || t.type === "theory") || nodeTasks[0]
+    const quizTask = nodeTasks.find((t) => t.task_type === "quiz" || t.type === "quiz") || nodeTasks[1]
+    const codingTask = nodeTasks.find((t) => t.task_type === "coding" || t.type === "coding") || nodeTasks[2]
+
+    const fallbackMock: any = (WORKSPACE_TASK_DETAILS as any)[node.id] || {}
+    const fbTheory = fallbackMock[`${node.id}-task-1`] || fallbackMock.task1 || {}
+    const fbQuiz = fallbackMock[`${node.id}-task-2`] || fallbackMock.task2 || {}
+    const fbCoding = fallbackMock[`${node.id}-task-3`] || fallbackMock.task3 || {}
+
+    // Populate Theory
+    const tContent = theoryTask?.content || {}
+    setTheoryState({
+      headerTitle: tContent.headerTitle || theoryTask?.title || fbTheory.headerTitle || `CORE THEORY: ${(node.label || "CONCEPT").toUpperCase()}`,
+      summaryLead: tContent.summaryLead || theoryTask?.description || fbTheory.summaryLead || node.description || "",
+      complexityStrip: tContent.complexityStrip || {
+        best: node.target_complexity || "O(log N)",
+        average: node.target_complexity || "O(log N)",
+        worst: node.target_complexity || "O(log N)",
+        space: "O(N)",
+      },
+      invariantsList: tContent.invariantsList || tContent.cards || fbTheory.cards || [
+        { id: "1", title: `${node.label} Core Property`, tag: "Invariant", detail: `In-depth structural property of ${node.label} preserving balanced access times.` },
+        { id: "2", title: "Time Complexity Bound", tag: "Big-O", detail: `Target complexity bounded to ${node.target_complexity || "O(log N)"}.` },
+      ],
+      snippetTitle: tContent.snippetTitle || tContent.snippet?.title || fbTheory.cards?.[0]?.title || "C++ Structural Reference",
+      snippetCode: tContent.snippetCode || tContent.snippet?.code || fbCoding.initialCode || `// C++ Reference for ${node.label}\n#include <iostream>\n\nint main() {\n    return 0;\n}`,
+      socraticCheck: tContent.socraticCheck || fbTheory.socraticCheck || "Notice how the structural invariant depends on local pointers. Why do local updates restore global balance?",
+      showLivePreview: false,
+    })
+
+    // Populate Quiz
+    const qContent = quizTask?.content || {}
+    if (Array.isArray(qContent.questions) && qContent.questions.length > 0) {
+      setQuizQuestions(qContent.questions)
+    } else if (Array.isArray(fbQuiz.options)) {
+      const correctIdx = Math.max(0, fbQuiz.options.findIndex((o: any) => o.isCorrect))
+      setQuizQuestions([
+        {
+          id: "q1",
+          prompt: qContent.questionPrompt || fbQuiz.questionPrompt || `What is the primary structural invariant of ${node.label}?`,
+          options: fbQuiz.options.map((o: any) => o.text || String(o)),
+          correctIndex: correctIdx,
+          explanation: fbQuiz.hints?.correct || "Satisfies structural balance invariants in worst-case analysis.",
+          socraticHint: fbQuiz.hints?.incorrect || "Review how height delta influences pointer traversal length.",
+        },
+        {
+          id: "q2",
+          prompt: `What is the worst-case time complexity of search operations in ${node.label}?`,
+          options: [node.target_complexity || "O(log N)", "O(N)", "O(N^2)", "O(1)"],
+          correctIndex: 0,
+          explanation: `Because height variance is strictly bounded, worst-case lookup is ${node.target_complexity || "O(log N)"}.`,
+          socraticHint: "Relate the maximum possible depth of the tree to the number of nodes N.",
+        },
+        {
+          id: "q3",
+          prompt: `Which operation is required when an insertion violates the invariant of ${node.label}?`,
+          options: ["Local Pointer Restructuring / Rebalancing", "Complete tree rebuilding from scratch", "Reallocating entire memory buffer", "No operation needed"],
+          correctIndex: 0,
+          explanation: "Local tree rotations or pointer swaps restore the structural invariant in O(1) time.",
+          socraticHint: "Can we restore height balance locally without traversing the entire tree?",
+        },
+      ])
+    }
+
+    // Populate Coding
+    const cContent = codingTask?.content || {}
+    setCodingState({
+      taskTitle: cContent.taskTitle || codingTask?.title || fbCoding.headerTitle || `Implement ${node.label} Operations`,
+      difficulty: cContent.difficulty || "Medium",
+      problemStatement: cContent.problemStatement || codingTask?.description || "Implement core algorithm and verify all edge invariants under strict time constraints.",
+      inputFormat: cContent.inputFormat || "Standard algorithmic inputs via STDIN.",
+      outputFormat: cContent.outputFormat || "Formatted traversal or validation output to STDOUT.",
+      testCases: cContent.testCases || [
+        { id: "tc-1", label: "Sample Ascending Inputs", input: "[10, 20, 30]", expected: "Balanced Root: 20", isHidden: false },
+        { id: "tc-2", label: "Sample Descending Inputs", input: "[30, 20, 10]", expected: "Balanced Root: 20", isHidden: false },
+        { id: "tc-3", label: "Hidden Edge Stress Test", input: "[5, 1, 9, 3, 7, 2]", expected: "Invariants Verified", isHidden: true },
+      ],
+      starterCode: cContent.starterCode || cContent.initialCode || fbCoding.initialCode || `// Starter Code for ${node.label}\n#include <iostream>\n\nint main() {\n    std::cout << "${node.label} Ready!" << std::endl;\n    return 0;\n}`,
+      solutionCode: cContent.solutionCode || fbCoding.initialCode || `// Reference Solution for ${node.label}\n#include <iostream>\n\nint main() {\n    std::cout << "${node.label} Solved!" << std::endl;\n    return 0;\n}`,
+    })
+
+    // Populate Guardrails
+    setGuardrailsState({
+      keyInvariants: socraticProf.keyInvariants || [
+        `Height difference bounded by 1 for all subtrees`,
+        `Preserves in-order traversal ordering`,
+      ],
+      commonMisconceptions: socraticProf.misconceptions || [
+        `Confusing node height with subtree node count`,
+        `Missing pointer updates on root replacement`,
+      ],
+      hintsLadder: socraticProf.progressiveHints || {
+        tier1: "Step back and observe which subtree grew taller. Does this form a straight line or a zigzag?",
+        tier2: "Inspect the child of the unbalanced node. If the child is right-heavy while the parent is left-heavy, a single rotation cannot restore balance.",
+        tier3: "Perform a pre-rotation on the child node first to straighten the zigzag, then rotate the parent.",
+      },
+      zeroSpoilerMode: socraticProf.strictZeroSpoiler !== false,
+    })
+
+    setIsCurriculumDirty(false)
+  }, [curriculumNodeId, nodesList, allTasksList, matchDocId])
+
+  // Save Course & Lesson Studio to Supabase and sync Workspace
+  const handleSaveCurriculumStudio = async () => {
+    if (curriculumDagCycle.hasCycle) {
+      showToast(`Cannot save: Circular dependency detected (${curriculumDagCycle.cycleString})!`)
+      return
+    }
+
+    setIsSavingCurriculum(true)
+    try {
+      const nodeData = {
+        id: curriculumNodeId,
+        document_id: curriculumDocId,
+        label: nodeMeta.label,
+        short_code: nodeMeta.shortCode,
+        target_complexity: nodeMeta.targetComplexity,
+        description: nodeMeta.description,
+        prerequisites: nodeMeta.prerequisites,
+        socratic_profile: {
+          primarySlideReference: nodeMeta.slideReference,
+          keyInvariants: guardrailsState.keyInvariants,
+          misconceptions: guardrailsState.commonMisconceptions,
+          progressiveHints: guardrailsState.hintsLadder,
+          strictZeroSpoiler: guardrailsState.zeroSpoilerMode,
+        },
+      }
+
+      const tasksList = [
+        {
+          id: `${curriculumNodeId}-task-1`,
+          node_id: curriculumNodeId,
+          task_type: "theory",
+          title: theoryState.headerTitle,
+          description: theoryState.summaryLead,
+          sequence_order: 1,
+          content: {
+            nodeId: curriculumNodeId,
+            taskId: `${curriculumNodeId}-task-1`,
+            task_type: "theory",
+            headerTitle: theoryState.headerTitle,
+            summaryLead: theoryState.summaryLead,
+            complexityStrip: theoryState.complexityStrip,
+            invariantsList: theoryState.invariantsList,
+            cards: theoryState.invariantsList,
+            snippetTitle: theoryState.snippetTitle,
+            snippetCode: theoryState.snippetCode,
+            snippet: {
+              title: theoryState.snippetTitle,
+              code: theoryState.snippetCode,
+            },
+            socraticCheck: theoryState.socraticCheck,
+          },
+        },
+        {
+          id: `${curriculumNodeId}-task-2`,
+          node_id: curriculumNodeId,
+          task_type: "quiz",
+          title: `Quiz: ${nodeMeta.label}`,
+          description: quizQuestions[0]?.prompt || "Evaluate comprehension of algorithmic invariants.",
+          sequence_order: 2,
+          content: {
+            nodeId: curriculumNodeId,
+            taskId: `${curriculumNodeId}-task-2`,
+            task_type: "quiz",
+            headerTitle: `Quiz: ${nodeMeta.label}`,
+            questions: quizQuestions,
+            questionPrompt: quizQuestions[0]?.prompt || "",
+            options: (quizQuestions[0]?.options || []).map((txt, idx) => ({
+              id: String.fromCharCode(65 + idx),
+              text: txt,
+              isCorrect: idx === quizQuestions[0]?.correctIndex,
+            })),
+            hints: {
+              correct: quizQuestions[0]?.explanation || "",
+              incorrect: quizQuestions[0]?.socraticHint || "",
+            },
+          },
+        },
+        {
+          id: `${curriculumNodeId}-task-3`,
+          node_id: curriculumNodeId,
+          task_type: "coding",
+          title: codingState.taskTitle,
+          description: codingState.problemStatement,
+          sequence_order: 3,
+          content: {
+            nodeId: curriculumNodeId,
+            taskId: `${curriculumNodeId}-task-3`,
+            task_type: "coding",
+            taskTitle: codingState.taskTitle,
+            difficulty: codingState.difficulty,
+            problemStatement: codingState.problemStatement,
+            inputFormat: codingState.inputFormat,
+            outputFormat: codingState.outputFormat,
+            testCases: codingState.testCases,
+            starterCode: codingState.starterCode,
+            initialCode: codingState.starterCode,
+            solutionCode: codingState.solutionCode,
+          },
+        },
+      ]
+
+      await saveCurriculumNodeAndTasks(curriculumNodeId, nodeData, tasksList)
+      setIsCurriculumDirty(false)
+      showToast(`Studio saved! Changes for ${nodeMeta.label} are live in Supabase & Workspace.`)
+      await loadRelationalContext()
+    } catch (err: any) {
+      showToast(`Error saving studio: ${err?.message || "Unknown error"}`)
+    } finally {
+      setIsSavingCurriculum(false)
+    }
+  }
+
+  // Handle Quick Create New Node
+  const handleCreateNewNode = async () => {
+    if (!newNodeData.label.trim()) {
+      showToast("Node label cannot be empty!")
+      return
+    }
+    const cleanId = newNodeData.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `node-${Date.now()}`
+    const newNodeRecord = {
+      id: cleanId,
+      document_id: curriculumDocId,
+      label: newNodeData.label,
+      short_code: newNodeData.shortCode || "09",
+      target_complexity: newNodeData.targetComplexity || "O(log N)",
+      description: newNodeData.description || "",
+      prerequisites: [],
+      socratic_profile: {
+        primarySlideReference: "Slide 01 (PDF)",
+      },
+    }
+    setNodesList((prev) => [...prev, newNodeRecord])
+    setCurriculumNodeId(cleanId)
+    setIsNewNodeModalOpen(false)
+    setIsCurriculumDirty(true)
+    showToast(`Created new node "${newNodeData.label}". Configure tasks and click "Save to Database"!`)
   }
 
   // Handle Demo Student Reset
@@ -911,13 +1292,20 @@ export default function AdminPage() {
 
         {/* Footer Info & Logout */}
         <div className="border-t border-[#24283b] p-3 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <div className="truncate text-xs font-bold text-white">
-                {currentUser?.fullName || "Admin"}
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#6366f1] via-[#8b5cf6] to-[#d946ef] text-white shadow-[0_0_12px_rgba(168,85,247,0.4)] ring-2 ring-purple-400/50">
+                <ShieldCheck className="size-4.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
+                <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-emerald-400 ring-1.5 ring-[#1a1b26]" />
               </div>
-              <div className="text-[10px] font-medium text-[#bb9af7] uppercase">
-                {currentUser?.role || "admin"}
+              <div className="min-w-0">
+                <div className="truncate text-xs font-bold text-white">
+                  {currentUser?.fullName || "System Admin"}
+                </div>
+                <div className="text-[10px] font-semibold text-[#bb9af7] uppercase tracking-wider flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {currentUser?.role || "admin"}
+                </div>
               </div>
             </div>
             <ThemeToggleButton />
@@ -1655,294 +2043,1332 @@ export default function AdminPage() {
         </div>
       )}
 
-        {/* ==================== TAB 2: CURRICULUM BUILDER ==================== */}
+        {/* ==================== TAB 2: COURSE & LESSON STUDIO (TOKYO NIGHT UNSLOP) ==================== */}
         {activeTab === "curriculum" && (
-          <div className="flex flex-1 flex-col overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#292e42] pb-3">
-              <div>
-                <h2 className="text-sm font-bold text-white">
-                  Node & Lesson Visual Form Editor
-                </h2>
-                <p className="text-xs text-[#565f89]">
-                  Edit learning theory, quiz questions, or C++ coding starter code.
-                </p>
+          <div className="flex flex-1 flex-col overflow-y-auto p-5 space-y-5">
+            {/* 1. TOP TOOLBAR: Document Scope + Node Selector + Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 shadow-sm">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Dropdown 1: Syllabus / Document */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#565f89]">Syllabus / Document:</span>
+                  <select
+                    value={curriculumDocId}
+                    onChange={(e) => {
+                      setCurriculumDocId(e.target.value)
+                      setIsCurriculumDirty(true)
+                    }}
+                    className="rounded-lg border border-[#292e42] bg-[#16161e] px-3 py-1.5 text-xs font-semibold text-[#7aa2f7] focus:border-[#7aa2f7] focus:outline-none"
+                  >
+                    {documentsList.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.name || doc.file_name || doc.title || (String(doc.id).includes("0002") ? "CS102_OOP_Cpp_Syllabus_HCMUS.pdf" : "CS101_DSA_Syllabus_HCMUS.pdf")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Dropdown 2: Select Node (Scoped to active document) */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#565f89]">Select Node:</span>
+                  <select
+                    value={curriculumNodeId}
+                    onChange={(e) => setCurriculumNodeId(e.target.value)}
+                    className="rounded-lg border border-[#292e42] bg-[#16161e] px-3 py-1.5 text-xs font-semibold text-white focus:border-[#7aa2f7] focus:outline-none"
+                  >
+                    {studioDocNodes.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.short_code || n.shortCode || "•"} - {n.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* + New Node Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsNewNodeModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#7aa2f7]/40 bg-[#7aa2f7]/10 px-3 py-1.5 text-xs font-semibold text-[#7aa2f7] hover:bg-[#7aa2f7]/20 transition-colors"
+                >
+                  <Plus className="size-3.5" />
+                  <span>New Node</span>
+                </button>
               </div>
 
-              {/* Node Selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[#565f89]">Select Node:</span>
-                <select
-                  value={selectedNodeId}
-                  onChange={(e) => setSelectedNodeId(e.target.value)}
-                  className="rounded-lg border border-[#292e42] bg-[#1a1b26] px-3 py-1.5 text-xs font-semibold text-[#7aa2f7] focus:border-[#7aa2f7] focus:outline-none"
-                >
-                  {MOCK_ROADMAP_NODES.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.shortCode} - {n.label}
-                    </option>
-                  ))}
-                </select>
+              {/* Status Badge & Save Button */}
+              <div className="flex items-center gap-3">
+                {isCurriculumDirty && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
+                    <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Unsaved Changes
+                  </span>
+                )}
                 <button
-                  onClick={handleSaveCurriculum}
-                  className="rounded-lg bg-[#bb9af7] px-4 py-1.5 text-xs font-bold text-[#16161e] hover:bg-[#bb9af7]/90 transition-colors shadow-sm"
+                  type="button"
+                  onClick={handleSaveCurriculumStudio}
+                  disabled={isSavingCurriculum || curriculumDagCycle.hasCycle}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#bb9af7] px-4 py-1.5 text-xs font-bold text-[#16161e] shadow-md transition-all hover:bg-[#bb9af7]/90 disabled:opacity-50"
                 >
-                  Save to Database
+                  {isSavingCurriculum ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                  <span>Save to Database</span>
                 </button>
               </div>
             </div>
 
-            {/* Node Metadata Form */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-xl border border-[#292e42] bg-[#1a1b26] p-4">
-              <div>
-                <label className="text-[11px] font-semibold text-[#565f89]">
-                  Node Label
-                </label>
-                <input
-                  type="text"
-                  value={nodeFormData.label}
-                  onChange={(e) =>
-                    setNodeFormData({ ...nodeFormData, label: e.target.value })
-                  }
-                  className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs text-white"
-                />
+            {/* 2. NODE METADATA & VISUAL DAG PREREQUISITES EDITOR */}
+            <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#565f89]">Node Label</label>
+                  <input
+                    type="text"
+                    value={nodeMeta.label}
+                    onChange={(e) => {
+                      setNodeMeta({ ...nodeMeta, label: e.target.value })
+                      setIsCurriculumDirty(true)
+                    }}
+                    className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs text-white focus:border-[#7aa2f7] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#565f89]">Short Code</label>
+                  <input
+                    type="text"
+                    value={nodeMeta.shortCode}
+                    onChange={(e) => {
+                      setNodeMeta({ ...nodeMeta, shortCode: e.target.value })
+                      setIsCurriculumDirty(true)
+                    }}
+                    className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs text-white focus:border-[#7aa2f7] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#565f89]">Target Complexity</label>
+                  <input
+                    type="text"
+                    value={nodeMeta.targetComplexity}
+                    onChange={(e) => {
+                      setNodeMeta({ ...nodeMeta, targetComplexity: e.target.value })
+                      setIsCurriculumDirty(true)
+                    }}
+                    className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs font-mono text-[#7aa2f7] focus:border-[#7aa2f7] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-[#565f89]">Slide PDF Reference</label>
+                  <input
+                    type="text"
+                    value={nodeMeta.slideReference}
+                    onChange={(e) => {
+                      setNodeMeta({ ...nodeMeta, slideReference: e.target.value })
+                      setIsCurriculumDirty(true)
+                    }}
+                    className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs text-[#c0caf5] focus:border-[#7aa2f7] focus:outline-none"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-[11px] font-semibold text-[#565f89]">
-                  Short Code
-                </label>
-                <input
-                  type="text"
-                  value={nodeFormData.shortCode}
-                  onChange={(e) =>
-                    setNodeFormData({ ...nodeFormData, shortCode: e.target.value })
-                  }
-                  className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs text-white"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-[#565f89]">
-                  Target Complexity
-                </label>
-                <input
-                  type="text"
-                  value={nodeFormData.complexity}
-                  onChange={(e) =>
-                    setNodeFormData({ ...nodeFormData, complexity: e.target.value })
-                  }
-                  className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs text-white"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-[#565f89]">
-                  Slide PDF Reference
-                </label>
-                <input
-                  type="text"
-                  value={nodeFormData.primarySlideReference}
-                  onChange={(e) =>
-                    setNodeFormData({
-                      ...nodeFormData,
-                      primarySlideReference: e.target.value,
-                    })
-                  }
-                  className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs text-white"
-                />
+
+              {/* Row 2: DAG Prerequisites Selection & Cycle Banner */}
+              <div className="space-y-2 pt-1 border-t border-[#24283b]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-[#565f89] uppercase tracking-wider">
+                    DAG Prerequisites (Parent Nodes in same document)
+                  </span>
+                  <span className="text-[10px] text-[#565f89]">
+                    {nodeMeta.prerequisites.length} selected
+                  </span>
+                </div>
+
+                {curriculumDagCycle.hasCycle && (
+                  <div className="flex items-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-2.5 text-xs font-medium text-red-300">
+                    <AlertTriangle className="size-4 shrink-0 text-red-400" />
+                    <span>
+                      DAG Integrity Error: Circular dependency detected in node prerequisites ({curriculumDagCycle.cycleString})! Saving is disabled until fixed.
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {studioDocNodes
+                    .filter((n) => n.id !== curriculumNodeId)
+                    .map((parent) => {
+                      const isPrereq = nodeMeta.prerequisites.includes(parent.id)
+                      return (
+                        <button
+                          key={parent.id}
+                          type="button"
+                          onClick={() => {
+                            const next = isPrereq
+                              ? nodeMeta.prerequisites.filter((id) => id !== parent.id)
+                              : [...nodeMeta.prerequisites, parent.id]
+                            setNodeMeta({ ...nodeMeta, prerequisites: next })
+                            setIsCurriculumDirty(true)
+                          }}
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
+                            isPrereq
+                              ? "border-[#7aa2f7] bg-[#7aa2f7]/15 text-[#7aa2f7] shadow-sm"
+                              : "border-[#292e42] bg-[#16161e] text-[#565f89] hover:border-[#7aa2f7]/40 hover:text-[#c0caf5]"
+                          }`}
+                        >
+                          <span className="font-mono text-[10px] text-[#565f89]">
+                            {parent.short_code || parent.shortCode || "•"}
+                          </span>
+                          <span>{parent.label}</span>
+                          {isPrereq && <Check className="size-3 text-[#7aa2f7]" />}
+                        </button>
+                      )
+                    })}
+                </div>
               </div>
             </div>
 
-            {/* Task Type Tabs */}
-            <div className="flex items-center gap-2 border-b border-[#292e42]">
+            {/* 3. LESSON TABS NAVIGATION */}
+            <div className="flex items-center gap-2 border-b border-[#24283b] pb-2">
               <button
-                onClick={() => setActiveLessonType("theory")}
-                className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-xs font-semibold ${
-                  activeLessonType === "theory"
-                    ? "border-[#7aa2f7] text-[#7aa2f7]"
-                    : "border-transparent text-[#565f89] hover:text-[#c0caf5]"
+                type="button"
+                onClick={() => setCurriculumActiveTab("theory")}
+                className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  curriculumActiveTab === "theory"
+                    ? "bg-[#7aa2f7] text-[#16161e] shadow-sm font-bold"
+                    : "text-[#565f89] hover:bg-[#1a1b26] hover:text-[#c0caf5]"
                 }`}
               >
                 <BookOpen className="size-3.5" />
                 <span>Task 1: Core Theory</span>
               </button>
+
               <button
-                onClick={() => setActiveLessonType("quiz")}
-                className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-xs font-semibold ${
-                  activeLessonType === "quiz"
-                    ? "border-[#bb9af7] text-[#bb9af7]"
-                    : "border-transparent text-[#565f89] hover:text-[#c0caf5]"
+                type="button"
+                onClick={() => setCurriculumActiveTab("quiz")}
+                className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  curriculumActiveTab === "quiz"
+                    ? "bg-[#7aa2f7] text-[#16161e] shadow-sm font-bold"
+                    : "text-[#565f89] hover:bg-[#1a1b26] hover:text-[#c0caf5]"
                 }`}
               >
                 <HelpCircle className="size-3.5" />
-                <span>Task 2: Socratic Quiz</span>
+                <span>Task 2: Socratic Quiz ({quizQuestions.length})</span>
               </button>
+
               <button
-                onClick={() => setActiveLessonType("coding")}
-                className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-xs font-semibold ${
-                  activeLessonType === "coding"
-                    ? "border-[#7dcfff] text-[#7dcfff]"
-                    : "border-transparent text-[#565f89] hover:text-[#c0caf5]"
+                type="button"
+                onClick={() => setCurriculumActiveTab("coding")}
+                className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  curriculumActiveTab === "coding"
+                    ? "bg-[#7aa2f7] text-[#16161e] shadow-sm font-bold"
+                    : "text-[#565f89] hover:bg-[#1a1b26] hover:text-[#c0caf5]"
                 }`}
               >
                 <Code2 className="size-3.5" />
                 <span>Task 3: C++ Coding Task</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setCurriculumActiveTab("guardrails")}
+                className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  curriculumActiveTab === "guardrails"
+                    ? "bg-[#7aa2f7] text-[#16161e] shadow-sm font-bold"
+                    : "text-[#565f89] hover:bg-[#1a1b26] hover:text-[#c0caf5]"
+                }`}
+              >
+                <ShieldCheck className="size-3.5" />
+                <span>Task 4: Socratic AI Guardrails</span>
+              </button>
             </div>
 
-            {/* Lesson Body Form */}
-            <div className="flex-1 overflow-auto rounded-xl border border-[#292e42] bg-[#1a1b26] p-4">
-              {activeLessonType === "theory" && (
-                <div className="space-y-3 max-w-2xl">
-                  <div>
-                    <label className="text-xs font-semibold text-[#565f89]">
-                      Theory Header Title
-                    </label>
-                    <input
-                      type="text"
-                      value={theoryContent.headerTitle}
-                      onChange={(e) =>
-                        setTheoryContent({ ...theoryContent, headerTitle: e.target.value })
-                      }
-                      className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2 text-xs text-white"
-                    />
+            {/* 4. CONTENT PANELS (2-COLUMN FULL-WIDTH LAYOUT) */}
+
+            {/* ==================== TAB 1: CORE THEORY (6/6 GRID) ==================== */}
+            {curriculumActiveTab === "theory" && (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 w-full">
+                {/* Left Column (6): Theory Specs, Complexity Strip, Invariants */}
+                <div className="xl:col-span-6 space-y-4">
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Theory Header Title</label>
+                      <input
+                        type="text"
+                        value={theoryState.headerTitle}
+                        onChange={(e) => {
+                          setTheoryState({ ...theoryState, headerTitle: e.target.value })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs font-bold text-white focus:border-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Summary Lead Paragraph</label>
+                      <textarea
+                        rows={3}
+                        value={theoryState.summaryLead}
+                        onChange={(e) => {
+                          setTheoryState({ ...theoryState, summaryLead: e.target.value })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-[#c0caf5] leading-relaxed focus:border-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* 4-item Complexity Strip */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89] uppercase tracking-wider">
+                        Operational Complexity Strip
+                      </label>
+                      <div className="mt-1.5 grid grid-cols-4 gap-2">
+                        <div className="rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-center">
+                          <span className="text-[10px] text-[#565f89]">Best</span>
+                          <input
+                            type="text"
+                            value={theoryState.complexityStrip.best}
+                            onChange={(e) => {
+                              setTheoryState({
+                                ...theoryState,
+                                complexityStrip: { ...theoryState.complexityStrip, best: e.target.value },
+                              })
+                              setIsCurriculumDirty(true)
+                            }}
+                            className="mt-0.5 w-full bg-transparent text-center font-mono text-xs text-[#7aa2f7] focus:outline-none"
+                          />
+                        </div>
+                        <div className="rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-center">
+                          <span className="text-[10px] text-[#565f89]">Average</span>
+                          <input
+                            type="text"
+                            value={theoryState.complexityStrip.average}
+                            onChange={(e) => {
+                              setTheoryState({
+                                ...theoryState,
+                                complexityStrip: { ...theoryState.complexityStrip, average: e.target.value },
+                              })
+                              setIsCurriculumDirty(true)
+                            }}
+                            className="mt-0.5 w-full bg-transparent text-center font-mono text-xs text-[#7aa2f7] focus:outline-none"
+                          />
+                        </div>
+                        <div className="rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-center">
+                          <span className="text-[10px] text-[#565f89]">Worst</span>
+                          <input
+                            type="text"
+                            value={theoryState.complexityStrip.worst}
+                            onChange={(e) => {
+                              setTheoryState({
+                                ...theoryState,
+                                complexityStrip: { ...theoryState.complexityStrip, worst: e.target.value },
+                              })
+                              setIsCurriculumDirty(true)
+                            }}
+                            className="mt-0.5 w-full bg-transparent text-center font-mono text-xs text-[#7aa2f7] focus:outline-none"
+                          />
+                        </div>
+                        <div className="rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-center">
+                          <span className="text-[10px] text-[#565f89]">Space</span>
+                          <input
+                            type="text"
+                            value={theoryState.complexityStrip.space}
+                            onChange={(e) => {
+                              setTheoryState({
+                                ...theoryState,
+                                complexityStrip: { ...theoryState.complexityStrip, space: e.target.value },
+                              })
+                              setIsCurriculumDirty(true)
+                            }}
+                            className="mt-0.5 w-full bg-transparent text-center font-mono text-xs text-[#9ece6a] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-[#565f89]">
-                      Summary Lead
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={theoryContent.summaryLead}
-                      onChange={(e) =>
-                        setTheoryContent({ ...theoryContent, summaryLead: e.target.value })
-                      }
-                      className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2 text-xs text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-[#565f89]">
-                      Socratic Check Question
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={theoryContent.socraticCheck}
-                      onChange={(e) =>
-                        setTheoryContent({
-                          ...theoryContent,
-                          socraticCheck: e.target.value,
-                        })
-                      }
-                      className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2 text-xs text-white"
-                    />
+
+                  {/* Structural Invariants List */}
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-2">
+                      <div className="flex items-center gap-2">
+                        <Layers className="size-4 text-[#7aa2f7]" />
+                        <h3 className="text-xs font-bold text-white">Structural Invariants & Properties</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextCards = [
+                            ...theoryState.invariantsList,
+                            {
+                              id: String(Date.now()),
+                              title: "New Invariant Property",
+                              tag: "Invariant",
+                              detail: "Describe structural guarantee or bounding property here.",
+                            },
+                          ]
+                          setTheoryState({ ...theoryState, invariantsList: nextCards })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7aa2f7] hover:underline"
+                      >
+                        <Plus className="size-3" />
+                        <span>Add Property</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                      {theoryState.invariantsList.map((card, cIdx) => (
+                        <div key={card.id || cIdx} className="rounded-lg border border-[#292e42] bg-[#16161e] p-3 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <input
+                              type="text"
+                              value={card.title}
+                              onChange={(e) => {
+                                const next = [...theoryState.invariantsList]
+                                next[cIdx] = { ...card, title: e.target.value }
+                                setTheoryState({ ...theoryState, invariantsList: next })
+                                setIsCurriculumDirty(true)
+                              }}
+                              className="flex-1 bg-transparent text-xs font-bold text-white focus:outline-none"
+                              placeholder="Property Title"
+                            />
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={card.tag}
+                                onChange={(e) => {
+                                  const next = [...theoryState.invariantsList]
+                                  next[cIdx] = { ...card, tag: e.target.value }
+                                  setTheoryState({ ...theoryState, invariantsList: next })
+                                  setIsCurriculumDirty(true)
+                                }}
+                                className="w-24 rounded border border-[#292e42] bg-[#1a1b26] px-1.5 py-0.5 text-center text-[10px] font-mono text-[#bb9af7] focus:outline-none"
+                                placeholder="Tag"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = theoryState.invariantsList.filter((_, i) => i !== cIdx)
+                                  setTheoryState({ ...theoryState, invariantsList: next })
+                                  setIsCurriculumDirty(true)
+                                }}
+                                className="text-[#565f89] hover:text-red-400"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <textarea
+                            rows={2}
+                            value={card.detail}
+                            onChange={(e) => {
+                              const next = [...theoryState.invariantsList]
+                              next[cIdx] = { ...card, detail: e.target.value }
+                              setTheoryState({ ...theoryState, invariantsList: next })
+                              setIsCurriculumDirty(true)
+                            }}
+                            className="w-full rounded border border-[#292e42] bg-[#1a1b26] p-2 text-[11px] text-[#c0caf5] focus:outline-none"
+                            placeholder="Detail description..."
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {activeLessonType === "quiz" && (
-                <div className="space-y-3 max-w-2xl">
-                  <div>
-                    <label className="text-xs font-semibold text-[#565f89]">
-                      Quiz Prompt / Question
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={quizContent.questionPrompt}
-                      onChange={(e) =>
-                        setQuizContent({ ...quizContent, questionPrompt: e.target.value })
-                      }
-                      className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2 text-xs text-white"
+                {/* Right Column (6): C++ Reference Snippet Editor, Socratic Check, Live Preview */}
+                <div className="xl:col-span-6 space-y-4">
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-2">
+                      <div className="flex items-center gap-2">
+                        <Code2 className="size-4 text-[#7aa2f7]" />
+                        <h3 className="text-xs font-bold text-white">C++ Structural Snippet Reference</h3>
+                      </div>
+                      <input
+                        type="text"
+                        value={theoryState.snippetTitle}
+                        onChange={(e) => {
+                          setTheoryState({ ...theoryState, snippetTitle: e.target.value })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="rounded border border-[#292e42] bg-[#16161e] px-2 py-0.5 text-xs text-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    <TokyoNightCodeEditor
+                      value={theoryState.snippetCode}
+                      onChange={(val) => {
+                        setTheoryState({ ...theoryState, snippetCode: val })
+                        setIsCurriculumDirty(true)
+                      }}
+                      minHeight="260px"
                     />
-                  </div>
 
-                  <div className="space-y-2 pt-2">
-                    <span className="text-xs font-semibold text-[#565f89]">
-                      4 Options & Correct Answer
-                    </span>
-                    {["A", "B", "C", "D"].map((opt) => (
-                      <div key={opt} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="correctOption"
-                          checked={quizContent.correctOption === opt}
-                          onChange={() =>
-                            setQuizContent({ ...quizContent, correctOption: opt })
-                          }
-                          className="size-4 text-[#bb9af7]"
-                        />
-                        <span className="font-mono text-xs font-bold text-[#bb9af7]">
-                          {opt}:
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Socratic Reflection Question</label>
+                      <textarea
+                        rows={2}
+                        value={theoryState.socraticCheck}
+                        onChange={(e) => {
+                          setTheoryState({ ...theoryState, socraticCheck: e.target.value })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2 text-xs text-[#7dcfff] focus:border-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-[#24283b]">
+                      <span className="text-xs font-semibold text-[#565f89]">Student Workspace Preview</span>
+                      <button
+                        type="button"
+                        onClick={() => setTheoryState({ ...theoryState, showLivePreview: !theoryState.showLivePreview })}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                          theoryState.showLivePreview ? "bg-[#7aa2f7] text-[#16161e]" : "border border-[#292e42] bg-[#16161e] text-[#c0caf5]"
+                        }`}
+                      >
+                        <Eye className="size-3.5" />
+                        <span>{theoryState.showLivePreview ? "Hide Preview" : "Show Live Preview"}</span>
+                      </button>
+                    </div>
+
+                    {theoryState.showLivePreview && (
+                      <div className="mt-3 rounded-xl border border-[#7aa2f7]/40 bg-[#16161e] p-4 space-y-3 shadow-inner">
+                        <div className="flex items-center justify-between border-b border-[#292e42] pb-2">
+                          <span className="font-mono text-[10px] uppercase text-[#7aa2f7]">{theoryState.headerTitle}</span>
+                          <span className="rounded bg-[#7aa2f7]/20 px-2 py-0.5 text-[10px] font-bold text-[#7aa2f7]">Live Theory Card</span>
+                        </div>
+                        <p className="text-xs text-[#c0caf5] leading-relaxed">{theoryState.summaryLead}</p>
+                        <div className="rounded-lg border border-[#7dcfff]/30 bg-[#7dcfff]/5 p-3 text-xs text-[#7dcfff]">
+                          <span className="font-bold">Socratic Check: </span>
+                          <span>{theoryState.socraticCheck}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ==================== TAB 2: SOCRATIC QUIZ (7/5 GRID) ==================== */}
+            {curriculumActiveTab === "quiz" && (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 w-full">
+                {/* Left Column (7): Question Pills, Prompt, 4 Options A-D with Radio, Explanation */}
+                <div className="xl:col-span-7 space-y-4">
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-4">
+                    {/* Question Tabs Header */}
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-3">
+                      <div className="flex items-center gap-2">
+                        {quizQuestions.map((q, qIdx) => (
+                          <button
+                            key={q.id || qIdx}
+                            type="button"
+                            onClick={() => {
+                              setActiveQuizIndex(qIdx)
+                              setLiveQuizSelectedOption(null)
+                              setLiveQuizShowHint(false)
+                            }}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                              activeQuizIndex === qIdx
+                                ? "bg-[#7aa2f7] text-[#16161e] shadow-sm"
+                                : "border border-[#292e42] bg-[#16161e] text-[#565f89] hover:text-[#c0caf5]"
+                            }`}
+                          >
+                            Q{qIdx + 1}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newQ = {
+                              id: `q${Date.now()}`,
+                              prompt: "New quiz inquiry regarding structural algorithmic invariant:",
+                              options: ["Option A (Correct)", "Option B", "Option C", "Option D"],
+                              correctIndex: 0,
+                              explanation: "Explanation on why this invariant holds under all test cases.",
+                              socraticHint: "Consider the definition of structural height balance.",
+                            }
+                            setQuizQuestions([...quizQuestions, newQ])
+                            setActiveQuizIndex(quizQuestions.length)
+                            setIsCurriculumDirty(true)
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[#292e42] px-2.5 py-1 text-xs text-[#7aa2f7] hover:border-[#7aa2f7]"
+                        >
+                          <Plus className="size-3" />
+                          <span>Add Question</span>
+                        </button>
+                      </div>
+
+                      {quizQuestions.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = quizQuestions.filter((_, idx) => idx !== activeQuizIndex)
+                            setQuizQuestions(next)
+                            setActiveQuizIndex(Math.max(0, activeQuizIndex - 1))
+                            setIsCurriculumDirty(true)
+                          }}
+                          className="text-xs text-[#565f89] hover:text-red-400"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Active Question Prompt */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">
+                        Question {activeQuizIndex + 1} Prompt
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={quizQuestions[activeQuizIndex]?.prompt || ""}
+                        onChange={(e) => {
+                          const next = [...quizQuestions]
+                          next[activeQuizIndex] = { ...next[activeQuizIndex], prompt: e.target.value }
+                          setQuizQuestions(next)
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-white leading-relaxed focus:border-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    {/* 4 Options A-D with Radio Buttons */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-semibold text-[#565f89] uppercase tracking-wider">
+                        Select Options (Click radio to mark Correct Answer)
+                      </label>
+                      {(quizQuestions[activeQuizIndex]?.options || ["A", "B", "C", "D"]).map((opt, optIdx) => {
+                        const isCorrect = quizQuestions[activeQuizIndex]?.correctIndex === optIdx
+                        const letter = String.fromCharCode(65 + optIdx)
+                        return (
+                          <div
+                            key={optIdx}
+                            className={`flex items-center gap-3 rounded-lg border p-2.5 transition-all ${
+                              isCorrect
+                                ? "border-emerald-500/60 bg-emerald-500/10 shadow-sm"
+                                : "border-[#292e42] bg-[#16161e]"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name={`correct-q-${activeQuizIndex}`}
+                              checked={isCorrect}
+                              onChange={() => {
+                                const next = [...quizQuestions]
+                                next[activeQuizIndex] = { ...next[activeQuizIndex], correctIndex: optIdx }
+                                setQuizQuestions(next)
+                                setIsCurriculumDirty(true)
+                              }}
+                              className="size-4 accent-emerald-500 cursor-pointer"
+                            />
+                            <span className="font-mono text-xs font-bold text-[#7aa2f7]">{letter}.</span>
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={(e) => {
+                                const next = [...quizQuestions]
+                                const nextOpts = [...next[activeQuizIndex].options]
+                                nextOpts[optIdx] = e.target.value
+                                next[activeQuizIndex] = { ...next[activeQuizIndex], options: nextOpts }
+                                setQuizQuestions(next)
+                                setIsCurriculumDirty(true)
+                              }}
+                              className="flex-1 bg-transparent text-xs text-white focus:outline-none"
+                            />
+                            {isCorrect && (
+                              <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                                Correct Answer
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Answer Explanation */}
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Detailed Answer Explanation</label>
+                      <textarea
+                        rows={2}
+                        value={quizQuestions[activeQuizIndex]?.explanation || ""}
+                        onChange={(e) => {
+                          const next = [...quizQuestions]
+                          next[activeQuizIndex] = { ...next[activeQuizIndex], explanation: e.target.value }
+                          setQuizQuestions(next)
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-emerald-300 leading-relaxed focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column (5): Socratic Hint & Live Quiz Card Preview */}
+                <div className="xl:col-span-5 space-y-4">
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Question Socratic Hint</label>
+                      <textarea
+                        rows={3}
+                        value={quizQuestions[activeQuizIndex]?.socraticHint || ""}
+                        onChange={(e) => {
+                          const next = [...quizQuestions]
+                          next[activeQuizIndex] = { ...next[activeQuizIndex], socraticHint: e.target.value }
+                          setQuizQuestions(next)
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-[#7dcfff] leading-relaxed focus:border-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="border-t border-[#24283b] pt-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold text-white">Live Quiz Card Preview</span>
+                        <span className="font-mono text-[10px] text-[#7aa2f7]">
+                          Q{activeQuizIndex + 1} of {quizQuestions.length}
                         </span>
+                      </div>
+
+                      <div className="rounded-xl border border-[#24283b] bg-[#16161e] p-4 space-y-3 shadow-inner">
+                        <p className="text-xs font-medium text-white leading-relaxed">
+                          {quizQuestions[activeQuizIndex]?.prompt}
+                        </p>
+
+                        <div className="space-y-2 pt-1">
+                          {(quizQuestions[activeQuizIndex]?.options || []).map((opt, oIdx) => {
+                            const isSelected = liveQuizSelectedOption === oIdx
+                            return (
+                              <button
+                                key={oIdx}
+                                type="button"
+                                onClick={() => setLiveQuizSelectedOption(oIdx)}
+                                className={`w-full text-left flex items-center gap-2.5 rounded-lg border p-2.5 text-xs transition-all ${
+                                  isSelected
+                                    ? "border-[#7aa2f7] bg-[#7aa2f7]/20 text-white font-semibold"
+                                    : "border-[#292e42] bg-[#1a1b26] text-[#c0caf5] hover:border-[#7aa2f7]/50"
+                                }`}
+                              >
+                                <span className="font-mono text-[11px] text-[#7aa2f7]">{String.fromCharCode(65 + oIdx)}.</span>
+                                <span className="flex-1">{opt}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setLiveQuizShowHint(!liveQuizShowHint)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7dcfff] hover:underline"
+                          >
+                            <Sparkles className="size-3" />
+                            <span>{liveQuizShowHint ? "Hide Socratic Hint" : "Ask Socratic Tutor"}</span>
+                          </button>
+
+                          {liveQuizSelectedOption !== null && (
+                            <span className={`text-xs font-bold ${
+                              liveQuizSelectedOption === quizQuestions[activeQuizIndex]?.correctIndex
+                                ? "text-emerald-400"
+                                : "text-amber-400"
+                            }`}>
+                              {liveQuizSelectedOption === quizQuestions[activeQuizIndex]?.correctIndex
+                                ? "Correct Choice"
+                                : "Incorrect Selection"}
+                            </span>
+                          )}
+                        </div>
+
+                        {liveQuizShowHint && (
+                          <div className="rounded-lg border border-[#7dcfff]/30 bg-[#7dcfff]/10 p-2.5 text-xs text-[#7dcfff]">
+                            <span className="font-bold">Tutor Guidance: </span>
+                            <span>{quizQuestions[activeQuizIndex]?.socraticHint}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ==================== TAB 3: C++ CODING TASK (5/7 GRID) ==================== */}
+            {curriculumActiveTab === "coding" && (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 w-full">
+                {/* Left Column (5): Problem Specs, Difficulty, Test Suite Builder */}
+                <div className="xl:col-span-5 space-y-4">
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1">
+                        <label className="text-[11px] font-semibold text-[#565f89]">Task Title</label>
                         <input
                           type="text"
-                          value={quizContent[`option${opt}`]}
-                          onChange={(e) =>
-                            setQuizContent({
-                              ...quizContent,
-                              [`option${opt}`]: e.target.value,
-                            })
-                          }
-                          className="flex-1 rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs text-white"
+                          value={codingState.taskTitle}
+                          onChange={(e) => {
+                            setCodingState({ ...codingState, taskTitle: e.target.value })
+                            setIsCurriculumDirty(true)
+                          }}
+                          className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs font-bold text-white focus:border-[#7aa2f7] focus:outline-none"
                         />
                       </div>
-                    ))}
+                      <div className="w-28">
+                        <label className="text-[11px] font-semibold text-[#565f89]">Difficulty</label>
+                        <select
+                          value={codingState.difficulty}
+                          onChange={(e: any) => {
+                            setCodingState({ ...codingState, difficulty: e.target.value })
+                            setIsCurriculumDirty(true)
+                          }}
+                          className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs font-bold text-[#7aa2f7] focus:outline-none"
+                        >
+                          <option value="Easy">Easy</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Hard">Hard</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Problem Statement</label>
+                      <textarea
+                        rows={3}
+                        value={codingState.problemStatement}
+                        onChange={(e) => {
+                          setCodingState({ ...codingState, problemStatement: e.target.value })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-[#c0caf5] leading-relaxed focus:border-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-semibold text-[#565f89]">Input Format</label>
+                        <input
+                          type="text"
+                          value={codingState.inputFormat}
+                          onChange={(e) => {
+                            setCodingState({ ...codingState, inputFormat: e.target.value })
+                            setIsCurriculumDirty(true)
+                          }}
+                          className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs text-[#c0caf5] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-[#565f89]">Output Format</label>
+                        <input
+                          type="text"
+                          value={codingState.outputFormat}
+                          onChange={(e) => {
+                            setCodingState({ ...codingState, outputFormat: e.target.value })
+                            setIsCurriculumDirty(true)
+                          }}
+                          className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs text-[#c0caf5] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Test Suite Builder */}
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-2">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="size-4 text-[#7aa2f7]" />
+                        <h3 className="text-xs font-bold text-white">Test Suite Specifications ({codingState.testCases.length})</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextTc = [
+                            ...codingState.testCases,
+                            {
+                              id: `tc-${Date.now()}`,
+                              label: `Test Case ${codingState.testCases.length + 1}`,
+                              input: "[1, 2, 3]",
+                              expected: "Passed",
+                              isHidden: false,
+                            },
+                          ]
+                          setCodingState({ ...codingState, testCases: nextTc })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#7aa2f7] hover:underline"
+                      >
+                        <Plus className="size-3" />
+                        <span>Add Test Case</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                      {codingState.testCases.map((tc, tcIdx) => (
+                        <div key={tc.id || tcIdx} className="rounded-lg border border-[#292e42] bg-[#16161e] p-3 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <input
+                              type="text"
+                              value={tc.label}
+                              onChange={(e) => {
+                                const next = [...codingState.testCases]
+                                next[tcIdx] = { ...tc, label: e.target.value }
+                                setCodingState({ ...codingState, testCases: next })
+                                setIsCurriculumDirty(true)
+                              }}
+                              className="flex-1 bg-transparent text-xs font-bold text-white focus:outline-none"
+                            />
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = [...codingState.testCases]
+                                  next[tcIdx] = { ...tc, isHidden: !tc.isHidden }
+                                  setCodingState({ ...codingState, testCases: next })
+                                  setIsCurriculumDirty(true)
+                                }}
+                                className={`rounded px-2 py-0.5 text-[10px] font-bold transition-all ${
+                                  tc.isHidden ? "bg-purple-500/20 text-purple-300 border border-purple-500/40" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                }`}
+                              >
+                                {tc.isHidden ? "Hidden Judge" : "Public Sample"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const next = codingState.testCases.filter((_, i) => i !== tcIdx)
+                                  setCodingState({ ...codingState, testCases: next })
+                                  setIsCurriculumDirty(true)
+                                }}
+                                className="text-[#565f89] hover:text-red-400"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="text-[10px] text-[#565f89]">Input</span>
+                              <input
+                                type="text"
+                                value={tc.input}
+                                onChange={(e) => {
+                                  const next = [...codingState.testCases]
+                                  next[tcIdx] = { ...tc, input: e.target.value }
+                                  setCodingState({ ...codingState, testCases: next })
+                                  setIsCurriculumDirty(true)
+                                }}
+                                className="w-full rounded border border-[#292e42] bg-[#1a1b26] p-1.5 font-mono text-[11px] text-[#c0caf5] focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-[#565f89]">Expected Output</span>
+                              <input
+                                type="text"
+                                value={tc.expected}
+                                onChange={(e) => {
+                                  const next = [...codingState.testCases]
+                                  next[tcIdx] = { ...tc, expected: e.target.value }
+                                  setCodingState({ ...codingState, testCases: next })
+                                  setIsCurriculumDirty(true)
+                                }}
+                                className="w-full rounded border border-[#292e42] bg-[#1a1b26] p-1.5 font-mono text-[11px] text-[#9ece6a] focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {activeLessonType === "coding" && (
-                <div className="space-y-3 max-w-3xl">
-                  <div>
-                    <label className="text-xs font-semibold text-[#565f89]">
-                      Coding Starter Code (C++)
-                    </label>
-                    <textarea
-                      rows={12}
-                      value={codingContent.initialCode}
-                      onChange={(e) =>
-                        setCodingContent({
-                          ...codingContent,
-                          initialCode: e.target.value,
-                        })
-                      }
-                      className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-3 font-mono text-xs text-emerald-300 focus:outline-none"
+                {/* Right Column (7): Dual-Tab Tokyo Night Code Editor */}
+                <div className="xl:col-span-7 space-y-4">
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveCodingEditorTab("starter")}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                            activeCodingEditorTab === "starter"
+                              ? "bg-[#7aa2f7] text-[#16161e] shadow-sm"
+                              : "border border-[#292e42] bg-[#16161e] text-[#565f89] hover:text-[#c0caf5]"
+                          }`}
+                        >
+                          Starter Code (C++)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveCodingEditorTab("solution")}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                            activeCodingEditorTab === "solution"
+                              ? "bg-[#bb9af7] text-[#16161e] shadow-sm"
+                              : "border border-[#292e42] bg-[#16161e] text-[#565f89] hover:text-[#c0caf5]"
+                          }`}
+                        >
+                          Reference Solution (C++)
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const targetText = activeCodingEditorTab === "starter" ? codingState.starterCode : codingState.solutionCode
+                            navigator.clipboard.writeText(targetText)
+                            setEditorCopied(true)
+                            setTimeout(() => setEditorCopied(false), 2000)
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs font-semibold text-[#c0caf5] hover:bg-[#24283b]"
+                        >
+                          {editorCopied ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                          <span>{editorCopied ? "Copied!" : "Copy"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (activeCodingEditorTab === "starter") {
+                              setCodingState({
+                                ...codingState,
+                                starterCode: "// Starter Code\n#include <iostream>\n\nint main() {\n    return 0;\n}",
+                              })
+                            } else {
+                              setCodingState({
+                                ...codingState,
+                                solutionCode: "// Reference Solution\n#include <iostream>\n\nint main() {\n    return 0;\n}",
+                              })
+                            }
+                            setIsCurriculumDirty(true)
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs font-semibold text-[#565f89] hover:text-white"
+                        >
+                          <RotateCcw className="size-3" />
+                          <span>Reset</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <TokyoNightCodeEditor
+                      value={activeCodingEditorTab === "starter" ? codingState.starterCode : codingState.solutionCode}
+                      onChange={(val) => {
+                        if (activeCodingEditorTab === "starter") {
+                          setCodingState({ ...codingState, starterCode: val })
+                        } else {
+                          setCodingState({ ...codingState, solutionCode: val })
+                        }
+                        setIsCurriculumDirty(true)
+                      }}
+                      minHeight="420px"
                     />
                   </div>
+                </div>
+              </div>
+            )}
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-[#565f89]">
-                        Test Case Input
-                      </label>
-                      <input
-                        type="text"
-                        value={codingContent.testCasesInput}
-                        onChange={(e) =>
-                          setCodingContent({
-                            ...codingContent,
-                            testCasesInput: e.target.value,
-                          })
-                        }
-                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2 text-xs font-mono text-white"
-                      />
+            {/* ==================== TAB 4: SOCRATIC AI GUARDRAILS (6/6 GRID) ==================== */}
+            {curriculumActiveTab === "guardrails" && (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 w-full">
+                {/* Left Column (6): Key Invariants & Misconceptions Chips */}
+                <div className="xl:col-span-6 space-y-4">
+                  {/* Key Invariants */}
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-2">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="size-4 text-[#7aa2f7]" />
+                        <h3 className="text-xs font-bold text-white">Algorithmic Invariants to Enforce</h3>
+                      </div>
+                      <span className="text-[10px] text-[#565f89]">{guardrailsState.keyInvariants.length} active</span>
                     </div>
-                    <div>
-                      <label className="text-xs font-semibold text-[#565f89]">
-                        Test Case Expected Output
-                      </label>
+
+                    <div className="flex items-center gap-2">
                       <input
                         type="text"
-                        value={codingContent.testCasesExpected}
-                        onChange={(e) =>
-                          setCodingContent({
-                            ...codingContent,
-                            testCasesExpected: e.target.value,
-                          })
-                        }
-                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2 text-xs font-mono text-white"
+                        value={newInvariantInput}
+                        onChange={(e) => setNewInvariantInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && newInvariantInput.trim()) {
+                            setGuardrailsState({
+                              ...guardrailsState,
+                              keyInvariants: [...guardrailsState.keyInvariants, newInvariantInput.trim()],
+                            })
+                            setNewInvariantInput("")
+                            setIsCurriculumDirty(true)
+                          }
+                        }}
+                        placeholder="Add new invariant to probe..."
+                        className="flex-1 rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs text-white focus:outline-none"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newInvariantInput.trim()) {
+                            setGuardrailsState({
+                              ...guardrailsState,
+                              keyInvariants: [...guardrailsState.keyInvariants, newInvariantInput.trim()],
+                            })
+                            setNewInvariantInput("")
+                            setIsCurriculumDirty(true)
+                          }
+                        }}
+                        className="rounded-lg bg-[#7aa2f7] px-3 py-1.5 text-xs font-bold text-[#16161e]"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      {guardrailsState.keyInvariants.map((inv, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-2 rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-xs text-[#c0caf5]">
+                          <span>{inv}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = guardrailsState.keyInvariants.filter((_, i) => i !== idx)
+                              setGuardrailsState({ ...guardrailsState, keyInvariants: next })
+                              setIsCurriculumDirty(true)
+                            }}
+                            className="text-[#565f89] hover:text-red-400"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Common Misconceptions */}
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-2">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="size-4 text-amber-400" />
+                        <h3 className="text-xs font-bold text-white">Common Student Misconceptions</h3>
+                      </div>
+                      <span className="text-[10px] text-[#565f89]">{guardrailsState.commonMisconceptions.length} active</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newMisconceptionInput}
+                        onChange={(e) => setNewMisconceptionInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && newMisconceptionInput.trim()) {
+                            setGuardrailsState({
+                              ...guardrailsState,
+                              commonMisconceptions: [...guardrailsState.commonMisconceptions, newMisconceptionInput.trim()],
+                            })
+                            setNewMisconceptionInput("")
+                            setIsCurriculumDirty(true)
+                          }
+                        }}
+                        placeholder="Add common pitfall or incorrect mental model..."
+                        className="flex-1 rounded border border-[#292e42] bg-[#16161e] px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newMisconceptionInput.trim()) {
+                            setGuardrailsState({
+                              ...guardrailsState,
+                              commonMisconceptions: [...guardrailsState.commonMisconceptions, newMisconceptionInput.trim()],
+                            })
+                            setNewMisconceptionInput("")
+                            setIsCurriculumDirty(true)
+                          }
+                        }}
+                        className="rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-bold text-[#16161e]"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      {guardrailsState.commonMisconceptions.map((misc, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-2 rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-xs text-amber-200">
+                          <span>{misc}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = guardrailsState.commonMisconceptions.filter((_, i) => i !== idx)
+                              setGuardrailsState({ ...guardrailsState, commonMisconceptions: next })
+                              setIsCurriculumDirty(true)
+                            }}
+                            className="text-[#565f89] hover:text-red-400"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+
+                {/* Right Column (6): 3-Tier Progressive Hint Ladder & Zero-Spoiler Mode */}
+                <div className="xl:col-span-6 space-y-4">
+                  <div className="rounded-xl border border-[#24283b] bg-[#1a1b26] p-4 space-y-4">
+                    <div className="flex items-center justify-between border-b border-[#24283b] pb-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="size-4 text-[#bb9af7]" />
+                        <h3 className="text-xs font-bold text-white">3-Tier Progressive Hint Ladder</h3>
+                      </div>
+                      <span className="text-[10px] text-[#565f89]">Multi-turn Socratic Scaffolding</span>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#7aa2f7]">
+                        Tier 1: Conceptual Probe (Minimal Nudge)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={guardrailsState.hintsLadder.tier1}
+                        onChange={(e) => {
+                          setGuardrailsState({
+                            ...guardrailsState,
+                            hintsLadder: { ...guardrailsState.hintsLadder, tier1: e.target.value },
+                          })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-[#c0caf5] leading-relaxed focus:border-[#7aa2f7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#bb9af7]">
+                        Tier 2: Targeted Structural Hint (Directed Focus)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={guardrailsState.hintsLadder.tier2}
+                        onChange={(e) => {
+                          setGuardrailsState({
+                            ...guardrailsState,
+                            hintsLadder: { ...guardrailsState.hintsLadder, tier2: e.target.value },
+                          })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-[#c0caf5] leading-relaxed focus:border-[#bb9af7] focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#7dcfff]">
+                        Tier 3: Boundary / Pseudo-logic Nudge (Specific Invariant)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={guardrailsState.hintsLadder.tier3}
+                        onChange={(e) => {
+                          setGuardrailsState({
+                            ...guardrailsState,
+                            hintsLadder: { ...guardrailsState.hintsLadder, tier3: e.target.value },
+                          })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-[#c0caf5] leading-relaxed focus:border-[#7dcfff] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-[#24283b]">
+                      <div>
+                        <div className="text-xs font-bold text-white">Strict Zero-Spoiler Policy</div>
+                        <div className="text-[11px] text-[#565f89]">AI Tutor will never output direct code solutions without proof of invariants.</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGuardrailsState({
+                            ...guardrailsState,
+                            zeroSpoilerMode: !guardrailsState.zeroSpoilerMode,
+                          })
+                          setIsCurriculumDirty(true)
+                        }}
+                        className={`rounded-full px-3 py-1 text-xs font-bold transition-all ${
+                          guardrailsState.zeroSpoilerMode
+                            ? "bg-emerald-500 text-[#16161e]"
+                            : "border border-[#292e42] bg-[#16161e] text-[#565f89]"
+                        }`}
+                      >
+                        {guardrailsState.zeroSpoilerMode ? "ON" : "OFF"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. MODAL: CREATE NEW NODE */}
+            {isNewNodeModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+                <div className="w-full max-w-md rounded-2xl border border-[#24283b] bg-[#1a1b26] p-6 shadow-2xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#24283b] pb-3">
+                    <h3 className="text-sm font-bold text-white">Create New Curriculum Node</h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsNewNodeModalOpen(false)}
+                      className="text-[#565f89] hover:text-white"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Node Label</label>
+                      <input
+                        type="text"
+                        value={newNodeData.label}
+                        onChange={(e) => setNewNodeData({ ...newNodeData, label: e.target.value })}
+                        placeholder="e.g. Red-Black Tree"
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-3 py-1.5 text-xs text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-semibold text-[#565f89]">Short Code</label>
+                        <input
+                          type="text"
+                          value={newNodeData.shortCode}
+                          onChange={(e) => setNewNodeData({ ...newNodeData, shortCode: e.target.value })}
+                          placeholder="09"
+                          className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-3 py-1.5 text-xs text-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-[#565f89]">Target Complexity</label>
+                        <input
+                          type="text"
+                          value={newNodeData.targetComplexity}
+                          onChange={(e) => setNewNodeData({ ...newNodeData, targetComplexity: e.target.value })}
+                          placeholder="O(log N)"
+                          className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] px-3 py-1.5 text-xs font-mono text-[#7aa2f7] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-[#565f89]">Description</label>
+                      <textarea
+                        rows={2}
+                        value={newNodeData.description}
+                        onChange={(e) => setNewNodeData({ ...newNodeData, description: e.target.value })}
+                        placeholder="Brief summary of the data structure or topic..."
+                        className="mt-1 w-full rounded border border-[#292e42] bg-[#16161e] p-2.5 text-xs text-[#c0caf5] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#24283b]">
+                    <button
+                      type="button"
+                      onClick={() => setIsNewNodeModalOpen(false)}
+                      className="rounded-lg border border-[#292e42] bg-[#16161e] px-3 py-1.5 text-xs font-medium text-[#c0caf5] hover:bg-[#24283b]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCreateNewNode}
+                      className="rounded-lg bg-[#7aa2f7] px-4 py-1.5 text-xs font-bold text-[#16161e] hover:bg-[#7aa2f7]/90"
+                    >
+                      Create Node
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -2127,7 +3553,14 @@ export default function AdminPage() {
                           {userEmail}
                         </td>
                         <td className="px-4 py-3 font-semibold text-[#c0caf5]">
-                          {userFullName}
+                          <div className="flex items-center gap-2">
+                            {userRole === "admin" && (
+                              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#6366f1] via-[#8b5cf6] to-[#d946ef] text-white shadow-sm ring-1 ring-purple-400/40">
+                                <ShieldCheck className="size-3.5 text-white" />
+                              </div>
+                            )}
+                            <span>{userFullName}</span>
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <select

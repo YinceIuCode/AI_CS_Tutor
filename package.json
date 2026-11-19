@@ -1,0 +1,12 @@
+{
+  "name": "ai-cs-tutor",
+  "version": "1.0.0",
+  "description": "AI CS Tutor - Automated DSA Learning Pathway",
+  "private": true,
+  "scripts": {
+    "web": "cmd /c scripts\\run.bat web",
+    "api": "cmd /c scripts\\run.bat api",
+    "dev:web": "npm --prefix web run dev",
+    "dev:api": "cmd /c scripts\\run.bat api"
+  }
+}

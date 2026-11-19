@@ -577,22 +577,34 @@ export async function saveRecord(tableName, record) {
   if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       const baseUrl = `${SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/${tableName}`
-      const url = isUpdate ? `${baseUrl}?id=eq.${encodeURIComponent(targetId)}` : baseUrl
-      const method = isUpdate ? "PATCH" : "POST"
-
-      const res = await fetch(url, {
-        method,
+      // Use UPSERT with resolution=merge-duplicates so both existing and new records are cleanly saved
+      const res = await fetch(baseUrl, {
+        method: "POST",
         headers: {
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${SUPABASE_KEY}`,
           "Content-Type": "application/json",
-          Prefer: "return=representation",
+          Prefer: "resolution=merge-duplicates,return=representation",
         },
         body: JSON.stringify(finalRecord),
       })
 
       if (res.ok) {
         supabaseSuccess = true
+      } else {
+        // Fallback to PATCH if POST resolution=merge-duplicates fails
+        const patchUrl = `${baseUrl}?id=eq.${encodeURIComponent(targetId)}`
+        const patchRes = await fetch(patchUrl, {
+          method: "PATCH",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify(finalRecord),
+        })
+        if (patchRes.ok) supabaseSuccess = true
       }
     } catch (e) {
       console.warn(`[AdminService] Supabase ${tableName} write failed, updating cache:`, e.message)
@@ -945,31 +957,52 @@ export function getCurriculumOverrides() {
 
 /**
  * Save complete Node + its 3 tasks from the visual Curriculum Builder
+ * Strictly adheres to Supabase schema columns to guarantee zero 400 Bad Request errors.
  */
 export async function saveCurriculumNodeAndTasks(nodeId, nodeData, tasksList) {
-  // 1. Save Node
-  await saveRecord("roadmap_nodes", {
+  // 1. Save Node - strictly valid Supabase columns:
+  // id, document_id, label, short_code, target_complexity, description, sequence_order, prerequisites, socratic_profile
+  const cleanNodeRecord = {
     id: nodeId,
-    document_id: nodeData.documentId || "doc-dsa-syllabus",
-    label: nodeData.label,
-    short_code: nodeData.shortCode,
-    complexity: nodeData.complexity,
-    target_complexity: nodeData.complexity,
-    description: nodeData.description,
-    primary_slide_reference: nodeData.primarySlideReference,
-  })
+    document_id: nodeData.document_id || nodeData.documentId || "00000005-0000-4000-8000-000000000001",
+    label: nodeData.label || "Untitled Node",
+    short_code: nodeData.short_code || nodeData.shortCode || "01",
+    target_complexity: nodeData.target_complexity || nodeData.complexity || "O(1)",
+    description: nodeData.description || "",
+    prerequisites: Array.isArray(nodeData.prerequisites) ? nodeData.prerequisites : [],
+    socratic_profile: {
+      primarySlideReference: nodeData.primarySlideReference || nodeData.slideReference || "Slide 01",
+      ...(nodeData.socratic_profile || nodeData.socraticProfile || {}),
+    },
+  }
+  if (nodeData.sequence_order !== undefined) {
+    cleanNodeRecord.sequence_order = nodeData.sequence_order
+  }
 
-  // 2. Save each task
-  for (const t of tasksList) {
-    await saveRecord("tasks", {
-      id: t.id,
+  await saveRecord("roadmap_nodes", cleanNodeRecord)
+  syncCurriculumOverride("roadmap_nodes", cleanNodeRecord)
+
+  // 2. Save each task - strictly valid Supabase columns:
+  // id, node_id, task_type, title, description, sequence_order, content
+  for (let idx = 0; idx < tasksList.length; idx++) {
+    const t = tasksList[idx]
+    const taskType = t.task_type || t.type || (idx === 0 ? "theory" : idx === 1 ? "quiz" : "coding")
+    const cleanTaskRecord = {
+      id: t.id || `${nodeId}-task-${idx + 1}`,
       node_id: nodeId,
-      document_id: nodeData.documentId || "doc-dsa-syllabus",
-      task_type: t.type,
-      title: t.title,
+      task_type: taskType,
+      title: t.title || `Task ${idx + 1}`,
       description: t.description || "",
+      sequence_order: t.sequence_order !== undefined ? t.sequence_order : idx + 1,
       content: t.content || {},
-    })
+    }
+    await saveRecord("tasks", cleanTaskRecord)
+    syncCurriculumOverride("tasks", cleanTaskRecord)
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("algopath:curriculum-updated"))
+    window.dispatchEvent(new Event("storage"))
   }
 
   return { success: true }

@@ -105,11 +105,18 @@ export function UserProfileMenu() {
         onClick={() => setOpen((prev) => !prev)}
         className="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 transition-colors hover:bg-surface/40"
       >
-        <span
-          className={`flex size-8 items-center justify-center rounded-full text-xs font-bold ${badgeColorClass}`}
-        >
-          {avatarInitial}
-        </span>
+        {isAdmin ? (
+          <div className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#6366f1] via-[#8b5cf6] to-[#d946ef] text-white shadow-[0_0_12px_rgba(168,85,247,0.45)] ring-2 ring-purple-400/50">
+            <ShieldCheck className="size-4.5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
+            <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 ring-2 ring-[#16161e]" />
+          </div>
+        ) : (
+          <span
+            className={`flex size-8 items-center justify-center rounded-full text-xs font-bold ${badgeColorClass}`}
+          >
+            {avatarInitial}
+          </span>
+        )}
         <div className="hidden text-left sm:block min-w-0">
           <div className="text-xs leading-tight font-semibold text-text-primary truncate max-w-[120px]">
             {displayName}
@@ -128,28 +135,48 @@ export function UserProfileMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-[100] mt-2 w-60 overflow-hidden rounded-lg border border-border-subtle bg-surface p-1.5 shadow-xl">
-          <div className="border-b border-border-subtle px-3 py-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-xs font-bold text-text-primary">
-                {displayName}
-              </span>
-              <span
-                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${pillBadgeClass}`}
-              >
-                {isGuest ? (
-                  <User className="size-2.5" />
-                ) : (
-                  <ShieldCheck className="size-2.5" />
+        <div className="absolute right-0 z-[100] mt-2 w-64 overflow-hidden rounded-xl border border-border-subtle bg-surface p-2 shadow-2xl backdrop-blur-md">
+          <div className="border-b border-border-subtle pb-2.5 pt-1 px-1.5">
+            <div className="flex items-center gap-2.5">
+              {isAdmin ? (
+                <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#6366f1] via-[#8b5cf6] to-[#d946ef] text-white shadow-[0_0_14px_rgba(168,85,247,0.5)] ring-2 ring-purple-400/60">
+                  <ShieldCheck className="size-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-400 ring-2 ring-surface" />
+                </div>
+              ) : (
+                <span
+                  className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${badgeColorClass}`}
+                >
+                  {avatarInitial}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="truncate text-xs font-bold text-text-primary">
+                    {displayName}
+                  </span>
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
+                      isAdmin
+                        ? "border border-purple-500/40 bg-purple-500/20 text-purple-300 shadow-sm"
+                        : pillBadgeClass
+                    }`}
+                  >
+                    {isGuest ? (
+                      <User className="size-2.5" />
+                    ) : (
+                      <ShieldCheck className="size-2.5" />
+                    )}
+                    {statusBadge}
+                  </span>
+                </div>
+                {currentUser?.email && (
+                  <p className="mt-0.5 truncate font-mono text-[10px] text-text-muted">
+                    {currentUser.email}
+                  </p>
                 )}
-                {statusBadge}
-              </span>
+              </div>
             </div>
-            {currentUser?.email && (
-              <p className="mt-0.5 truncate font-mono text-[10px] text-text-muted">
-                {currentUser.email}
-              </p>
-            )}
           </div>
 
           <div className="mt-1.5 space-y-1">
