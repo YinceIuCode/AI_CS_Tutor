@@ -1,283 +1,207 @@
-import time
-import json
-import base64
-import hmac
-import hashlib
 from typing import Optional, Dict, Any, Tuple
 from fastapi import Request
 from modules.common.config import JWT_SECRET_KEY, JWT_ALGORITHM
 
-# Attempt to load native bcrypt
-try:
-    import bcrypt
-    HAS_BCRYPT = True
-except ImportError:
-    bcrypt = None
-    HAS_BCRYPT = False
+# Hằng số thời gian sống của Token
+ACCESS_TOKEN_EXPIRE_SECONDS = 15 * 60            # 15 phút
+REFRESH_TOKEN_EXPIRE_SECONDS = 7 * 24 * 60 * 60  # 7 ngày
 
-# Attempt to load pyjwt
-try:
-    import jwt
-    HAS_PYJWT = True
-except ImportError:
-    jwt = None
-    HAS_PYJWT = False
-
-# Pre-computed valid bcrypt cost 12 dummy hash for timing attack mitigation
-DUMMY_BCRYPT_HASH = "$2b$12$8Y.4e1Qy2fE07KzHj0nNweq70jL5o8mBvV2N0D1E3F4G5H6I7J8K9"
 
 # ====================================================================
-# 1. BCRYPT PASSWORD HASHING & UPGRADE LOGIC
+# 1. BCRYPT PASSWORD HASHING & VERIFICATION
 # ====================================================================
 
 def hash_password(plain_password: str) -> str:
-    """Hash password using Bcrypt (cost factor = 12) with SHA-256 fallback."""
-    if HAS_BCRYPT and bcrypt:
-        salt = bcrypt.gensalt(rounds=12)
-        return bcrypt.hashpw(plain_password.encode("utf-8"), salt).decode("utf-8")
-    
-    # Pure Python SHA-256 + Salt fallback
-    salt_hex = hashlib.sha256(f"offbyone_salt_{time.time()}".encode()).hexdigest()[:16]
-    hashed = hashlib.sha256(f"{salt_hex}{plain_password}".encode()).hexdigest()
-    return f"pbkdf2_sha256$12000${salt_hex}${hashed}"
+    """
+    TODO:
+    1. Nhiệm vụ: Băm mật khẩu người dùng bằng thuật toán Bcrypt an toàn (cost factor = 12).
+    2. Input / Output:
+       - Input: plain_password (str, ví dụ 'Demo1234').
+       - Output: Chuỗi hash dạng Bcrypt (str, bắt đầu bằng '$2b$12$...').
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users, Cột: password_hash.
+    4. Các bước gợi ý:
+       - Step 1: Encode plain_password sang bytes UTF-8.
+       - Step 2: Dùng bcrypt.gensalt(rounds=12) sinh muối ngẫu nhiên.
+       - Step 3: Dùng bcrypt.hashpw(password_bytes, salt) và decode UTF-8 để lưu vào database.
+    """
+    raise NotImplementedError("TODO: Implement hash_password using bcrypt")
+
 
 def is_bcrypt_hash(hash_str: str) -> bool:
-    """Check if string matches standard bcrypt signature ($2a$, $2b$, or $2y$)."""
-    if not hash_str:
-        return False
-    return hash_str.startswith("$2a$") or hash_str.startswith("$2b$") or hash_str.startswith("$2y$")
+    """
+    TODO:
+    1. Nhiệm vụ: Kiểm tra xem chuỗi hash trong database có phải định dạng chuẩn Bcrypt hay không.
+    2. Input / Output:
+       - Input: hash_str (str).
+       - Output: bool (True nếu bắt đầu bằng '$2a$', '$2b$', hoặc '$2y$', ngược lại False).
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users, Cột: password_hash.
+    4. Các bước gợi ý:
+       - Step 1: Kiểm tra hash_str có rỗng không.
+       - Step 2: So khớp tiền tố '$2a$', '$2b$', '$2y$'.
+    """
+    raise NotImplementedError("TODO: Implement is_bcrypt_hash check")
+
 
 def verify_password_internal(plain_password: str, stored_hash: str) -> Tuple[bool, bool]:
     """
-    Verifies password and checks if the hash needs upgrading to Bcrypt.
-    Returns: (is_valid, needs_upgrade)
+    TODO:
+    1. Nhiệm vụ: Xác thực mật khẩu nhập vào với hash lưu trong database, đồng thời kiểm tra có cần nâng cấp hash cũ lên Bcrypt không.
+    2. Input / Output:
+       - Input: plain_password (str), stored_hash (str).
+       - Output: Tuple[bool, bool] -> (is_valid: bool, needs_upgrade: bool).
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users, Cột: password_hash.
+    4. Các bước gợi ý:
+       - Step 1: Nếu stored_hash là bcrypt: dùng bcrypt.checkpw(plain.encode(), hash.encode()) -> return (valid, False).
+       - Step 2: Nếu stored_hash là định dạng cũ ('offbyone_demo_hash::...'): kiểm tra khớp -> return (True, True) để kích hoạt nâng cấp.
+       - Step 3: Ngược lại return (False, False).
     """
-    if not stored_hash:
-        return False, False
+    raise NotImplementedError("TODO: Implement verify_password_internal with legacy format migration")
 
-    # 1. Standard Bcrypt format
-    if is_bcrypt_hash(stored_hash):
-        if HAS_BCRYPT and bcrypt:
-            try:
-                valid = bcrypt.checkpw(plain_password.encode("utf-8"), stored_hash.encode("utf-8"))
-                return valid, False
-            except Exception:
-                return False, False
-        return False, False
-
-    # 2. Legacy seed data format: 'offbyone_demo_hash::<email>::<pass>' or 'offbyone_demo_hash::<pass>'
-    if stored_hash.startswith("offbyone_demo_hash::"):
-        parts = stored_hash.split("::")
-        plain_in_db = parts[-1]
-        if plain_in_db == plain_password:
-            return True, True  # Match found, mark for automatic upgrade to Bcrypt!
-        return False, False
-
-    # 3. Old sha256 development salt format
-    old_computed = "h_" + hashlib.sha256(f"algopath_salt_{plain_password}".encode("utf-8")).hexdigest()[:8]
-    if stored_hash == old_computed:
-        return True, True
-
-    # 4. Fallback direct plain-text match (dev seeds)
-    if stored_hash == plain_password:
-        return True, True
-
-    return False, False
 
 def verify_password_with_timing_mitigation(plain_password: str, stored_hash: Optional[str]) -> Tuple[bool, bool]:
     """
-    Executes password verification.
-    If stored_hash is None (user does not exist), executes verification against
-    DUMMY_BCRYPT_HASH to prevent timing attacks.
+    TODO:
+    1. Nhiệm vụ: Xác thực mật khẩu với kỹ thuật phòng chống tấn công Timing Attack.
+       Khi user không tồn tại trong database (stored_hash = None), vẫn thực hiện một phép tính toán Bcrypt giả
+       để kẻ tấn công không thể phân biệt user có tồn tại hay không thông qua thời gian phản hồi API.
+    2. Input / Output:
+       - Input: plain_password (str), stored_hash (Optional[str]).
+       - Output: Tuple[bool, bool] -> (is_valid, needs_upgrade).
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users.
+    4. Các bước gợi ý:
+       - Step 1: Nếu stored_hash is None: chạy bcrypt.checkpw với dummy hash dựng sẵn rồi trả về (False, False).
+       - Step 2: Nếu có stored_hash: gọi verify_password_internal(plain_password, stored_hash).
     """
-    if stored_hash is None:
-        if HAS_BCRYPT and bcrypt:
-            try:
-                bcrypt.checkpw(plain_password.encode("utf-8"), DUMMY_BCRYPT_HASH.encode("utf-8"))
-            except Exception:
-                pass
-        else:
-            hashlib.sha256(f"dummy_salt_{plain_password}".encode()).hexdigest()
-        return False, False
+    raise NotImplementedError("TODO: Implement verify_password_with_timing_mitigation against timing attacks")
 
-    return verify_password_internal(plain_password, stored_hash)
 
 # ====================================================================
 # 2. DUAL TOKEN CREATION & VERIFICATION (ACCESS + REFRESH)
 # ====================================================================
 
-ACCESS_TOKEN_EXPIRE_SECONDS = 15 * 60            # 15 minutes
-REFRESH_TOKEN_EXPIRE_SECONDS = 7 * 24 * 60 * 60  # 7 days
-
-def _encode_jwt_pure(payload_dict: Dict[str, Any]) -> str:
-    """RFC7519 pure Python HS256 JWT encoder as universal fallback."""
-    header = {"alg": "HS256", "typ": "JWT"}
-    h_b64 = base64.urlsafe_b64encode(json.dumps(header, separators=(',', ':')).encode()).decode().rstrip("=")
-    p_b64 = base64.urlsafe_b64encode(json.dumps(payload_dict, separators=(',', ':')).encode()).decode().rstrip("=")
-    signing_input = f"{h_b64}.{p_b64}".encode()
-    signature = hmac.new(JWT_SECRET_KEY.encode(), signing_input, hashlib.sha256).digest()
-    s_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
-    return f"{h_b64}.{p_b64}.{s_b64}"
-
-def _decode_jwt_pure(token: str) -> Optional[Dict[str, Any]]:
-    """RFC7519 pure Python HS256 JWT decoder and verifier."""
-    try:
-        parts = token.split(".")
-        if len(parts) != 3:
-            return None
-        h_b64, p_b64, s_b64 = parts
-        
-        # Verify signature
-        padding = '=' * (4 - len(s_b64) % 4)
-        sig = base64.urlsafe_b64decode(s_b64 + padding)
-        expected_sig = hmac.new(JWT_SECRET_KEY.encode(), f"{h_b64}.{p_b64}".encode(), hashlib.sha256).digest()
-        if not hmac.compare_digest(sig, expected_sig):
-            return None
-        
-        # Decode payload
-        p_padding = '=' * (4 - len(p_b64) % 4)
-        payload = json.loads(base64.urlsafe_b64decode(p_b64 + p_padding).decode("utf-8"))
-        
-        # Expiry check
-        if "exp" in payload and int(time.time()) > int(payload["exp"]):
-            return None
-            
-        return payload
-    except Exception:
-        return None
-
 def create_access_token(user_id: str, email: str, role: str, account_type: str = "registered") -> str:
-    """Generate short-lived 15m Access Token."""
-    now = int(time.time())
-    payload = {
-        "sub": user_id,
-        "email": email,
-        "role": role,
-        "accountType": account_type,
-        "type": "access",
-        "iat": now,
-        "exp": now + ACCESS_TOKEN_EXPIRE_SECONDS
-    }
-    if HAS_PYJWT and jwt:
-        return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    return _encode_jwt_pure(payload)
+    """
+    TODO:
+    1. Nhiệm vụ: Tạo JWT Access Token ngắn hạn (thời hạn 15 phút) chứa thông tin định danh và vai trò của người dùng.
+    2. Input / Output:
+       - Input: user_id (str uuid), email (str), role (str: 'student' | 'tutor' | 'admin'), account_type (str).
+       - Output: Chuỗi JWT Access Token (str).
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users (cung cấp id, email, role, account_type).
+    4. Các bước gợi ý:
+       - Step 1: Chuẩn bị claims payload: sub = user_id, email = email, role = role, accountType = account_type, type = 'access', iat, exp = now + 15m.
+       - Step 2: Ký token bằng jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM).
+       - Step 3: Trả về chuỗi JWT đã ký.
+    """
+    raise NotImplementedError("TODO: Implement create_access_token with JWT")
+
 
 def create_refresh_token(user_id: str) -> str:
-    """Generate long-lived 7-day Refresh Token."""
-    now = int(time.time())
-    payload = {
-        "sub": user_id,
-        "type": "refresh",
-        "iat": now,
-        "exp": now + REFRESH_TOKEN_EXPIRE_SECONDS
-    }
-    if HAS_PYJWT and jwt:
-        return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
-    return _encode_jwt_pure(payload)
+    """
+    TODO:
+    1. Nhiệm vụ: Tạo JWT Refresh Token dài hạn (thời hạn 7 ngày) dùng để cấp mới Access Token mà không cần đăng nhập lại.
+    2. Input / Output:
+       - Input: user_id (str uuid).
+       - Output: Chuỗi JWT Refresh Token (str).
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users (cột id).
+    4. Các bước gợi ý:
+       - Step 1: Chuẩn bị payload: sub = user_id, type = 'refresh', iat, exp = now + 7 days.
+       - Step 2: Ký token bằng jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM).
+       - Step 3: Trả về chuỗi token.
+    """
+    raise NotImplementedError("TODO: Implement create_refresh_token with JWT")
+
 
 def verify_token(token: str, expected_type: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Decode and validate JWT token signature and expiration."""
-    if not token:
-        return None
-        
-    payload = None
-    if HAS_PYJWT and jwt:
-        try:
-            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        except Exception:
-            payload = _decode_jwt_pure(token)
-    else:
-        payload = _decode_jwt_pure(token)
-        
-    if not payload:
-        return None
-        
-    if expected_type and payload.get("type") != expected_type:
-        return None
-        
-    return payload
+    """
+    TODO:
+    1. Nhiệm vụ: Giải mã và xác thực tính hợp lệ của chữ ký JWT và thời hạn hết hạn (exp).
+    2. Input / Output:
+       - Input: token (str), expected_type (Optional[str]: 'access' hoặc 'refresh').
+       - Output: Dict payload đã giải mã nếu hợp lệ, hoặc None nếu token sai chữ ký, hết hạn hoặc sai type.
+    3. Bảng Supabase liên quan:
+       - Không truy vấn DB trực tiếp (Stateless verification qua JWT Secret).
+    4. Các bước gợi ý:
+       - Step 1: Gọi jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]).
+       - Step 2: Kiểm tra payload.get('type') == expected_type (nếu có yêu cầu).
+       - Step 3: Trả về payload dict, bắt lỗi ExpiredSignatureError / InvalidTokenError và trả về None.
+    """
+    raise NotImplementedError("TODO: Implement verify_token with signature & expiry checks")
+
 
 # ====================================================================
-# 3. SLIDING WINDOW RATE LIMITER (KEYED BY IP + EMAIL)
+# 3. RATE LIMITER & CLIENT IP
 # ====================================================================
 
 class LoginRateLimiter:
     """
-    In-memory Sliding Window Rate Limiter.
-    - >= 3 consecutive failed attempts: 30s lock
-    - >= 5 consecutive failed attempts: 300s (5m) lock
-    - Reset to 0 upon successful login.
+    Bộ đếm giới hạn tần suất đăng nhập (Rate Limiter) chống tấn công dò mật khẩu (Brute-Force).
+    Khóa tạm thời theo cặp khóa (Client IP, Email).
     """
-    def __init__(self):
-        self._attempts: Dict[str, Dict[str, Any]] = {}
-
-    def _get_key(self, ip: str, email: str) -> str:
-        norm_ip = (ip or "127.0.0.1").strip()
-        norm_email = (email or "").strip().lower()
-        return f"{norm_ip}:{norm_email}"
 
     def check(self, ip: str, email: str) -> Tuple[bool, int]:
         """
-        Check if the request is permitted.
-        Returns: (is_allowed, remaining_lock_seconds)
+        TODO:
+        1. Nhiệm vụ: Kiểm tra xem IP và Email này có đang bị khóa đăng nhập hay không.
+        2. Input / Output:
+           - Input: ip (str), email (str).
+           - Output: Tuple[bool, int] -> (is_allowed, remaining_lock_seconds).
+        3. Bảng Supabase liên quan:
+           - Lưu bộ nhớ RAM (In-memory) hoặc Redis cache.
+        4. Các bước gợi ý:
+           - Step 1: Tra cứu entry theo key = f"{ip}:{email}".
+           - Step 2: Nếu now < locked_until: return (False, remaining_seconds).
+           - Step 3: Ngược lại return (True, 0).
         """
-        key = self._get_key(ip, email)
-        entry = self._attempts.get(key)
-        if not entry:
-            return True, 0
-
-        now = time.time()
-        locked_until = entry.get("locked_until", 0)
-        if now < locked_until:
-            remaining = int(locked_until - now) + 1
-            return False, remaining
-
-        return True, 0
+        raise NotImplementedError("TODO: Implement LoginRateLimiter.check")
 
     def record_failure(self, ip: str, email: str) -> Tuple[int, int]:
         """
-        Record a failed attempt.
-        Returns: (consecutive_failures, lock_seconds_applied)
+        TODO:
+        1. Nhiệm vụ: Ghi nhận 1 lần đăng nhập thất bại. Nếu >= 3 lần: khóa 30s; nếu >= 5 lần: khóa 300s (5 phút).
+        2. Input / Output:
+           - Input: ip (str), email (str).
+           - Output: Tuple[int, int] -> (consecutive_failures, lock_seconds_applied).
+        3. Bảng Supabase liên quan: In-memory tracker hoặc Redis.
+        4. Các bước gợi ý:
+           - Step 1: Tăng số lần failures += 1.
+           - Step 2: Tính toán thời gian khóa locked_until tương ứng.
+           - Step 3: Trả về (failures, lock_seconds).
         """
-        key = self._get_key(ip, email)
-        now = time.time()
-        entry = self._attempts.get(key)
+        raise NotImplementedError("TODO: Implement LoginRateLimiter.record_failure")
 
-        if not entry:
-            entry = {"failures": 1, "locked_until": 0, "last_attempt": now}
-            self._attempts[key] = entry
-            return 1, 0
+    def record_success(self, ip: str, email: str) -> None:
+        """
+        TODO:
+        1. Nhiệm vụ: Xóa bỏ lịch sử thất bại và mở khóa ngay khi đăng nhập thành công.
+        2. Input / Output: Input ip (str), email (str). Output: None.
+        3. Bảng Supabase liên quan: In-memory tracker.
+        4. Các bước gợi ý:
+           - Step 1: Xóa entry f"{ip}:{email}" khỏi bộ nhớ tracker.
+        """
+        raise NotImplementedError("TODO: Implement LoginRateLimiter.record_success")
 
-        # If previous lock expired, increment count
-        entry["failures"] += 1
-        entry["last_attempt"] = now
-        failures = entry["failures"]
 
-        lock_seconds = 0
-        if failures >= 5:
-            lock_seconds = 300  # 5 minutes
-            entry["locked_until"] = now + lock_seconds
-        elif failures >= 3:
-            lock_seconds = 30   # 30 seconds
-            entry["locked_until"] = now + lock_seconds
-
-        return failures, lock_seconds
-
-    def record_success(self, ip: str, email: str):
-        """Reset failed attempts after a successful login."""
-        key = self._get_key(ip, email)
-        if key in self._attempts:
-            del self._attempts[key]
-
-# Global singleton limiter
+# Khởi tạo singleton instance cho rate limiter
 login_limiter = LoginRateLimiter()
 
+
 def get_client_ip(request: Request) -> str:
-    """Extract real client IP considering reverse proxies."""
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
-    return request.client.host if request.client else "127.0.0.1"
+    """
+    TODO:
+    1. Nhiệm vụ: Trích xuất chính xác địa chỉ IP của Client, tính đến các tầng Reverse Proxy (X-Forwarded-For, X-Real-IP).
+    2. Input / Output:
+       - Input: request (FastAPI Request).
+       - Output: str IP (ví dụ '127.0.0.1' hoặc '14.161.x.x').
+    3. Bảng Supabase liên quan: Không.
+    4. Các bước gợi ý:
+       - Step 1: Kiểm tra request.headers.get("x-forwarded-for") -> lấy IP đầu tiên.
+       - Step 2: Kiểm tra request.headers.get("x-real-ip").
+       - Step 3: Fallback về request.client.host.
+    """
+    raise NotImplementedError("TODO: Implement get_client_ip resolving proxy headers")

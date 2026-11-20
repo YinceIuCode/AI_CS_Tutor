@@ -1,217 +1,95 @@
-import uuid
 from typing import Optional
-from fastapi import APIRouter, Request, Response, Depends, status
-from pydantic import BaseModel
-from modules.common.request import LoginRequest
+from fastapi import APIRouter, Request, Response, Depends, HTTPException, status
+from modules.common.request import LoginRequest, RefreshRequest
 from modules.common.response import success_response, error_response
-from modules.authenticate.security import (
-    verify_password_with_timing_mitigation,
-    hash_password,
-    create_access_token,
-    create_refresh_token,
-    verify_token,
-    login_limiter,
-    get_client_ip,
-    REFRESH_TOKEN_EXPIRE_SECONDS,
-    ACCESS_TOKEN_EXPIRE_SECONDS,
-)
 from modules.authenticate.dependencies import get_current_user
-from services.database.database import DatabaseService
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
-class RefreshRequest(BaseModel):
-    refreshToken: Optional[str] = None
 
 @router.post("/login")
 def login(request_data: LoginRequest, request: Request, response: Response):
-    ip = get_client_ip(request)
-    normalized_email = (request_data.email or "").strip().lower()
+    """
+    TODO:
+    1. Nhiệm vụ:
+       - Xử lý đăng nhập an toàn bằng email và mật khẩu cho người dùng (Student, Tutor, Admin).
+       - Chống brute-force bằng Rate Limiting và chống timing attack.
+       - Cấp cặp Token kép (Access Token 15 phút, Refresh Token 7 ngày) và gắn HttpOnly Cookie.
+    2. Input / Output:
+       - Input: LoginRequest body {email: str, password: str}, request, response.
+       - Output: JSON success_response chứa {"accessToken": str, "user": {id, email, fullName, role, accountType}}.
+       - Lỗi: 429 Too Many Requests (nếu bị khóa), 401 Unauthorized (sai thông tin).
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users
+       - Cột: email (text), password_hash (text: bcrypt $2b$12$...), role (text), account_type (text), full_name (text).
+    4. Các bước gợi ý:
+       - Step 1: Kiểm tra rate limit: login_limiter.check(ip, email). Nếu bị khóa, trả về 429 kèm retryAfter.
+       - Step 2: Tìm user theo email: DatabaseService.get_user_by_email(email).
+       - Step 3: Xác thực mật khẩu: verify_password_with_timing_mitigation(password, stored_hash). Nếu sai, ghi nhận failure và trả về 401.
+       - Step 4: Tạo Access Token và Refresh Token qua create_access_token và create_refresh_token.
+       - Step 5: Gắn refresh_token và access_token vào HttpOnly cookie của response.
+       - Step 6: Trả về success_response chứa thông tin user và accessToken.
+    """
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="TODO: Implement /api/auth/login")
 
-    # 1. Rate Limiting Check
-    allowed, remaining_seconds = login_limiter.check(ip, normalized_email)
-    if not allowed:
-        return error_response(
-            message=f"Too many failed login attempts. Please wait {remaining_seconds} seconds.",
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            details={"retryAfter": remaining_seconds}
-        )
-
-    # 2. Database Lookup & Timing Attack Mitigation
-    user = DatabaseService.get_user_by_email(normalized_email)
-    stored_hash = user.get("password_hash") if user else None
-
-    # Always executes timing mitigation check
-    is_valid, needs_upgrade = verify_password_with_timing_mitigation(request_data.password, stored_hash)
-
-    if not user or not is_valid:
-        failures, lock_seconds = login_limiter.record_failure(ip, normalized_email)
-        if lock_seconds > 0:
-            return error_response(
-                message=f"Locked due to multiple failed attempts. Please wait {lock_seconds} seconds.",
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                details={"retryAfter": lock_seconds}
-            )
-        return error_response("Invalid email or password.", status_code=status.HTTP_401_UNAUTHORIZED)
-
-    # 3. Successful Login - Reset Failure Counter
-    login_limiter.record_success(ip, normalized_email)
-
-    # 4. Automatic Seed Data Bcrypt Upgrade
-    if needs_upgrade:
-        try:
-            upgraded_hash = hash_password(request_data.password)
-            DatabaseService.update_user_password(user["id"], upgraded_hash)
-        except Exception as e:
-            print(f"[Auth Upgrade Warning] Failed to upgrade hash: {e}")
-
-    # 5. Dual Token Generation (Access 15m, Refresh 7d)
-    user_id = str(user["id"])
-    role = user.get("role", "student")
-    account_type = user.get("account_type", "registered")
-    access_token = create_access_token(user_id, normalized_email, role, account_type)
-    refresh_token = create_refresh_token(user_id)
-
-    # Set HttpOnly Cookies
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        max_age=REFRESH_TOKEN_EXPIRE_SECONDS,
-        samesite="lax",
-        secure=False,
-        path="/"
-    )
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
-        samesite="lax",
-        secure=False,
-        path="/"
-    )
-
-    public_user = {
-        "id": user_id,
-        "email": normalized_email,
-        "fullName": user.get("full_name") or "User",
-        "role": role,
-        "accountType": account_type,
-        "token": access_token
-    }
-
-    return success_response(
-        {
-            "user": public_user,
-            "accessToken": access_token
-        },
-        message="Login successful."
-    )
 
 @router.post("/refresh")
 def refresh_token_endpoint(request: Request, response: Response, body: Optional[RefreshRequest] = None):
     """
-    Refresh access token using the HttpOnly refresh_token cookie or payload.
+    TODO:
+    1. Nhiệm vụ:
+       - Cấp mới Access Token khi token cũ hết hạn (15 phút) thông qua Refresh Token hợp lệ (7 ngày).
+       - Đọc Refresh Token từ HttpOnly Cookie hoặc request payload.
+    2. Input / Output:
+       - Input: request, response, body Optional[RefreshRequest].
+       - Output: JSON success_response chứa {"accessToken": str, "user": {...}}.
+       - Lỗi: 401 Unauthorized nếu refresh token thiếu, không hợp lệ hoặc hết hạn.
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users (kiểm tra tài khoản người dùng còn tồn tại hay không).
+    4. Các bước gợi ý:
+       - Step 1: Trích xuất refresh_token từ cookie hoặc body.refreshToken.
+       - Step 2: Giải mã verify_token(token, expected_type='refresh').
+       - Step 3: Lấy user_id từ claim 'sub' và kiểm tra user trên database: DatabaseService.get_user_by_id(user_id).
+       - Step 4: Tạo Access Token mới và cập nhật cookie access_token.
+       - Step 5: Trả về accessToken mới kèm thông tin user.
     """
-    token = request.cookies.get("refresh_token")
-    if not token and body and body.refreshToken:
-        token = body.refreshToken
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="TODO: Implement /api/auth/refresh")
 
-    if not token:
-        return error_response("Refresh token missing.", status_code=status.HTTP_401_UNAUTHORIZED)
-
-    payload = verify_token(token, expected_type="refresh")
-    if not payload or not payload.get("sub"):
-        return error_response("Invalid or expired refresh token.", status_code=status.HTTP_401_UNAUTHORIZED)
-
-    user_id = str(payload["sub"])
-    user = DatabaseService.get_user_by_id(user_id)
-    if not user:
-        return error_response("User account no longer exists.", status_code=status.HTTP_401_UNAUTHORIZED)
-
-    email = user.get("email", "")
-    role = user.get("role", "student")
-    account_type = user.get("account_type", "registered")
-
-    new_access_token = create_access_token(user_id, email, role, account_type)
-
-    response.set_cookie(
-        key="access_token",
-        value=new_access_token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
-        samesite="lax",
-        secure=False,
-        path="/"
-    )
-
-    public_user = {
-        "id": user_id,
-        "email": email,
-        "fullName": user.get("full_name") or "User",
-        "role": role,
-        "accountType": account_type,
-        "token": new_access_token
-    }
-
-    return success_response(
-        {
-            "accessToken": new_access_token,
-            "user": public_user
-        },
-        message="Token refreshed successfully."
-    )
 
 @router.get("/me")
 def get_current_user_profile(current_user: dict = Depends(get_current_user)):
     """
-    Protected route returning active user information.
+    TODO:
+    1. Nhiệm vụ:
+       - Trả về thông tin hồ sơ của tài khoản đang đăng nhập trong phiên làm việc hiện tại.
+    2. Input / Output:
+       - Input: current_user (được tiêm tự động từ dependency get_current_user).
+       - Output: JSON success_response chứa {"user": {id, email, fullName, role, accountType}}.
+    3. Bảng Supabase liên quan:
+       - Bảng: public.users.
+    4. Các bước gợi ý:
+       - Step 1: Đọc current_user["id"].
+       - Step 2: Truy vấn thông tin cập nhật mới nhất từ DatabaseService.get_user_by_id(user_id).
+       - Step 3: Trả về success_response với payload chuẩn cho Frontend.
     """
-    user_db = DatabaseService.get_user_by_id(current_user["id"])
-    full_name = user_db.get("full_name") if user_db else "User"
-    return success_response({
-        "user": {
-            "id": current_user["id"],
-            "email": current_user["email"],
-            "fullName": full_name,
-            "role": current_user["role"],
-            "accountType": current_user["accountType"]
-        }
-    })
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="TODO: Implement /api/auth/me")
+
 
 @router.post("/guest")
 def login_as_guest(response: Response):
     """
-    Create a guest student session with guest access token.
+    TODO:
+    1. Nhiệm vụ:
+       - Khởi tạo phiên học tập tức thì cho khách vãng lai (Guest Student) không cần đăng ký tài khoản.
+       - Cấp Access Token với role='student' và accountType='guest'.
+    2. Input / Output:
+       - Input: response (FastAPI Response để gắn Cookie).
+       - Output: JSON success_response chứa {"accessToken": str, "user": {id, email, fullName, role: 'student', accountType: 'guest'}}.
+    3. Bảng Supabase liên quan:
+       - Không bắt buộc ghi vào users vĩnh viễn, hoặc ghi bản ghi tạm với account_type='guest'.
+    4. Các bước gợi ý:
+       - Step 1: Sinh UUID ngẫu nhiên: guest_id = str(uuid.uuid4()).
+       - Step 2: Tạo access token với role='student', account_type='guest'.
+       - Step 3: Gắn access_token vào cookie và trả về payload cho Frontend.
     """
-    guest_id = str(uuid.uuid4())
-    email = f"guest_{guest_id[:8]}@offbyone.demo"
-    role = "student"
-    account_type = "guest"
-
-    access_token = create_access_token(guest_id, email, role, account_type)
-
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_SECONDS,
-        samesite="lax",
-        secure=False,
-        path="/"
-    )
-
-    public_user = {
-        "id": guest_id,
-        "email": email,
-        "fullName": "Guest Student",
-        "role": role,
-        "accountType": account_type,
-        "token": access_token
-    }
-
-    return success_response({
-        "user": public_user,
-        "accessToken": access_token
-    }, message="Guest session started.")
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="TODO: Implement /api/auth/guest")

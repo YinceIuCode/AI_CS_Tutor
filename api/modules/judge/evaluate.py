@@ -1,128 +1,107 @@
 import time
 import uuid
-import re
-from fastapi import APIRouter, status
+from typing import List, Dict, Any
+from fastapi import APIRouter, HTTPException, status
 from modules.common.request import CodeRunRequest, CodeSubmitRequest
 from modules.common.response import success_response, error_response
 from services.database.database import DatabaseService
 
 router = APIRouter(prefix="/api", tags=["Judge & Evaluation"])
 
-def evaluate_cpp_code(code: str, test_cases: list) -> dict:
+
+def evaluate_cpp_code(code: str, test_cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Robust compilation & evaluation engine:
-    Checks syntax errors, missing semicolons, recursion bounds, and runs against test cases.
+    TODO:
+    1. Nhiệm vụ:
+       - Biên dịch và thực thi mã nguồn C++ của học viên trong môi trường cô lập an toàn (Docker Sandbox hoặc subprocess có cgroups/timeout/RAM limit).
+       - Phát hiện và phân loại lỗi: Lỗi biên dịch (Compilation Error), Lỗi thời gian chạy (Runtime Error / Segfault), Quá thời gian (Time Limit Exceeded - TLE), Quá bộ nhớ (Memory Limit Exceeded - MLE).
+       - Nạp lần lượt input vào stdin của chương trình đã biên dịch, thu thập stdout và so khớp với expectedOutput.
+    2. Input / Output:
+       - Input:
+         + code: str (chuỗi mã nguồn C++ do học viên viết).
+         + test_cases: list[dict] (danh sách test cases; mỗi test case có {"id": int, "label": str, "input": str, "expectedOutput": str, "isPublic": bool}).
+       - Output: dict chuẩn theo định dạng Frontend mong đợi:
+         {
+             "status": "success" | "failed" | "compilation_error" | "runtime_error" | "timeout",
+             "passedCount": int,
+             "totalCount": int,
+             "metrics": {"runtimeMs": int, "memoryMb": str},
+             "testCases": list[dict] (chứa {id, label, passed, actual, expected, isPublic}),
+             "stdout": Optional[str],
+             "errorMessage": Optional[str]
+         }
+    3. Bảng Supabase liên quan:
+       - Hàm thuần xử lý logic biên dịch, không truy vấn database trực tiếp.
+    4. Các bước gợi ý:
+       - Step 1: Kiểm tra an toàn mã nguồn (chặn các lệnh nguy hiểm: <sys/socket.h>, fork, system, exec...).
+       - Step 2: Lưu code vào file tạm `solution.cpp` và gọi `g++ -O2 -std=c++17 solution.cpp -o solution.exe`. Nếu có lỗi, parse stderr và trả về status="compilation_error".
+       - Step 3: Với từng test case, truyền tc["input"] vào stdin và chạy solution với giới hạn thời gian (ví dụ 1000ms).
+       - Step 4: So sánh stdout sau khi strip khoảng trắng thừa với expectedOutput. Ẩn actual của private test cases nếu học viên chưa giải đúng.
+       - Step 5: Tính tổng số test passed, đo runtimeMs, định dạng memoryMb và trả về dict kết quả.
     """
-    start_time = time.time()
+    raise NotImplementedError("TODO: Implement Docker Sandbox C++ compilation and execution")
 
-    # 1. Syntax Check Guard
-    if "#include" not in code and "using namespace" not in code and "class" not in code and "struct" not in code:
-        return {
-            "status": "compilation_error",
-            "passedCount": 0,
-            "totalCount": len(test_cases),
-            "metrics": {"runtimeMs": 0, "memoryMb": "0 MB"},
-            "errorType": "Compilation Error",
-            "errorTitle": "Missing Standard Libraries",
-            "errorMessage": "File must include valid C++ headers (e.g., #include <iostream>).",
-            "testCases": []
-        }
-
-    # Check for basic unbalanced braces
-    if code.count("{") != code.count("}"):
-        return {
-            "status": "compilation_error",
-            "passedCount": 0,
-            "totalCount": len(test_cases),
-            "metrics": {"runtimeMs": 0, "memoryMb": "0 MB"},
-            "errorType": "Compilation Error",
-            "errorTitle": "Syntax Error",
-            "errorMessage": "error: expected '}' at end of input - Unbalanced curly brackets.",
-            "testCases": []
-        }
-
-    # 2. Simulated Test Case Execution
-    test_results = []
-    passed_count = 0
-
-    for idx, tc in enumerate(test_cases):
-        label = tc.get("label", f"Test Case #{idx + 1}")
-        expected = tc.get("expectedOutput") or tc.get("expected", "")
-        is_public = tc.get("isPublic", True)
-
-        # Simulation: Pass if proper structural logic is present
-        passed = True
-        actual_output = expected
-
-        test_results.append({
-            "id": idx + 1,
-            "label": label,
-            "passed": passed,
-            "actual": actual_output if is_public else "Hidden Result",
-            "expected": expected if is_public else "Hidden Expected",
-            "isPublic": is_public
-        })
-        if passed:
-            passed_count += 1
-
-    total_count = len(test_cases) if test_cases else 1
-    if not test_cases:
-        passed_count = 1
-        test_results.append({"id": 1, "label": "Default Test Case", "passed": True, "actual": "OK"})
-
-    elapsed_ms = max(int((time.time() - start_time) * 1000), 12)
-    status_verdict = "success" if passed_count == total_count else "failed"
-
-    return {
-        "status": status_verdict,
-        "passedCount": passed_count,
-        "totalCount": total_count,
-        "metrics": {"runtimeMs": elapsed_ms, "memoryMb": "4.2 MB"},
-        "testCases": test_results,
-        "stdout": f"All {passed_count}/{total_count} test cases executed successfully."
-    }
 
 @router.post("/code/run")
 @router.post("/evaluate")
 def run_code(request: CodeRunRequest):
-    # Fetch task detail to get test cases
-    task = DatabaseService.get_task_by_id(request.taskId)
-    content = task.get("content", {}) if task else {}
-    all_test_cases = content.get("testCases", [])
+    """
+    TODO:
+    1. Nhiệm vụ:
+       - Chạy thử mã nguồn C++ với các Test Cases công khai (isPublic = True).
+       - Giúp học viên kiểm tra nhanh tính đúng đắn và debug trước khi nộp bài chính thức.
+       - Không ghi nhận vào bảng `submissions` và không tính là hoàn thành bài học.
+    2. Input / Output:
+       - Input: CodeRunRequest {taskId: str, code: str, language: Optional[str] = "cpp"}
+       - Output: JSON success_response chứa {status, passedCount, totalCount, metrics, testCases, stdout}
+    3. Bảng Supabase liên quan:
+       - public.tasks:
+         + id: text hoặc uuid
+         + content: jsonb (chứa content.testCases: danh sách test cases với cờ isPublic: bool).
+    4. Các bước gợi ý:
+       - Step 1: Lấy chi tiết task từ DatabaseService.get_task_by_id(request.taskId).
+       - Step 2: Lọc danh sách test cases công khai: `[tc for tc in all_tests if tc.get("isPublic", True)]` (hoặc lấy 2 test cases đầu).
+       - Step 3: Gọi hàm evaluate_cpp_code(request.code, public_tests).
+       - Step 4: Trả về kết quả đánh giá qua success_response(eval_result, message="Run Code executed successfully.").
+    """
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="TODO: Implement /api/code/run")
 
-    # Filter only public test cases for Run Code
-    public_tests = [tc for tc in all_test_cases if tc.get("isPublic", True)]
-    if not public_tests:
-        public_tests = all_test_cases[:2] if all_test_cases else []
-
-    eval_result = evaluate_cpp_code(request.code, public_tests)
-    return success_response(eval_result, message="Run Code executed successfully.")
 
 @router.post("/code/submit")
 def submit_code(request: CodeSubmitRequest):
-    task = DatabaseService.get_task_by_id(request.taskId)
-    content = task.get("content", {}) if task else {}
-    all_test_cases = content.get("testCases", [])
-
-    eval_result = evaluate_cpp_code(request.code, all_test_cases)
-
-    # Record submission to Supabase
-    DatabaseService.record_submission({
-        "id": str(uuid.uuid4()),
-        "user_id": "00000001-0000-4000-8000-000000000001", # Can be extracted from cookie
-        "task_id": request.taskId,
-        "code": request.code,
-        "language": request.language,
-        "status": eval_result["status"],
-        "passed_count": eval_result["passedCount"],
-        "total_count": eval_result["totalCount"],
-        "execution_metrics": eval_result["metrics"],
-        "test_results": eval_result["testCases"]
-    })
-
-    # If 100% passed, update progress
-    if eval_result["status"] == "success":
-        eval_result["isCompleted"] = True
-        eval_result["congratsMessage"] = "Xuất sắc! Bạn đã giải chính xác toàn bộ Test Cases."
-
-    return success_response(eval_result, message="Nộp bài thành công!")
+    """
+    TODO:
+    1. Nhiệm vụ:
+       - Chấm điểm mã nguồn C++ chính thức trên toàn bộ Test Cases (cả Public lẫn Hidden/Private Test Cases).
+       - Ghi nhận lịch sử nộp bài vào bảng `public.submissions`.
+       - Nếu vượt qua 100% test cases (status == "success"): cập nhật cờ hoàn thành task vào `public.user_progress`.
+    2. Input / Output:
+       - Input: CodeSubmitRequest {taskId: str, code: str, language: Optional[str] = "cpp", userId: Optional[str]}
+       - Output: JSON success_response chứa verdict, metrics, testCases, isCompleted: bool, congratsMessage: str.
+    3. Bảng Supabase liên quan:
+       - public.tasks:
+         + id: text hoặc uuid
+         + task_type: text ("coding")
+         + content: jsonb (chứa danh sách đầy đủ testCases)
+       - public.submissions:
+         + id: uuid (UUIDv4)
+         + user_id: uuid (foreign key users.id)
+         + task_id: text hoặc uuid (foreign key tasks.id)
+         + code: text
+         + language: text ("cpp")
+         + status: text ("success" | "failed" | "compilation_error")
+         + passed_count: integer
+         + total_count: integer
+         + execution_metrics: jsonb ({"runtimeMs": int, "memoryMb": str})
+         + test_results: jsonb
+       - public.user_progress:
+         + completed_tasks: jsonb (ví dụ: { [task_id]: true })
+    4. Các bước gợi ý:
+       - Step 1: Lấy chi tiết task từ DatabaseService.get_task_by_id(request.taskId).
+       - Step 2: Lấy toàn bộ test cases từ task content.
+       - Step 3: Thực thi đánh giá qua evaluate_cpp_code(request.code, all_test_cases).
+       - Step 4: Ghi bản ghi nộp bài vào bảng submissions qua DatabaseService.record_submission(...).
+       - Step 5: Nếu passedCount == totalCount (status == "success"), cập nhật tiến độ user_progress.
+       - Step 6: Trả về success_response kèm cờ isCompleted = True và thông báo hoàn thành.
+    """
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="TODO: Implement /api/code/submit")
