@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from modules.common.response import success_response, error_response
-from services.database.database import DatabaseService
+from services.database.client import DatabaseService
 
 router = APIRouter(prefix="/api/documents", tags=["Lecture & Syllabus OCR"])
 

@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, status
 from modules.common.request import CodeRunRequest, CodeSubmitRequest
 from modules.common.response import success_response, error_response
-from services.database.database import DatabaseService
+from services.database.client import DatabaseService
 
 router = APIRouter(prefix="/api", tags=["Judge & Evaluation"])
 
