@@ -17,18 +17,23 @@ import {
   ChevronDown,
   ChevronUp,
   Code2,
+  Copy,
+  FileText,
+  HelpCircle,
   Maximize2,
   Minimize2,
   Lock,
   PanelLeftClose,
   PanelLeftOpen,
   Play,
+  RotateCcw,
   Search,
   Send,
   Settings,
   Sparkles,
   Square,
   Target,
+  Terminal,
   X,
 } from "lucide-react"
 import { UserProfileMenu } from "@/components/user-profile-menu"
@@ -47,10 +52,10 @@ import { useUserProgress } from "@/hooks/useUserProgress"
 import { cn } from "@/lib/utils"
 import { BRAND } from "@/config/brand"
 import { BrandLogo } from "@/components/brand-logo"
-import { PwaInstallButton } from "@/components/pwa-install-button"
 import { ThemeToggleButton } from "@/components/theme-toggle-button"
 import { getSocraticTutorProfile } from "@/mocks/socraticTutorData"
 import { resolveWorkspaceSession, evaluateQuizAnswer } from "@/services/roadmapService"
+import { syncTaskProgressToSupabase } from "@/services/adminService"
 
 /**
  * Cấu hình các đường dẫn điều hướng (href) trong trang Workspace.
@@ -174,7 +179,7 @@ export function WorkspaceView({
 }: WorkspaceViewProps) {
   const router = useRouter()
   const params = useParams<{ nodeId?: string; taskId?: string }>()
-  const { isAuthenticated, isInitializing } = useAuth()
+  const { currentUser, isAuthenticated, isInitializing } = useAuth()
   const { resolvedTheme } = useTheme()
   const monacoTheme = resolvedTheme === "light" ? "offbyone-light" : "offbyone-dark"
   const {
@@ -189,17 +194,28 @@ export function WorkspaceView({
   const resolvedNodeId = propNodeId || params?.nodeId || "avl-tree"
   const resolvedTaskId = propTaskId || params?.taskId || ""
 
-  // Protected Route: Yêu cầu phiên người dùng hoặc Guest
+  // Protected Route: Yêu cầu phiên người dùng hoặc Guest. Admin redirect về /admin.
   React.useEffect(() => {
     if (!isInitializing && !isAuthenticated) {
       router.replace("/auth")
+      return
     }
-  }, [isInitializing, isAuthenticated, router])
+    if (!isInitializing && isAuthenticated && currentUser?.role === "admin") {
+      router.replace("/admin")
+    }
+  }, [isInitializing, isAuthenticated, currentUser, router])
 
   const { node, activeTask, taskDetail: fallbackTaskDetail } = React.useMemo(
     () => resolveWorkspaceSession(resolvedNodeId, resolvedTaskId, userProgress),
     [resolvedNodeId, resolvedTaskId, userProgress]
   )
+
+  // Chặn mở Workspace nếu Node đang bị khóa trong đồ thị DAG (DAG Invariant Protection)
+  React.useEffect(() => {
+    if (isProgressLoaded && node?.status === "locked") {
+      router.replace("/roadmap")
+    }
+  }, [isProgressLoaded, node?.status, router])
 
   const [dynamicTaskDetail, setDynamicTaskDetail] = React.useState<any>(null)
 
@@ -226,12 +242,265 @@ export function WorkspaceView({
     taskDetail?.type ||
     "theory") as WorkspaceMode
 
-  // Ở Task Quiz, khôi phục đáp án đã chọn từ tiến độ của User (nếu có)
-  const [selectedOption, setSelectedOption] = React.useState<string | null>(
-    null
-  )
+  // Ở Task Quiz, lưu trữ và khôi phục trạng thái từng câu hỏi (Q1, Q2, Q3)
+  const [quizQuestionsMap, setQuizQuestionsMap] = React.useState<
+    Record<string, { selected: string | null; checked: boolean; isCorrect: boolean }>
+  >({})
   const [isEvaluatingQuiz, setIsEvaluatingQuiz] = React.useState<boolean>(false)
-  const [quizEvaluationMap, setQuizEvaluationMap] = React.useState<Record<string, boolean>>({})
+  const [quizQuestionIndex, setQuizQuestionIndex] = React.useState<number>(0)
+  const [copiedTheoryCode, setCopiedTheoryCode] = React.useState<boolean>(false)
+
+  // Ref theo dõi Task ID hiện tại để chống reset kết quả executionResult khi Alt-Tab / focus lại
+  const activeTaskIdRef = React.useRef(activeTask.id)
+
+  // Helper kiểm tra một task đã hoàn thành chưa (bền vững qua completedTasks hoặc initial status)
+  const isTaskCompleted = React.useCallback(
+    (taskId: string, initialStatus?: string) => {
+      return (
+        initialStatus === "completed" ||
+        Boolean(userProgress?.completedTasks?.[taskId])
+      )
+    },
+    [userProgress?.completedTasks]
+  )
+
+  // Topic tasks progress count: chỉ đếm các task thực sự đã hoàn thành
+  const completedTasksCount = React.useMemo(() => {
+    return node.tasks.filter((t) => isTaskCompleted(t.id, t.status)).length
+  }, [node.tasks, isTaskCompleted])
+
+  // Connected Stepper items resolver with strict "No Reverse Lock" guarantees
+  const stepperTasks = React.useMemo(() => {
+    return node.tasks.map((taskItem, idx) => {
+      const isActive = taskItem.id === activeTask.id
+      const isDone = isTaskCompleted(taskItem.id, taskItem.status)
+
+      // Điều kiện mở khóa (Unlock):
+      // - Task 0 (Theory): Luôn luôn mở
+      // - Task > 0: Mở nếu tất cả task trước đó đã hoàn thành (allPreviousDone)
+      //   HOẶC chính task này đã từng hoàn thành (isDone)
+      //   HOẶC bất kỳ task nào sau đó đã hoàn thành (anyLaterDone)
+      //   HOẶC người dùng đang đứng xem chính task này (isActive)
+      const allPreviousDone = node.tasks
+        .slice(0, idx)
+        .every((prev) => isTaskCompleted(prev.id, prev.status))
+      const anyLaterDone = node.tasks
+        .slice(idx + 1)
+        .some((later) => isTaskCompleted(later.id, later.status))
+
+      const isLocked = !isDone && !isActive && !allPreviousDone && !anyLaterDone
+      const isAvailable = !isLocked && !isDone && !isActive
+
+      let taskIcon = <BookOpen className="size-3" />
+      let typeLabel = "Theory"
+      if (taskItem.type === "quiz") {
+        taskIcon = <HelpCircle className="size-3" />
+        typeLabel = "Quiz"
+      } else if (taskItem.type === "coding") {
+        taskIcon = <Code2 className="size-3" />
+        typeLabel = "Coding"
+      }
+
+      return {
+        ...taskItem,
+        idx,
+        isActive,
+        isDone,
+        isLocked,
+        isAvailable,
+        taskIcon,
+        typeLabel,
+      }
+    })
+  }, [node.tasks, activeTask.id, isTaskCompleted])
+
+  // Dynamic Theory Reference Snippet & Dry-run State Trace
+  const theorySnippet = React.useMemo(() => {
+    if (taskDetail?.snippet?.code) {
+      return {
+        title: taskDetail.snippet.title || `${node.label} Reference Implementation`,
+        code: taskDetail.snippet.code,
+        traceSteps: taskDetail.snippet.traceSteps || [
+          { label: "Step 1: Invariant Initialization", desc: "Validates base structure invariants and memory layout." },
+          { label: "Step 2: Pointer / State Transition", desc: "Performs atomic state transitions according to theoretical bounds." },
+          { label: "Step 3: Post-Condition Guard", desc: "Restores balance invariants and bounds execution time." },
+        ],
+        complexityNote: taskDetail.snippet.complexityNote || "Operations verified against complexity bounds."
+      }
+    }
+    if (node.id === "avl-tree") {
+      return {
+        title: "AVL O(1) Right Rotation (LL Imbalance)",
+        code: `// O(1) Right Rotation (LL Imbalance)
+Node* rightRotate(Node* y) {
+    Node* x = y->left;
+    Node* T2 = x->right;
+    
+    // Perform pointer rewiring
+    x->right = y;
+    y->left = T2;
+    
+    // Update heights bottom-up
+    y->height = max(height(y->left), height(y->right)) + 1;
+    x->height = max(height(x->left), height(x->right)) + 1;
+    
+    return x; // Return new subtree root
+}`,
+        traceSteps: [
+          { label: "Step 1: Unbalanced Subtree", desc: "Node y(30) has Left=x(20), Left Subtree Height=3, Right Height=1 (BF = +2)" },
+          { label: "Step 2: Pivot Rewiring", desc: "x->right assigned to y, sub-tree T2 moved to y->left" },
+          { label: "Step 3: New Balanced Root", desc: "x(20) becomes root, BF restores to 0, height recomputed in O(1)" },
+        ],
+        complexityNote: "Rotations strictly execute 4 pointer updates with zero recursive loops."
+      }
+    }
+    if (node.id === "sorting-algorithms") {
+      return {
+        title: "In-Place Lomuto Partitioning Snippet",
+        code: `// O(N) In-Place Partitioning (Lomuto)
+int partition(vector<int>& arr, int low, int high) {
+    int pivot = arr[high]; // Rightmost element as pivot
+    int i = low - 1;
+    
+    for (int j = low; j < high; ++j) {
+        if (arr[j] <= pivot) {
+            swap(arr[++i], arr[j]);
+        }
+    }
+    swap(arr[i + 1], arr[high]);
+    return i + 1; // Pivot fixed in sorted spot
+}`,
+        traceSteps: [
+          { label: "Step 1: Pivot Selection", desc: "Pivot chosen, partition index i initialized before low" },
+          { label: "Step 2: Dual Scanning", desc: "Elements <= pivot swapped to left partition [low..i]" },
+          { label: "Step 3: Final Placement", desc: "Pivot placed at index i+1; Left <= pivot < Right invariant guaranteed" },
+        ],
+        complexityNote: "Partitioning runs in strict O(N) time and O(1) auxiliary space."
+      }
+    }
+    return {
+      title: `${node.label} Reference Implementation`,
+      code: `// Core Invariant & Pointer Structure for ${node.label}
+struct Node {
+    int value;
+    Node* left = nullptr;
+    Node* right = nullptr;
+    int height = 1;
+};
+
+// Guarantee invariant: ${node.complexity || "O(log N)"}
+bool verifyInvariant(Node* root) {
+    if (!root) return true;
+    return verifyInvariant(root->left) && verifyInvariant(root->right);
+}`,
+      traceSteps: [
+        { label: "Base State", desc: `Initial memory layout satisfying ${node.label} constraints` },
+        { label: "Operation Step", desc: `Local update maintaining ${node.complexity || "O(log N)"} asymptotic bound` },
+        { label: "Verified State", desc: "Boundary conditions verified with defensive null checks" },
+      ],
+      complexityNote: `Maintains invariant with ${node.complexity || "O(log N)"} complexity.`
+    }
+  }, [node.id, node.label, node.complexity])
+
+  // 4 Core Breakdown Cards for Theory Mode
+  const theoryCards = React.useMemo(() => {
+    if (taskDetail?.cards && taskDetail.cards.length >= 4) {
+      return taskDetail.cards.slice(0, 4)
+    }
+    return [
+      {
+        badge: "01",
+        title: `${node.label} Structural Invariant`,
+        detail: `Core representation and memory layout properties that guarantee correctness across all ${node.label} operations.`,
+        tag: "Invariant",
+      },
+      {
+        badge: "02",
+        title: "Asymptotic Bound Analysis",
+        detail: `Mathematical proof bounding worst-case operations to ${node.complexity || "O(log N)"} through localized invariant maintenance.`,
+        tag: "Complexity",
+      },
+      {
+        badge: "03",
+        title: "Edge Cases & Pointer Guards",
+        detail: "Defensive handling of empty roots, single-node scenarios, duplicate keys, and unbalanced input distributions.",
+        tag: "Boundary",
+      },
+      {
+        badge: "04",
+        title: "Problem Patterns & Usage",
+        detail: `Key algorithmic indicators where ${node.label} outperforms naive structures in competitive programming and systems design.`,
+        tag: "Application",
+      },
+    ]
+  }, [taskDetail?.cards, node.label, node.complexity])
+
+  // 3-Question assessment suite for Task 2
+  const quizQuestions = React.useMemo(() => {
+    if (Array.isArray(taskDetail?.questions) && taskDetail.questions.length > 0) {
+      return taskDetail.questions.map((q: any, idx: number) => ({
+        prompt: q.prompt || q.questionPrompt || `Question ${idx + 1} for ${node.label}`,
+        options: q.options || [],
+        explanation: q.explanation || q.hints?.correct || `Correct! Option properly satisfies ${node.label} invariants.`,
+        clue: q.hint || q.clue || q.hints?.incorrect || "Review how this data structure enforces local vs global invariants.",
+      }))
+    }
+
+    const q1 = {
+      prompt: taskDetail?.questionPrompt || `Which invariant strictly defines ${node.label}?`,
+      options: taskDetail?.options || [
+        { id: "A", text: `${node.label} maintains strict invariant bounds.`, isCorrect: true },
+        { id: "B", text: "Degenerates into unlinked memory.", isCorrect: false },
+        { id: "C", text: "Requires global array reallocation on each read.", isCorrect: false },
+        { id: "D", text: "Disables asymptotic efficiency bounds.", isCorrect: false },
+      ],
+      explanation: taskDetail?.hints?.correct || `Correct! ${node.label} enforces this core invariant across mutations.`,
+      clue: taskDetail?.hints?.incorrect || "Review how this data structure enforces local vs global invariants.",
+    }
+
+    const q2 = {
+      prompt: `What is the tight operational time complexity bound for ${node.label}?`,
+      options: [
+        { id: "A", text: `${node.complexity || "O(log N)"} asymptotic bound`, isCorrect: true },
+        { id: "B", text: "O(N²) quadratic time in all cases", isCorrect: false },
+        { id: "C", text: "O(1) constant time without traversal", isCorrect: false },
+        { id: "D", text: "O(N!) factorial recursion depth", isCorrect: false },
+      ],
+      explanation: `Correct! ${node.label} is specifically engineered to bound operations within ${node.complexity || "O(log N)"}.`,
+      clue: `Think about how the tree height or partition step divides the problem size.`,
+    }
+
+    const q3 = {
+      prompt: `How are mutations handled to avoid degrading memory performance?`,
+      options: [
+        { id: "A", text: "Local pointer updates or in-place partition without full reallocation", isCorrect: true },
+        { id: "B", text: "Copying all elements into a new heap array on every insert", isCorrect: false },
+        { id: "C", text: "Ignoring null checks and allowing undefined behavior", isCorrect: false },
+        { id: "D", text: "Allocating auxiliary O(N²) buffers for temporary pointers", isCorrect: false },
+      ],
+      explanation: "Correct! Splicing and pointer rotations operate locally with O(1) auxiliary space.",
+      clue: "Does a rotation or partition require rebuilding the entire data structure?",
+    }
+
+    return [q1, q2, q3]
+  }, [taskDetail, node.label, node.complexity])
+
+  const currentQ = quizQuestions[quizQuestionIndex] || quizQuestions[0]
+  const currentQKey = `Q${quizQuestionIndex + 1}`
+  const currentQState = quizQuestionsMap[currentQKey] || {
+    selected: null,
+    checked: false,
+    isCorrect: false,
+  }
+  const currentQSelectedOption = currentQState.selected
+  const isCurrentQChecked = currentQState.checked
+  const isCurrentQCorrect = currentQState.isCorrect
+
+  const correctQuizQuestionsCount = React.useMemo(() => {
+    return quizQuestions.filter((_: any, idx: number) => quizQuestionsMap[`Q${idx + 1}`]?.isCorrect === true).length
+  }, [quizQuestions, quizQuestionsMap])
+
+  const isQuizFullyCompleted = correctQuizQuestionsCount === quizQuestions.length // 3/3 Correct
 
   // State cho phần Monaco Code Editor (khôi phục code đang viết dở hoặc dùng initialCode)
   const [code, setCode] = React.useState<string>(
@@ -336,7 +605,7 @@ export function WorkspaceView({
               className: "algopath-faulty-line-bg",
               linesDecorationsClassName: "algopath-faulty-line-gutter",
               after: {
-                content: `  ⟵ ⚠️ ${socraticProfile.faultyLine.shortReason}`,
+                content: `  ⟵ [FAULT] ${socraticProfile.faultyLine.shortReason}`,
                 inlineClassName: "algopath-faulty-inline-pointer",
               },
             },
@@ -355,53 +624,89 @@ export function WorkspaceView({
 
   // Đồng bộ đáp án Quiz, bản nháp Code và số lượt Hint từ bộ nhớ của User khi đổi Task hoặc khi F5
   React.useEffect(() => {
-    const savedQuiz = userProgress.quizAnswers?.[activeTask.id]
-    setSelectedOption(savedQuiz?.selectedOption ?? null)
-    const chosenOption = savedQuiz?.selectedOption
-    if (typeof chosenOption === "string") {
-      setQuizEvaluationMap((prev) => ({
-        ...prev,
-        [chosenOption]: Boolean(savedQuiz?.isSubmitted),
-      }))
-    }
+    const isNewTask = activeTaskIdRef.current !== activeTask.id
+    activeTaskIdRef.current = activeTask.id
 
-    const savedCodeObj = userProgress.codeDrafts?.[activeTask.id]
-    const savedCode = savedCodeObj?.code
-    if (typeof savedCode === "string") {
-      setCode(savedCode)
-    } else if (taskDetail?.initialCode) {
-      setCode(taskDetail.initialCode)
-    }
-
-    if (savedCodeObj?.isSubmitted) {
-      setCodeRunOutcome("passed")
-      setLastRunMetrics({ runtimeMs: 12, memoryMb: "4.1 MB" })
-      setExecutionStatus("success")
-      setActiveAction("submit")
-      setIsOutdated(false)
-      setExecutionResult({
-        action: "submit",
-        status: "success",
-        metrics: { runtimeMs: 12, memoryMb: "4.1 MB" },
-        passedCount: 8,
-        totalCount: 8,
-        testCases: [],
-        complexity: {
-          timeComplexity: taskDetail?.analysis?.timeComplexity || "O(1)",
-          spaceComplexity: taskDetail?.analysis?.spaceComplexity || "O(1)",
-          optimal: true,
-          optimalNote: taskDetail?.analysis?.optimalNote || "Meets optimal bounds.",
+    // 1. Khôi phục trạng thái các câu hỏi Quiz
+    const savedQuiz = userProgress.quizAnswers?.[activeTask.id] as any
+    if (savedQuiz?.questionsMap && typeof savedQuiz.questionsMap === "object") {
+      setQuizQuestionsMap(savedQuiz.questionsMap)
+    } else if (savedQuiz?.selectedOption) {
+      setQuizQuestionsMap({
+        Q1: {
+          selected: savedQuiz.selectedOption,
+          checked: true,
+          isCorrect: Boolean(savedQuiz.isSubmitted),
         },
       })
-      executedCodeRef.current = typeof savedCode === "string" ? savedCode : (taskDetail?.initialCode || "")
-    } else {
-      setCodeRunOutcome("initial")
-      setLastRunMetrics(null)
-      setExecutionStatus("idle")
-      setActiveAction(null)
-      setIsOutdated(false)
-      setExecutionResult(null)
-      executedCodeRef.current = ""
+    } else if (isNewTask) {
+      setQuizQuestionsMap({})
+      setQuizQuestionIndex(0)
+    }
+
+    // 2. Chống reset code & executionResult khi Alt-Tab / visibilitychange
+    if (isNewTask) {
+      const savedCodeObj = userProgress.codeDrafts?.[activeTask.id]
+      const savedCode =
+        typeof savedCodeObj === "string" ? savedCodeObj : savedCodeObj?.code
+      if (typeof savedCode === "string") {
+        setCode(savedCode)
+      } else if (taskDetail?.initialCode) {
+        setCode(taskDetail.initialCode)
+      }
+
+      // Khôi phục kết quả chạy code từ sessionStorage nếu có
+      const cachedRaw =
+        typeof window !== "undefined"
+          ? window.sessionStorage.getItem(`offbyone_exec_result_${activeTask.id}`)
+          : null
+
+      if (cachedRaw) {
+        try {
+          const cached = JSON.parse(cachedRaw)
+          setExecutionResult(cached.executionResult || null)
+          setExecutionStatus(cached.executionStatus || "idle")
+          setCodeRunOutcome(cached.codeRunOutcome || "initial")
+          setLastRunMetrics(cached.lastRunMetrics || null)
+          setActiveAction(cached.activeAction || null)
+          if (cached.code) setCode(cached.code)
+        } catch {
+          setExecutionResult(null)
+          setExecutionStatus("idle")
+          setCodeRunOutcome("initial")
+          setLastRunMetrics(null)
+          setActiveAction(null)
+        }
+      } else if (savedCodeObj?.isSubmitted) {
+        setCodeRunOutcome("passed")
+        setLastRunMetrics({ runtimeMs: 12, memoryMb: "4.1 MB" })
+        setExecutionStatus("success")
+        setActiveAction("submit")
+        setIsOutdated(false)
+        setExecutionResult({
+          action: "submit",
+          status: "success",
+          metrics: { runtimeMs: 12, memoryMb: "4.1 MB" },
+          passedCount: 8,
+          totalCount: 8,
+          testCases: [],
+          complexity: {
+            timeComplexity: taskDetail?.analysis?.timeComplexity || "O(1)",
+            spaceComplexity: taskDetail?.analysis?.spaceComplexity || "O(1)",
+            optimal: true,
+            optimalNote: taskDetail?.analysis?.optimalNote || "Meets optimal bounds.",
+          },
+        })
+        executedCodeRef.current = typeof savedCode === "string" ? savedCode : (taskDetail?.initialCode || "")
+      } else {
+        setCodeRunOutcome("initial")
+        setLastRunMetrics(null)
+        setExecutionStatus("idle")
+        setActiveAction(null)
+        setIsOutdated(false)
+        setExecutionResult(null)
+        executedCodeRef.current = ""
+      }
     }
 
     const savedHintCount = userProgress.hintsRemaining?.[activeTask.id]
@@ -414,7 +719,6 @@ export function WorkspaceView({
       activeMode !== "coding" && prev === "visualization" ? null : prev
     )
   }, [
-    node.id,
     activeTask.id,
     activeMode,
     taskDetail?.initialCode,
@@ -427,41 +731,82 @@ export function WorkspaceView({
   ])
 
   const handleSelectQuizOption = React.useCallback(
-    async (optionId: string, localIsCorrect?: boolean) => {
-      setSelectedOption(optionId)
-
-      let isCorrect = localIsCorrect
-      if (isCorrect === undefined) {
-        setIsEvaluatingQuiz(true)
-        try {
-          const evalRes = await evaluateQuizAnswer(activeTask.id, optionId)
-          if (evalRes && typeof evalRes.isCorrect === "boolean") {
-            isCorrect = evalRes.isCorrect
-          }
-        } catch {
-          // Fallback gracefully
-        } finally {
-          setIsEvaluatingQuiz(false)
-        }
-      }
-
-      if (typeof isCorrect === "boolean") {
-        setQuizEvaluationMap((prev) => ({ ...prev, [optionId]: isCorrect }))
-      }
-
-      saveQuizAnswer(activeTask.id, {
-        selectedOption: optionId,
-        isSubmitted: Boolean(isCorrect),
-      })
-      if (isCorrect) {
-        completeTask(activeTask.id)
-        setHasNewHintAlert(false)
-      } else {
-        setHasNewHintAlert(activeTool !== "tutor")
-      }
+    (optionId: string) => {
+      setQuizQuestionsMap((prev) => ({
+        ...prev,
+        [currentQKey]: {
+          selected: optionId,
+          checked: false,
+          isCorrect: false,
+        },
+      }))
     },
-    [activeTask.id, saveQuizAnswer, completeTask, activeTool]
+    [currentQKey]
   )
+
+  const handleCheckQuizAnswer = React.useCallback(async () => {
+    if (!currentQSelectedOption) return
+    setIsEvaluatingQuiz(true)
+    const optObj = currentQ.options.find((o: any) => o.id === currentQSelectedOption)
+    let isCorrect = Boolean(optObj?.isCorrect)
+
+    try {
+      const evalRes = await evaluateQuizAnswer(activeTask.id, currentQSelectedOption)
+      if (evalRes && typeof evalRes.isCorrect === "boolean") {
+        isCorrect = evalRes.isCorrect
+      }
+    } catch {}
+
+    setIsEvaluatingQuiz(false)
+    const nextMap = {
+      ...quizQuestionsMap,
+      [currentQKey]: {
+        selected: currentQSelectedOption,
+        checked: true,
+        isCorrect,
+      },
+    }
+    setQuizQuestionsMap(nextMap)
+
+    const all3Correct = quizQuestions.every(
+      (_: any, idx: number) => nextMap[`Q${idx + 1}`]?.isCorrect === true
+    )
+
+    saveQuizAnswer(activeTask.id, {
+      questionsMap: nextMap,
+      selectedOption: currentQSelectedOption,
+      isSubmitted: all3Correct,
+    } as any)
+
+    if (all3Correct) {
+      completeTask(activeTask.id)
+      setHasNewHintAlert(false)
+      if (currentUser?.id) {
+        syncTaskProgressToSupabase(currentUser.id, activeTask.id, true, {
+          questionsMap: nextMap,
+        }).catch(() => {})
+      }
+    } else {
+      setHasNewHintAlert(activeTool !== "tutor")
+    }
+  }, [
+    currentQSelectedOption,
+    currentQ.options,
+    activeTask.id,
+    currentQKey,
+    quizQuestionsMap,
+    quizQuestions,
+    saveQuizAnswer,
+    completeTask,
+    activeTool,
+    currentUser?.id,
+  ])
+
+  const handleNextQuizQuestion = React.useCallback(() => {
+    if (quizQuestionIndex < quizQuestions.length - 1) {
+      setQuizQuestionIndex((prev) => prev + 1)
+    }
+  }, [quizQuestionIndex, quizQuestions.length])
 
   const handleCodeChange = React.useCallback(
     (nextValue: string | undefined) => {
@@ -524,6 +869,23 @@ export function WorkspaceView({
       setLastRunMetrics(result.metrics)
       setHasNewHintAlert(!isPass && activeTool !== "tutor")
       setIsCodeSavedBadge(true)
+
+      // Lưu kết quả vào sessionStorage để chống reset khi Alt-Tab
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem(
+            `offbyone_exec_result_${activeTask.id}`,
+            JSON.stringify({
+              executionResult: result,
+              executionStatus: result.status,
+              codeRunOutcome: isPass ? "passed" : "warning",
+              lastRunMetrics: result.metrics,
+              activeAction: "run",
+              code,
+            })
+          )
+        } catch {}
+      }
     } catch {
       setExecutionStatus("failed")
       setIsRunningCode(false)
@@ -556,8 +918,12 @@ export function WorkspaceView({
       setExecutionStatus(result.status)
       setIsRunningCode(false)
 
-      if (result.status === "success") {
+      const isPass = result.status === "success"
+      if (isPass) {
         completeTask(activeTask.id)
+        if (currentUser?.id) {
+          syncTaskProgressToSupabase(currentUser.id, activeTask.id, true, null).catch(() => {})
+        }
         saveCodeDraft(activeTask.id, {
           code,
           language: taskDetail?.language || "C++",
@@ -571,6 +937,23 @@ export function WorkspaceView({
       }
       setLastRunMetrics(result.metrics)
       setIsCodeSavedBadge(true)
+
+      // Lưu kết quả vào sessionStorage để chống reset khi Alt-Tab
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem(
+            `offbyone_exec_result_${activeTask.id}`,
+            JSON.stringify({
+              executionResult: result,
+              executionStatus: result.status,
+              codeRunOutcome: isPass ? "passed" : "warning",
+              lastRunMetrics: result.metrics,
+              activeAction: "submit",
+              code,
+            })
+          )
+        } catch {}
+      }
     } catch {
       setExecutionStatus("failed")
       setIsRunningCode(false)
@@ -583,6 +966,7 @@ export function WorkspaceView({
     completeTask,
     saveCodeDraft,
     activeTool,
+    currentUser?.id,
   ])
 
   const handleSelectTask = React.useCallback(
@@ -605,6 +989,46 @@ export function WorkspaceView({
     return null
   }, [node.tasks, activeTask.id])
 
+  const isTask1Completed = isTaskCompleted(node.tasks[0]?.id || "", node.tasks[0]?.status)
+
+  const handleCompleteTask1AndProceed = React.useCallback(() => {
+    completeTask(activeTask.id)
+    if (currentUser?.id) {
+      syncTaskProgressToSupabase(currentUser.id, activeTask.id, true, null).catch(() => {})
+    }
+    if (nextTask) {
+      handleCompleteAndAdvance(nextTask.id)
+    }
+  }, [activeTask.id, completeTask, currentUser?.id, nextTask, handleCompleteAndAdvance])
+
+  const handleCompleteQuizAndOpenCode = React.useCallback(() => {
+    if (!isQuizFullyCompleted) return
+    completeTask(activeTask.id)
+    if (currentUser?.id) {
+      syncTaskProgressToSupabase(currentUser.id, activeTask.id, true, {
+        questionsMap: quizQuestionsMap,
+      }).catch(() => {})
+    }
+    if (nextTask) {
+      handleCompleteAndAdvance(nextTask.id)
+    }
+  }, [
+    isQuizFullyCompleted,
+    activeTask.id,
+    completeTask,
+    currentUser?.id,
+    quizQuestionsMap,
+    nextTask,
+    handleCompleteAndAdvance,
+  ])
+
+  const handleCopyTheoryCode = React.useCallback((text: string) => {
+    if (!text) return
+    navigator.clipboard?.writeText(text).catch(() => {})
+    setCopiedTheoryCode(true)
+    setTimeout(() => setCopiedTheoryCode(false), 2000)
+  }, [])
+
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
@@ -619,22 +1043,97 @@ export function WorkspaceView({
   }
 
   const selectedQuizOptionObj = React.useMemo(() => {
-    if (!selectedOption || !Array.isArray(taskDetail?.options)) return null
+    if (!currentQSelectedOption || !Array.isArray(currentQ?.options)) return null
     return (
-      taskDetail.options.find(
-        (opt: { id: string; text: string; isCorrect: boolean }) =>
-          opt.id === selectedOption
+      currentQ.options.find(
+        (opt: any) => opt.id === currentQSelectedOption
       ) || null
     )
-  }, [selectedOption, taskDetail])
+  }, [currentQSelectedOption, currentQ])
 
   const resolvedProblem = React.useMemo(() => {
-    if (taskDetail?.problem) return taskDetail.problem
+    if (taskDetail?.problem) {
+      const p = taskDetail.problem
+      let descText = ""
+      if (typeof p.description === "string") {
+        descText = p.description
+      } else if (p.description && typeof p.description === "object") {
+        const paragraphs = [p.description.paragraph1, p.description.paragraph2].filter(Boolean)
+        descText =
+          paragraphs.length > 0
+            ? paragraphs.join("\n\n")
+            : typeof p.description.description === "string"
+            ? p.description.description
+            : typeof p.description.summaryLead === "string"
+            ? p.description.summaryLead
+            : "Problem Specification"
+      } else if (typeof p.summaryLead === "string") {
+        descText = p.summaryLead
+      } else {
+        descText = "No description provided."
+      }
+
+      return {
+        ...p,
+        title: p.title || activeTask.title || "Problem Specification",
+        difficulty: (p.difficulty || "Medium") as "Easy" | "Medium" | "Hard",
+        description: descText,
+        inputFormat: p.inputFormat || "Standard input format according to C++ function signature.",
+        outputFormat: p.outputFormat || "Standard output format or return value.",
+        examples: Array.isArray(p.examples) ? p.examples : [],
+        constraints: Array.isArray(p.constraints)
+          ? p.constraints
+          : ["C++17 / C++20 compliance", "Optimal time and memory bounds"],
+      }
+    }
+
+    // If taskDetail has an object-shaped description (e.g. OOP coding tasks)
+    if (typeof taskDetail?.description === "object" && taskDetail?.description !== null) {
+      const descObj = taskDetail.description
+      const paragraphs = [descObj.paragraph1, descObj.paragraph2].filter(Boolean)
+      const textDescription =
+        paragraphs.length > 0
+          ? paragraphs.join("\n\n")
+          : typeof descObj.description === "string"
+          ? descObj.description
+          : typeof descObj.summaryLead === "string"
+          ? descObj.summaryLead
+          : "Problem Specification"
+
+      return {
+        title: descObj.title || taskDetail.title || activeTask.title || "Problem Specification",
+        difficulty: (descObj.difficulty || taskDetail.difficulty || "Medium") as "Easy" | "Medium" | "Hard",
+        description: textDescription,
+        inputFormat: descObj.inputFormat || taskDetail.inputFormat || "Standard input format according to C++ function signature.",
+        outputFormat: descObj.outputFormat || taskDetail.outputFormat || "Standard output format or return value.",
+        examples: Array.isArray(descObj.examples)
+          ? descObj.examples
+          : Array.isArray(taskDetail.testCases)
+          ? taskDetail.testCases.slice(0, 3).map((tc: any, i: number) => ({
+              input: tc.input || "",
+              output: tc.expected || tc.output || "",
+              explanation: tc.explanation || `Sample test case ${i + 1}`,
+            }))
+          : [],
+        constraints: descObj.constraints || taskDetail.constraints || [
+          "C++17 / C++20 compliance",
+          "Optimal time and memory bounds",
+        ],
+      }
+    }
+
     if (taskDetail?.description || taskDetail?.markdown || taskDetail?.content) {
       return {
         title: taskDetail.title || activeTask.title || "Problem Specification",
         difficulty: (taskDetail.difficulty || "Medium") as "Easy" | "Medium" | "Hard",
-        description: taskDetail.description || taskDetail.markdown || taskDetail.content || "",
+        description:
+          typeof taskDetail.description === "string"
+            ? taskDetail.description
+            : typeof taskDetail.markdown === "string"
+            ? taskDetail.markdown
+            : typeof taskDetail.content === "string"
+            ? taskDetail.content
+            : "No description provided.",
         inputFormat: taskDetail.inputFormat || "Standard Input as described.",
         outputFormat: taskDetail.outputFormat || "Standard Output result.",
         examples: Array.isArray(taskDetail.testCases)
@@ -663,197 +1162,191 @@ export function WorkspaceView({
   }
 
   return (
-    <div className="relative flex min-h-svh flex-col overflow-x-hidden bg-surface-secondary px-4 py-3 font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary md:px-6 lg:h-svh lg:max-h-svh lg:overflow-hidden">
-      {/* ==================== THANH HEADER TRÊN CÙNG (TOP NAVBAR) ==================== */}
-      <header className="relative z-40 mx-auto w-full max-w-[1480px] shrink-0">
-        <nav className="flex items-center justify-between gap-4 rounded-2xl border border-border-subtle bg-surface/95 px-5 py-2.5 shadow-lg backdrop-blur-md">
-          {/* Logo OffByOne */}
-          <Link
-            href={WORKSPACE_LINKS.brand}
-            className="group flex shrink-0 items-center transition-opacity hover:opacity-95"
-          >
-            <BrandLogo size="sm" priority />
-          </Link>
-
-          {/* Thanh Search ở giữa */}
-          <div className="hidden max-w-[460px] flex-1 items-center justify-between rounded-full border border-border-subtle bg-surface-secondary/90 px-4 py-1.5 text-xs text-text-muted transition-colors focus-within:border-border md:flex">
-            <div className="flex flex-1 items-center gap-2.5">
-              <Search className="size-3.5 shrink-0 text-text-muted" />
-              <input
-                type="text"
-                placeholder="Search concepts, algorithms, or problems..."
-                className="w-full bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
-              />
+    <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-background p-2 font-sans text-text-secondary selection:bg-primary/30 selection:text-text-primary">
+      {/* ==================== KHÔNG GIAN LÀM VIỆC IDE DOCKED 3 CỘT (MAIN WORKSPACE 100VH) ==================== */}
+      <main className="relative z-10 flex h-full min-h-0 w-full flex-1 gap-2 overflow-hidden">
+        {/* -------------------- CỘT 1 (TRÁI): THANH ĐIỀU HƯỚNG TASK THEO NODE + STEPPER + SOCRATIC -------------------- */}
+        <aside className="w-56 xl:w-64 h-full min-h-0 shrink-0 flex flex-col justify-between overflow-hidden rounded-lg border border-border-subtle bg-surface p-2.5">
+          {/* Top Header: BrandLogo + Back to Roadmap Link */}
+          <div className="shrink-0 space-y-2">
+            <div className="flex items-center justify-between gap-2 border-b border-border-subtle pb-2">
+              <Link
+                href={WORKSPACE_LINKS.brand}
+                className="group flex shrink-0 items-center transition-opacity hover:opacity-95"
+                title="OffByOne Home"
+              >
+                <BrandLogo size="sm" priority />
+              </Link>
+              <Link
+                href={WORKSPACE_LINKS.backToSkillTree}
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-border-subtle bg-surface-secondary px-2 text-[11px] font-medium text-text-secondary transition-colors hover:border-border hover:text-text-primary"
+                title="Back to Skill Tree"
+              >
+                <ArrowLeft className="size-3 text-primary" />
+                <span>Roadmap</span>
+              </Link>
             </div>
-            <kbd className="rounded border border-border-subtle bg-surface px-2 py-0.5 font-mono text-[10px] font-medium text-text-secondary">
-              Ctrl + K
-            </kbd>
-          </div>
 
-          {/* User Profile & PWA Download Button */}
-          <div className="flex items-center gap-3">
-            <PwaInstallButton />
-            <ThemeToggleButton />
-            <UserProfileMenu />
-          </div>
-        </nav>
-      </header>
-
-      {/* ==================== KHÔNG GIAN LÀM VIỆC 3 CỘT (MAIN WORKSPACE) ==================== */}
-      <main className="relative z-10 mx-auto mt-3 grid min-h-0 w-full max-w-[1480px] flex-1 grid-cols-1 gap-3.5 lg:grid-cols-12">
-        {/* -------------------- CỘT 1 (TRÁI - 2/12): THANH ĐIỀU HƯỚNG TASK THEO NODE + THẺ SOCRATIC AI TUTOR -------------------- */}
-        <aside className="flex min-h-0 flex-col justify-between rounded-2xl border border-border-subtle bg-surface-secondary p-3.5 lg:col-span-2">
-          {/* Phần đầu cố định: Nút Back + Tiêu đề Node */}
-          <div className="shrink-0">
-            <Link
-              href={WORKSPACE_LINKS.backToSkillTree}
-              className="flex h-8 w-full items-center justify-center gap-2 rounded-lg border border-border-subtle bg-surface text-xs font-medium text-text-secondary transition-colors hover:border-border hover:text-text-primary"
-            >
-              <ArrowLeft className="size-3.5" />
-              <span>Back to Skill Tree</span>
-            </Link>
-
-            <div className="mt-3.5 border-b border-border-subtle pb-2.5">
-              <h1 className="text-sm font-bold text-text-primary">
-                {node.label} Mastery
-              </h1>
-              <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
-                Complete all tasks to unlock the next node.
-              </p>
+            {/* Topic Progress Bar */}
+            <div className="border-b border-border-subtle pb-2.5">
+              <div className="flex items-center justify-between">
+                <h1 className="text-xs font-bold uppercase tracking-wider text-text-primary truncate" title={node.label}>
+                  {node.label}
+                </h1>
+                <span className="font-mono text-[10px] font-bold text-[#7aa2f7]">
+                  {completedTasksCount}/{node.tasks.length}
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-center justify-between text-[10px] text-text-muted">
+                <span>Topic Progress</span>
+                <span>{Math.round((completedTasksCount / Math.max(1, node.tasks.length)) * 100)}%</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full border border-[#292e42] bg-[#16161e]">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300"
+                  style={{
+                    width: `${Math.round((completedTasksCount / Math.max(1, node.tasks.length)) * 100)}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Danh sách các Task (Cuộn độc lập nếu danh sách dài) */}
-          <div className="mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-0.5">
-            {node.tasks.map((taskItem, idx) => {
-              const isSelected = taskItem.id === activeTask.id
-              const isCompleted = taskItem.status === "completed"
+          {/* Connected Vertical Stepper (No Reverse Lock) */}
+          <div className="relative mt-2 flex-1 space-y-2.5 shrink-0 overflow-y-auto">
+            {/* Continuous vertical connector line */}
+            <div className="absolute left-[15px] top-3 bottom-5 w-0.5 bg-[#292e42] z-0" />
 
-              return (
-                <button
-                  key={taskItem.id}
-                  type="button"
-                  onClick={() => handleSelectTask(taskItem.id)}
+            {stepperTasks.map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                disabled={st.isLocked}
+                onClick={() => !st.isLocked && handleSelectTask(st.id)}
+                className={cn(
+                  "relative z-10 flex w-full items-start gap-2 rounded-lg border p-2 text-left transition-all",
+                  st.isDone && st.isActive
+                    ? "border-[#7aa2f7] ring-1 ring-[#7aa2f7]/60 bg-[#24283b] shadow-sm cursor-pointer"
+                    : st.isActive
+                    ? "border-[#7aa2f7] bg-[#7aa2f7]/10 shadow-sm cursor-pointer"
+                    : st.isDone
+                    ? "border-emerald-500/30 bg-[#16161e] hover:border-emerald-500/60 cursor-pointer"
+                    : st.isAvailable
+                    ? "border-[#292e42] bg-[#16161e] hover:border-[#7aa2f7]/50 cursor-pointer"
+                    : "border-[#292e42]/50 bg-[#16161e]/40 opacity-50 cursor-not-allowed"
+                )}
+              >
+                {/* Stepper Node Circle */}
+                <div
                   className={cn(
-                    "w-full cursor-pointer rounded-xl border p-2.5 text-left transition-all",
-                    isSelected
-                      ? "border-primary bg-primary/20/40 shadow-[0_0_20px_rgba(122,162,247,0.18)]"
-                      : isCompleted
-                        ? "border-success/55 bg-surface/60 hover:border-success"
-                        : "border-border-subtle bg-surface/45 hover:border-border"
+                    "flex size-6 shrink-0 items-center justify-center rounded-full transition-colors",
+                    st.isDone
+                      ? "border border-emerald-500 bg-emerald-500/20 text-emerald-400"
+                      : st.isActive
+                      ? "border-2 border-[#7aa2f7] bg-[#16161e] text-[#7aa2f7]"
+                      : st.isAvailable
+                      ? "border border-[#292e42] bg-[#1a1b26] text-[#c0caf5]"
+                      : "border border-[#292e42] bg-[#16161e] text-[#565f89]"
                   )}
                 >
-                  <div className="flex items-start gap-2.5">
-                    {isSelected ? (
-                      taskItem.type === "coding" ? (
-                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-surface-secondary">
-                          <Code2 className="size-3 stroke-[2.5]" />
-                        </span>
-                      ) : (
-                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-cyan bg-cyan/15 text-cyan">
-                          <Square className="size-2.5 fill-current" />
-                        </span>
-                      )
-                    ) : isCompleted ? (
-                      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-success text-surface-secondary">
-                        <Check className="size-3 stroke-[3]" />
+                  {st.isDone ? (
+                    <Check className="size-3 stroke-[3]" />
+                  ) : st.isLocked ? (
+                    <Lock className="size-2.5 text-[#565f89]" />
+                  ) : (
+                    st.taskIcon
+                  )}
+                </div>
+
+                {/* Stepper Step Info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span
+                      className={cn(
+                        "font-mono text-[10px] font-bold uppercase tracking-wider",
+                        st.isDone
+                          ? "text-emerald-400"
+                          : st.isActive
+                          ? "text-[#7aa2f7]"
+                          : "text-text-muted"
+                      )}
+                    >
+                      {`0${st.idx + 1} ${st.typeLabel}`}
+                    </span>
+
+                    {/* Status Badge: if isDone, ALWAYS show Done / Viewing • Done */}
+                    {st.isDone ? (
+                      <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.2 font-mono text-[9px] font-semibold text-emerald-400">
+                        {st.isActive ? "Viewing • Done" : "Done"}
+                      </span>
+                    ) : st.isActive ? (
+                      <span className="rounded bg-[#7aa2f7]/20 border border-[#7aa2f7]/40 px-1.5 py-0.2 font-mono text-[9px] font-bold text-[#7aa2f7]">
+                        Active
                       </span>
                     ) : (
-                      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-surface text-text-secondary">
-                        <Lock className="size-3" />
-                      </span>
-                    )}
-
-                    <div className="min-w-0">
-                      <div
-                        className={cn(
-                          "text-[10px]",
-                          isSelected ? "text-cyan" : "text-text-muted"
-                        )}
-                      >
-                        Task {idx + 1}
-                      </div>
-                      <div
-                        className={cn(
-                          "mt-0.5 text-xs font-bold",
-                          isSelected || isCompleted
-                            ? "text-text-primary"
-                            : "text-text-secondary"
-                        )}
-                      >
-                        {taskItem.title}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 flex justify-center">
-                    {isSelected ? (
-                      <span className="rounded-full bg-primary px-3 py-0.5 text-[10px] font-bold text-surface-secondary">
-                        In Progress
-                      </span>
-                    ) : isCompleted ? (
-                      <span className="rounded-full border border-success/50 bg-success/15 px-3 py-0.5 text-[10px] font-semibold text-success">
-                        Completed
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-surface px-3 py-0.5 text-[10px] font-medium text-text-muted">
-                        Locked
+                      <span className="rounded border border-[#292e42] bg-[#16161e] px-1.5 py-0.2 font-mono text-[9px] text-[#565f89]">
+                        {st.isAvailable ? "Open" : "Locked"}
                       </span>
                     )}
                   </div>
-                </button>
-              )
-            })}
+
+                  <div
+                    className={cn(
+                      "mt-0.5 truncate text-[11px] font-medium leading-tight",
+                      st.isActive
+                        ? "text-white font-semibold"
+                        : st.isDone
+                        ? "text-[#c0caf5]"
+                        : "text-text-muted"
+                    )}
+                  >
+                    {st.title}
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
 
-          {/* Phần cuối cố định: Thẻ Socratic AI Tutor riêng biệt nằm dưới danh sách Task */}
-          <div className="mt-3 shrink-0 space-y-2 border-t border-border-subtle pt-3">
+          {/* Socratic AI Tutor Card in Sidebar */}
+          <div className="mt-2 space-y-2 border-t border-border-subtle pt-2 shrink-0">
             <div
               className={cn(
-                "relative rounded-xl border p-3 transition-all",
+                "relative rounded-lg border p-2.5 transition-colors",
                 activeTool === "tutor"
-                  ? "border-cyan bg-primary/20/45 shadow-[0_0_20px_rgba(125,207,255,0.16)]"
+                  ? "border-[#7aa2f7]/60 bg-[#7aa2f7]/10"
                   : hasNewHintAlert
-                    ? "border-warning/80 bg-surface/90 shadow-[0_0_18px_rgba(255,158,100,0.16)]"
-                    : "border-border-subtle bg-surface/75 hover:border-border"
+                  ? "border-warning/70 bg-surface"
+                  : "border-[#292e42] bg-[#16161e] hover:border-[#7aa2f7]/40"
               )}
             >
-              {/* Hàng trên: Bot Icon + Tiêu đề + Trạng thái Ready to help */}
               <div className="flex items-start justify-between gap-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-lg border border-cyan/35 bg-cyan/12 text-cyan">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[#7aa2f7]/35 bg-[#7aa2f7]/15 text-[#7aa2f7]">
                     <Bot className="size-3.5" />
                   </span>
                   <div className="min-w-0">
-                    <div className="truncate text-xs font-bold text-text-primary">
+                    <div className="truncate text-[11px] font-bold text-white">
                       Socratic AI Tutor
                     </div>
-                    <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium text-success">
+                    <div className="flex items-center gap-1 text-[9.5px] font-medium text-emerald-400">
                       <span
                         className={cn(
-                          "size-1.5 shrink-0 rounded-full bg-success",
-                          hasNewHintAlert && "animate-ping bg-warning"
+                          "size-1.5 shrink-0 rounded-full bg-emerald-400",
+                          hasNewHintAlert && "bg-warning"
                         )}
                       />
                       <span className={cn(hasNewHintAlert && "text-warning")}>
-                        {hasNewHintAlert ? "New hint ready" : "Ready to help"}
+                        {hasNewHintAlert ? "New hint ready" : "Ready to guide"}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Badge số lượng Hint khả dụng */}
-                <span className="shrink-0 rounded-full border border-primary/35 bg-surface-secondary px-2 py-0.5 font-mono text-[9.5px] font-semibold text-cyan">
+                <span className="shrink-0 rounded-md border border-[#7aa2f7]/30 bg-[#16161e] px-1.5 py-0.5 font-mono text-[9.5px] font-semibold text-[#7aa2f7] tabular-nums">
                   {hintsRemaining}/3
                 </span>
               </div>
 
-              {/* Mô tả ngắn */}
-              <p className="mt-2 text-[11px] leading-snug text-text-secondary">
-                Need guidance with this task?
-              </p>
-
-              {/* Nút Get a Hint mở Floating Side Drawer */}
               <button
                 type="button"
                 onClick={() => {
@@ -861,257 +1354,534 @@ export function WorkspaceView({
                   setActiveTool((prev) => (prev === "tutor" ? null : "tutor"))
                 }}
                 className={cn(
-                  "mt-2.5 inline-flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border text-[11px] font-bold transition-all",
+                  "mt-2 inline-flex h-7 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border text-[10.5px] font-semibold transition-colors",
                   activeTool === "tutor"
-                    ? "border-cyan bg-cyan text-surface-secondary"
-                    : "border-primary/45 bg-primary/20/55 text-text-primary hover:border-primary hover:bg-primary/20/85"
+                    ? "border-[#7aa2f7] bg-[#7aa2f7]/20 text-[#7aa2f7]"
+                    : "border-[#292e42] bg-[#1a1b26] text-[#c0caf5] hover:border-[#7aa2f7]/60 hover:text-white hover:bg-[#24283b]"
                 )}
               >
-                <Sparkles className="size-3 text-cyan" />
-                <span>
-                  {activeTool === "tutor" ? "Hide Hint Drawer" : "Get a Hint"}
-                </span>
+                <Sparkles className="size-3 text-[#7aa2f7]" />
+                <span>{activeTool === "tutor" ? "Hide Socratic Panel" : "Get a Hint"}</span>
               </button>
             </div>
 
-            <div className="rounded-xl border border-border-subtle bg-surface-secondary p-1.5 text-center text-[10px] text-text-muted">
-              Click Task 1, 2, or 3 to switch stages.
+            {/* Topic Reference Box */}
+            <div className="rounded-lg border border-[#292e42] bg-[#16161e] p-2.5 shrink-0">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-[#7aa2f7]">
+                <div className="flex items-center gap-1.5">
+                  <FileText className="size-3.5 text-[#bb9af7]" />
+                  <span>Topic Reference</span>
+                </div>
+                <span className="rounded bg-[#7aa2f7]/10 px-1.5 py-0.2 font-mono text-[9px] text-[#7aa2f7] border border-[#7aa2f7]/30">
+                  RAG Indexed
+                </span>
+              </div>
+              <p className="mt-1 text-[10.5px] font-mono text-[#c0caf5] truncate" title={(node as any).document_id === "doc-oop-syllabus" ? "CS102_OOP_Cpp_Syllabus.pdf" : "CS101_DSA_Syllabus.pdf"}>
+                {(node as any).document_id === "doc-oop-syllabus" ? "CS102_OOP_Cpp_Syllabus.pdf" : "CS101_DSA_Syllabus.pdf"}
+              </p>
+              <div className="mt-1 flex items-center justify-between text-[10px] text-[#565f89]">
+                <span>{taskDetail?.slideLabel || "Slide 14 • Courseware"}</span>
+                <span className="font-mono text-emerald-400">Verified</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer of Left Sidebar: Compact User Profile + ThemeToggle */}
+          <div className="mt-auto shrink-0 border-t border-border-subtle pt-2 flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <UserProfileMenu />
+            </div>
+            <div className="shrink-0 ml-auto">
+              <ThemeToggleButton />
             </div>
           </div>
         </aside>
 
-        {/* ==================== TRẠNG THÁI 1 & 2: THEORY HOẶC QUIZ (MỞ RỘNG TOÀN BỘ 10/12 CỘT CÒN LẠI) ==================== */}
-        {activeMode !== "coding" ? (
-          <section className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-border-subtle bg-surface-secondary p-6 lg:col-span-10 custom-scrollbar transition-all duration-200 ease-out">
-            <div className="flex shrink-0 items-center justify-between border-b border-border-subtle pb-4">
-              <div className="flex items-center gap-2.5">
-                <BookOpen className="size-4 text-cyan" />
-                <h2 className="text-xs font-bold tracking-wider text-text-primary uppercase">
-                  {taskDetail?.headerTitle || taskDetail?.title || "Task Overview"}
-                </h2>
-              </div>
-
-              {activeMode === "theory" && nextTask ? (
-                <button
-                  type="button"
-                  onClick={() => handleCompleteAndAdvance(nextTask.id)}
-                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-bold text-surface-secondary transition-all hover:bg-primary-hover active:scale-95 shadow-sm"
-                >
-                  <span>Next: Take Quiz</span>
-                  <ArrowRight className="size-3.5" />
-                </button>
-              ) : activeMode === "quiz" && nextTask ? (
-                <button
-                  type="button"
-                  onClick={() => handleCompleteAndAdvance(nextTask.id)}
-                  disabled={isEvaluatingQuiz}
-                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-bold text-surface-secondary transition-all hover:bg-primary-hover active:scale-95 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Send className="size-3.5" />
-                  <span>Next: Coding Task</span>
-                </button>
-              ) : null}
-            </div>
-
-            {/* Nội dung Trạng thái 1: THEORY */}
-            {activeMode === "theory" && (
-              <div className="mt-6 flex-1 space-y-6">
-                <div>
-                  <p className="text-sm leading-relaxed text-text-primary">
-                    <span className="font-semibold text-cyan">
-                      {taskDetail?.moduleLabel || "Module 1 of 3:"}
-                    </span>{" "}
-                    {taskDetail?.summaryLead || taskDetail?.description || ""}
-                  </p>
+        {/* -------------------- CỘT 2 (GIỮA): VÙNG LÀM VIỆC CHÍNH (THEORY / QUIZ / CODING) -------------------- */}
+        <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
+          {activeMode !== "coding" ? (
+            <section className="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-lg border border-border-subtle bg-surface-secondary custom-description-scrollbar transition-colors duration-150 ease-out">
+              {/* Header Bar for Theory & Quiz */}
+              <div className="flex shrink-0 items-center justify-between border-b border-border-subtle bg-surface px-6 py-3">
+                <div className="flex items-center gap-2.5">
+                  {activeMode === "theory" ? (
+                    <BookOpen className="size-4 text-[#7aa2f7]" />
+                  ) : (
+                    <HelpCircle className="size-4 text-[#bb9af7]" />
+                  )}
+                  <h2 className="text-xs font-bold tracking-wider text-text-primary uppercase">
+                    {taskDetail?.headerTitle || taskDetail?.title || "Task Overview"}
+                  </h2>
                 </div>
 
-                {/* Render structured cards if present */}
-                {taskDetail?.cards && taskDetail.cards.length > 0 ? (
-                  <div className="space-y-3.5">
-                    {taskDetail.cards.map(
-                      (card: {
-                        badge: string
-                        title: string
-                        detail: string
-                        tag: string
-                      }) => (
-                        <div
-                          key={card.badge}
-                          className="flex items-start gap-4 rounded-xl border border-border-subtle bg-surface/75 p-4 transition-colors hover:border-border"
+                {/* Theory Header Action */}
+                {activeMode === "theory" && (
+                  <div className="flex items-center gap-2">
+                    {isTask1Completed ? (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 font-mono text-xs font-semibold text-emerald-400">
+                          <Check className="size-3.5 stroke-[3]" />
+                          Theory Completed
+                        </span>
+                        {nextTask && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectTask(nextTask.id)}
+                            className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-[#7aa2f7]/40 bg-[#7aa2f7]/15 px-3.5 text-xs font-bold text-[#7aa2f7] hover:bg-[#7aa2f7]/25 transition-all shadow-sm"
+                          >
+                            <span>Continue to Task 2: Quiz</span>
+                            <ArrowRight className="size-3.5" />
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      nextTask && (
+                        <button
+                          type="button"
+                          onClick={handleCompleteTask1AndProceed}
+                          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md bg-[#7aa2f7] px-4 text-xs font-bold text-[#16161e] transition-all hover:bg-[#7aa2f7]/90 active:scale-95 shadow-sm"
                         >
-                          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/20 font-mono text-xs font-bold text-primary">
-                            {card.badge}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <h3 className="text-xs font-bold text-text-primary">
-                                {card.title}
-                              </h3>
-                              <span className="rounded bg-primary/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan">
-                                {card.tag}
-                              </span>
-                            </div>
-                            <p className="mt-1.5 text-xs leading-relaxed text-text-secondary">
-                              {card.detail}
-                            </p>
-                          </div>
-                        </div>
+                          <span>Mark as Completed &amp; Take Quiz</span>
+                          <ArrowRight className="size-3.5" />
+                        </button>
                       )
                     )}
                   </div>
-                ) : (
-                  /* Fallback to raw text or markdown from Supabase Lean tasks table */
-                  (taskDetail?.markdown || taskDetail?.description || taskDetail?.content) && (
-                    <div className="rounded-xl border border-border-subtle bg-surface/60 p-5 text-xs leading-relaxed text-text-secondary sm:text-[13px] space-y-3">
-                      {(taskDetail.markdown || taskDetail.description || taskDetail.content)
-                        .split("\n\n")
-                        .map((paragraph: string, pIdx: number) => (
-                          <p key={pIdx} className="leading-relaxed">
-                            {paragraph}
-                          </p>
-                        ))}
+                )}
+
+                {/* Quiz Header: Question Switcher Pills with Checkmarks */}
+                {activeMode === "quiz" && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-[#16161e] border border-[#292e42] text-[#c0caf5]">
+                      <span className={correctQuizQuestionsCount === quizQuestions.length ? "text-emerald-400" : "text-[#7aa2f7]"}>
+                        {correctQuizQuestionsCount}/{quizQuestions.length}
+                      </span> Correct
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      {quizQuestions.map((_: any, qIdx: number) => {
+                        const qK = `Q${qIdx + 1}`
+                        const qRecord = quizQuestionsMap[qK]
+                        const isQCorrect = qRecord?.isCorrect === true
+                        const isQFailed = qRecord?.checked === true && !isQCorrect
+                        const isCurrentPill = quizQuestionIndex === qIdx
+
+                        return (
+                          <button
+                            key={qIdx}
+                            type="button"
+                            onClick={() => setQuizQuestionIndex(qIdx)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-xs font-bold transition-all cursor-pointer",
+                              isCurrentPill
+                                ? "border border-[#7aa2f7] bg-[#7aa2f7] text-[#16161e] shadow-sm"
+                                : isQCorrect
+                                ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+                                : isQFailed
+                                ? "border border-rose-500/40 bg-rose-500/15 text-rose-400 hover:bg-rose-500/25"
+                                : "border border-[#292e42] bg-[#16161e] text-[#c0caf5] hover:border-[#7aa2f7]/50"
+                            )}
+                          >
+                            <span>Q{qIdx + 1}</span>
+                            {isQCorrect && <Check className="size-3 stroke-[3] text-emerald-400" />}
+                            {isQFailed && <span className="text-rose-400 text-[10px]">✗</span>}
+                          </button>
+                        )
+                      })}
                     </div>
-                  )
+                  </div>
                 )}
               </div>
-            )}
 
-            {/* Nội dung Trạng thái 2: QUIZ */}
-            {activeMode === "quiz" && (
-              <div className="mt-6 flex-1 space-y-6">
-                <div>
-                  <p className="text-sm leading-relaxed text-text-primary">
-                    <span className="font-semibold text-cyan">
-                      {taskDetail?.questionLabel || "Question 2 of 3:"}
-                    </span>{" "}
-                    {taskDetail?.questionPrompt || taskDetail?.question || taskDetail?.title || "Choose the best answer:"}
-                  </p>
-                </div>
+              {/* Main Content Area: Max-W-4xl Centered */}
+              <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-between px-6 py-6 space-y-6">
+                {/* ==================== TRẠNG THÁI 1: INTERACTIVE TECH DOCS (THEORY) ==================== */}
+                {activeMode === "theory" && (
+                  <div className="space-y-6">
+                    {/* Phần 1: Concept Overview & Complexity Strip */}
+                    <div className="rounded-xl border border-border-subtle bg-surface p-5 shadow-sm space-y-3">
+                      <div>
+                        <span className="font-mono text-[11px] font-bold text-[#7aa2f7] uppercase tracking-wider">
+                          {taskDetail?.moduleLabel || "Module 1 of 3"}
+                        </span>
+                        <h3 className="mt-1 text-base sm:text-lg font-bold text-text-primary">
+                          {taskDetail?.title || `${node.label} Core Foundations`}
+                        </h3>
+                        <p className="mt-2 text-xs sm:text-sm leading-relaxed text-text-secondary">
+                          {taskDetail?.summaryLead || `${node.description} Mastering ${node.label} requires understanding structural invariants alongside operational bounds.`}
+                        </p>
+                      </div>
 
-                <div className="space-y-3.5">
-                  {(taskDetail?.options || []).map(
-                    (option: {
-                      id: string
-                      text: string
-                      isCorrect?: boolean
-                    }) => {
-                      const isSelected = selectedOption === option.id
-                      const evaluated = typeof option.isCorrect === "boolean"
-                        ? option.isCorrect
-                        : quizEvaluationMap[option.id]
-                      const isEvaluatingThis = isEvaluatingQuiz && isSelected && evaluated === undefined
-                      const isRightSelection = isSelected && evaluated === true
-                      const isWrongSelection = isSelected && evaluated === false
+                      {/* Complexity Strip */}
+                      <div className="mt-3 rounded-lg border border-[#292e42] bg-[#16161e] p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] font-bold text-[#7aa2f7] uppercase">Time Complexity:</span>
+                          <span className="font-mono text-emerald-400 font-semibold">
+                            Best O({node.id.includes("sort") ? "N log N" : "1"}) | Avg {node.complexity || "O(log N)"} | Worst {node.id.includes("sort") ? "O(N²)" : node.complexity || "O(log N)"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] font-bold text-[#bb9af7] uppercase">Space:</span>
+                          <span className="font-mono text-white font-semibold">
+                            {node.complexity?.includes("log") ? "O(log N) stack" : "O(1) aux"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] font-bold text-[#7dcfff] uppercase">Invariant:</span>
+                          <span className="font-mono text-cyan truncate max-w-[170px]">
+                            {node.label} Verified
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          disabled={isEvaluatingQuiz}
-                          onClick={() =>
-                            handleSelectQuizOption(option.id, option.isCorrect)
-                          }
-                          className={cn(
-                            "relative flex w-full cursor-pointer items-center rounded-xl border px-4 py-4 text-left transition-all",
-                            isWrongSelection &&
-                              "border-danger bg-danger/10",
-                            isRightSelection &&
-                              "border-success bg-success/10",
-                            isEvaluatingThis &&
-                              "border-cyan bg-cyan/10 animate-pulse",
-                            !isSelected &&
-                              "border-border-subtle bg-surface/70 hover:border-border hover:bg-surface disabled:opacity-60 disabled:cursor-not-allowed"
+                    {/* Phần 2: Core Breakdown (Left) & Code Reference / Dry-run (Right) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                      {/* Left: 4 Core Technical Points */}
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#7aa2f7] flex items-center gap-1.5">
+                          <BookOpen className="size-3.5" />
+                          <span>Core Structural Invariants</span>
+                        </h4>
+                        <div className="space-y-3">
+                          {theoryCards.map((card: any) => (
+                            <div
+                              key={card.badge}
+                              className="rounded-xl border border-border-subtle bg-surface p-3.5 hover:border-[#7aa2f7]/50 transition-colors shadow-sm"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-[#7aa2f7]/15 font-mono text-[11px] font-bold text-[#7aa2f7]">
+                                  {card.badge}
+                                </span>
+                                <span className="rounded bg-[#7aa2f7]/10 border border-[#7aa2f7]/20 px-2 py-0.5 font-mono text-[10px] font-semibold text-[#7aa2f7]">
+                                  {card.tag}
+                                </span>
+                              </div>
+                              <h5 className="mt-2 text-xs font-bold text-white">
+                                {card.title}
+                              </h5>
+                              <p className="mt-1 text-[11.5px] leading-relaxed text-text-secondary">
+                                {card.detail}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Right: Annotated C++ Snippet & Dry-Run Trace */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-[#bb9af7] flex items-center gap-1.5">
+                            <Code2 className="size-3.5" />
+                            <span>C++ Reference Snippet</span>
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyTheoryCode(theorySnippet.code)}
+                            className="inline-flex items-center gap-1 text-[10.5px] font-mono text-text-muted hover:text-[#7aa2f7] transition-colors"
+                          >
+                            <Copy className="size-3" />
+                            <span>{copiedTheoryCode ? "Copied" : "Copy Code"}</span>
+                          </button>
+                        </div>
+
+                        {/* Code Block Container */}
+                        <div className="rounded-xl border border-[#292e42] bg-[#16161e] p-3 font-mono text-[11px] overflow-hidden shadow-sm">
+                          <div className="flex items-center justify-between border-b border-[#292e42] pb-2 text-[10px] text-[#565f89]">
+                            <span>{theorySnippet.title}</span>
+                            <span className="text-[#9ece6a]">C++17 Validated</span>
+                          </div>
+                          <pre className="mt-2 text-[#c0caf5] leading-relaxed overflow-x-auto custom-scrollbar">
+                            <code>{theorySnippet.code}</code>
+                          </pre>
+                        </div>
+
+                        {/* Dry-run Memory / Pointer State Trace */}
+                        <div className="rounded-xl border border-cyan/30 bg-surface p-3.5 space-y-2">
+                          <div className="flex items-center justify-between text-xs font-bold text-cyan">
+                            <span className="flex items-center gap-1.5">
+                              <Target className="size-3.5" />
+                              <span>Dry-Run State Trace</span>
+                            </span>
+                            <span className="font-mono text-[10px] text-text-muted">Memory State</span>
+                          </div>
+
+                          <div className="space-y-2 pt-1">
+                            {theorySnippet.traceSteps.map((step: any, sIdx: number) => (
+                              <div key={sIdx} className="rounded-lg border border-[#292e42] bg-[#16161e] p-2 text-xs">
+                                <div className="font-mono text-[10.5px] font-bold text-[#7aa2f7]">{step.label}</div>
+                                <div className="mt-0.5 text-[11px] text-text-secondary">{step.desc}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <p className="text-[10px] font-mono text-text-muted pt-1">
+                            {theorySnippet.complexityNote}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Phần 3: Bottom Action Bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTool((prev) => (prev === "tutor" ? null : "tutor"))}
+                        className="inline-flex h-9 items-center gap-2 rounded-md border border-[#7aa2f7]/30 bg-[#7aa2f7]/10 px-4 text-xs font-semibold text-[#7aa2f7] transition-colors hover:bg-[#7aa2f7]/20"
+                      >
+                        <Sparkles className="size-3.5" />
+                        <span>Need Concept Guidance? Ask Socratic AI</span>
+                      </button>
+
+                      <div className="flex items-center gap-2.5">
+                        {isTask1Completed ? (
+                          <>
+                            <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-3.5 py-1.5 font-mono text-xs font-semibold text-emerald-400">
+                              <Check className="size-3.5 stroke-[3]" />
+                              Theory Completed
+                            </span>
+                            {nextTask && (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectTask(nextTask.id)}
+                                className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-[#7aa2f7]/40 bg-[#7aa2f7]/15 px-5 text-xs font-bold text-[#7aa2f7] shadow-sm transition-all hover:bg-[#7aa2f7]/25 active:scale-95"
+                              >
+                                <span>Continue to Task 2: Quiz</span>
+                                <ArrowRight className="size-3.5" />
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          nextTask && (
+                            <button
+                              type="button"
+                              onClick={handleCompleteTask1AndProceed}
+                              className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-[#7aa2f7] px-5 text-xs font-bold text-[#16161e] shadow-sm transition-all hover:bg-[#7aa2f7]/90 active:scale-95"
+                            >
+                              <span>Mark as Completed &amp; Take Quiz</span>
+                              <ArrowRight className="size-3.5" />
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ==================== TRẠNG THÁI 2: INTERACTIVE QUIZ ==================== */}
+                {activeMode === "quiz" && (
+                  <div className="space-y-6">
+                    {/* Question Prompt Card */}
+                    <div className="rounded-xl border border-border-subtle bg-surface p-5 sm:p-6 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-md border border-[#bb9af7]/30 bg-[#bb9af7]/10 px-2 py-0.5 font-mono text-[10px] font-bold text-[#bb9af7] uppercase tracking-wider">
+                            Question {quizQuestionIndex + 1} of {quizQuestions.length}
+                          </span>
+                          <span className="font-mono text-[10.5px] text-text-muted">
+                            Select one option below
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono text-xs">
+                          {isCurrentQCorrect ? (
+                            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 font-bold text-emerald-400">
+                              <Check className="size-3 stroke-[3]" /> Correct
+                            </span>
+                          ) : isCurrentQChecked ? (
+                            <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/15 px-2 py-0.5 font-bold text-rose-400">
+                              Incorrect
+                            </span>
+                          ) : (
+                            <span className="text-text-muted">Unanswered</span>
                           )}
-                        >
-                          <span
+                        </div>
+                      </div>
+                      <h3 className="mt-3 text-sm sm:text-base font-bold text-text-primary leading-snug">
+                        {currentQ.prompt}
+                      </h3>
+                    </div>
+
+                    {/* 4 Interactive Options */}
+                    <div className="space-y-3">
+                      {currentQ.options.map((option: any) => {
+                        const isSelected = currentQSelectedOption === option.id
+                        const isRightOption = Boolean(option.isCorrect)
+
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            disabled={isEvaluatingQuiz}
+                            onClick={() => handleSelectQuizOption(option.id)}
                             className={cn(
-                              "flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-bold transition-colors",
-                              isWrongSelection && "bg-danger text-surface-secondary",
-                              isRightSelection && "bg-success text-surface-secondary",
-                              isEvaluatingThis && "bg-cyan text-surface-secondary",
-                              !isSelected && "bg-primary/20 text-primary"
+                              "relative flex w-full cursor-pointer items-center rounded-xl border p-4 text-left transition-all shadow-sm",
+                              // If checked:
+                              isCurrentQChecked && isSelected && isRightOption && "border-emerald-500 bg-emerald-500/15",
+                              isCurrentQChecked && isSelected && !isRightOption && "border-rose-500 bg-rose-500/15",
+                              isCurrentQChecked && !isSelected && isRightOption && "border-emerald-500/50 bg-emerald-500/5",
+                              // If not checked:
+                              !isCurrentQChecked && isSelected && "border-[#7aa2f7] bg-[#7aa2f7]/15 ring-1 ring-[#7aa2f7]",
+                              !isCurrentQChecked && !isSelected && "border-border-subtle bg-surface hover:border-[#7aa2f7]/50 hover:bg-[#24283b]/30"
                             )}
                           >
-                            {option.id}
-                          </span>
+                            <span
+                              className={cn(
+                                "flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors",
+                                isCurrentQChecked && isSelected && isRightOption && "bg-emerald-500 text-[#16161e]",
+                                isCurrentQChecked && isSelected && !isRightOption && "bg-rose-500 text-white",
+                                isCurrentQChecked && !isSelected && isRightOption && "bg-emerald-500/30 text-emerald-300",
+                                !isCurrentQChecked && isSelected && "bg-[#7aa2f7] text-[#16161e]",
+                                !isCurrentQChecked && !isSelected && "bg-[#24283b] text-[#c0caf5]"
+                              )}
+                            >
+                              {option.id}
+                            </span>
 
-                          <span
-                            className={cn(
-                              "flex-1 px-4 text-xs font-medium sm:text-[13px]",
-                              isSelected ? "text-text-primary font-semibold" : "text-text-secondary"
+                            <span
+                              className={cn(
+                                "flex-1 px-4 text-xs font-medium sm:text-sm",
+                                isSelected ? "text-white font-semibold" : "text-text-secondary"
+                              )}
+                            >
+                              {option.text}
+                            </span>
+
+                            {isCurrentQChecked && isSelected && isRightOption && (
+                              <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-emerald-500 px-2.5 py-1 text-[11px] font-bold text-[#16161e] shadow-sm">
+                                <Check className="size-3 stroke-[3]" />
+                                <span>Correct</span>
+                              </span>
                             )}
+
+                            {isCurrentQChecked && isSelected && !isRightOption && (
+                              <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-rose-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">
+                                <X className="size-3 stroke-[3]" />
+                                <span>Incorrect</span>
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* Explanation Box (Revealed after Check Answer) */}
+                    {isCurrentQChecked && (
+                      <div
+                        className={cn(
+                          "rounded-xl border p-4.5 space-y-2 transition-all animate-in fade-in zoom-in-95",
+                          isCurrentQCorrect
+                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                            : "border-rose-500/40 bg-rose-500/10 text-rose-300"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 font-bold text-xs">
+                          {isCurrentQCorrect ? (
+                            <>
+                              <CheckCircle2 className="size-4 text-emerald-400" />
+                              <span className="text-emerald-400 uppercase tracking-wider">Correct! Invariant Verified</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle className="size-4 text-rose-400" />
+                              <span className="text-rose-400 uppercase tracking-wider">Concept Guidance</span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-xs leading-relaxed text-[#c0caf5]">
+                          {isCurrentQCorrect ? currentQ.explanation : currentQ.clue}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Grounded Action Bar at Bottom of Quiz */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTool((prev) => (prev === "tutor" ? null : "tutor"))}
+                        className="inline-flex h-9 items-center gap-2 rounded-md border border-[#292e42] bg-[#24283b] px-4 text-xs font-semibold text-[#c0caf5] transition-colors hover:border-[#7aa2f7]/50 hover:text-white"
+                      >
+                        <Sparkles className="size-3.5 text-[#7aa2f7]" />
+                        <span>Ask Socratic Hint</span>
+                      </button>
+
+                      <div className="flex items-center gap-2.5">
+                        {isQuizFullyCompleted ? (
+                          <button
+                            type="button"
+                            onClick={handleCompleteQuizAndOpenCode}
+                            className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-emerald-500 px-5 text-xs font-bold text-[#16161e] shadow-sm transition-all hover:bg-emerald-400"
                           >
-                            {option.text}
-                          </span>
-
-                          {isEvaluatingThis && (
-                            <span className="absolute right-3 bottom-2 sm:bottom-auto inline-flex items-center gap-1.5 rounded bg-cyan/20 px-2 py-0.5 text-[10px] font-semibold text-cyan">
-                              <span className="size-2 rounded-full bg-cyan animate-ping" />
-                              <span>Evaluating...</span>
-                            </span>
-                          )}
-
-                          {isWrongSelection && (
-                            <span className="absolute right-3 bottom-2 sm:bottom-auto inline-flex items-center gap-1 rounded bg-danger px-2 py-0.5 text-[10px] font-bold text-surface-secondary shadow-sm">
-                              <X className="size-2.5 stroke-[3]" />
-                              <span>Incorrect Selection</span>
-                            </span>
-                          )}
-
-                          {isRightSelection && (
-                            <span className="absolute right-3 bottom-2 sm:bottom-auto inline-flex items-center gap-1 rounded bg-success px-2 py-0.5 text-[10px] font-bold text-surface-secondary shadow-sm">
-                              <Check className="size-2.5 stroke-[3]" />
-                              <span>Correct Answer</span>
-                            </span>
-                          )}
-                        </button>
-                      )
-                    }
-                  )}
-                </div>
+                            <span>Quiz Completed (3/3) • Proceed to Coding</span>
+                            <ArrowRight className="size-3.5" />
+                          </button>
+                        ) : isCurrentQChecked && isCurrentQCorrect ? (
+                          (() => {
+                            const nextUnfinishedIdx = quizQuestions.findIndex(
+                              (_: any, idx: number) => !quizQuestionsMap[`Q${idx + 1}`]?.isCorrect
+                            )
+                            if (nextUnfinishedIdx !== -1) {
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => setQuizQuestionIndex(nextUnfinishedIdx)}
+                                  className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-[#7aa2f7] px-5 text-xs font-bold text-[#16161e] shadow-sm transition-all hover:bg-[#7aa2f7]/90"
+                                >
+                                  <span>Go to Unanswered Question (Q{nextUnfinishedIdx + 1})</span>
+                                  <ArrowRight className="size-3.5" />
+                                </button>
+                              )
+                            }
+                            return null
+                          })()
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!currentQSelectedOption || isEvaluatingQuiz}
+                            onClick={handleCheckQuizAnswer}
+                            className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md bg-[#7aa2f7] px-5 text-xs font-bold text-[#16161e] shadow-sm transition-all hover:bg-[#7aa2f7]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <span>{isEvaluatingQuiz ? "Checking..." : isCurrentQChecked ? "Re-check Answer" : "Check Answer"}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </section>
-        ) : (
-          /* ==================== TRẠNG THÁI 3: CODE WORKSPACE (MỞ RỘNG TOÀN BỘ 10/12 CỘT CÒN LẠI) ==================== */
-          <section className="flex min-h-0 flex-col justify-between gap-3 lg:col-span-10">
+            </section>
+          ) : (
+          /* ==================== TRẠNG THÁI 3: CODE WORKSPACE (EXPANDED TO OCCUPY CENTER) ==================== */
+          <section className="flex min-h-0 flex-1 flex-col justify-between gap-2 overflow-hidden">
             {/* 1. KHUNG TRÊN: MONACO CODE EDITOR */}
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border-subtle bg-surface-secondary">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface-secondary">
               {/* Thanh Tab & Nút điều khiển Editor */}
-              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface px-3.5 py-2">
+              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border-subtle bg-surface px-3 py-1.5">
                 <div className="flex items-center gap-2">
-                  {/* Nút mở/thu gọn Problem Description Panel */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsProblemCollapsed((prev) => !prev)
-                      setMobileTab("problem")
-                    }}
-                    className={cn(
-                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-semibold transition-all",
-                      !isProblemCollapsed
-                        ? "border-cyan/50 bg-cyan/10 text-cyan shadow-[0_0_12px_rgba(125,207,255,0.18)]"
-                        : "border-border-subtle bg-surface-secondary text-text-primary hover:border-cyan/60 hover:text-cyan"
-                    )}
-                    title={isProblemCollapsed ? "Expand Problem Description" : "Collapse Problem Description"}
-                  >
-                    {isProblemCollapsed ? (
-                      <PanelLeftOpen className="size-3.5 text-cyan" />
-                    ) : (
-                      <PanelLeftClose className="size-3.5 text-cyan" />
-                    )}
-                    <span>Description</span>
-                  </button>
+                  {/* Nút mở Problem Description Panel khi bị thu gọn */}
+                  {isProblemCollapsed && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProblemCollapsed(false)
+                        setMobileTab("problem")
+                      }}
+                      className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-[#292e42] bg-[#16161e] px-2.5 text-[11px] font-semibold text-[#c0caf5] transition-colors hover:border-[#7aa2f7] hover:text-[#7aa2f7]"
+                      title="Expand Problem Description"
+                    >
+                      <PanelLeftOpen className="size-3.5 text-[#7aa2f7]" />
+                      <span>Expand Problem</span>
+                    </button>
+                  )}
 
                   {/* Segmented Switch on smaller screens (< lg) */}
-                  <div className="inline-flex lg:hidden rounded-lg border border-border-subtle bg-surface-secondary p-0.5 text-[11px]">
+                  <div className="inline-flex lg:hidden rounded-md border border-border-subtle bg-surface-secondary p-0.5 text-[11px]">
                     <button
                       type="button"
                       onClick={() => setMobileTab("problem")}
                       className={cn(
-                        "rounded-md px-2 py-0.5 font-medium transition-colors",
+                        "rounded px-2 py-0.5 font-medium transition-colors",
                         mobileTab === "problem"
-                          ? "bg-cyan/15 text-cyan font-bold"
+                          ? "bg-[#7aa2f7]/15 text-[#7aa2f7] font-bold"
                           : "text-text-muted hover:text-text-primary"
                       )}
                     >
@@ -1121,7 +1891,7 @@ export function WorkspaceView({
                       type="button"
                       onClick={() => setMobileTab("code")}
                       className={cn(
-                        "rounded-md px-2 py-0.5 font-medium transition-colors",
+                        "rounded px-2 py-0.5 font-medium transition-colors",
                         mobileTab === "code"
                           ? "bg-primary/15 text-primary font-bold"
                           : "text-text-muted hover:text-text-primary"
@@ -1131,12 +1901,13 @@ export function WorkspaceView({
                     </button>
                   </div>
 
-                  <div className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-surface-secondary px-3 py-1 text-xs font-medium text-text-primary">
-                    <span className="font-mono text-[11px] font-bold text-cyan">
+                  <div className="hidden sm:inline-flex items-center gap-2 rounded-md border border-[#292e42] bg-[#16161e] px-2.5 py-1 text-xs font-medium text-text-primary">
+                    <span className="font-mono text-[11px] font-bold text-[#7aa2f7]">
                       {taskDetail?.language || "C++"}
                     </span>
-                    <span>{taskDetail?.fileName || "solution.cpp"}</span>
-                    <X className="size-3 text-text-muted" />
+                    <span className="font-mono text-[11px] text-[#c0caf5]">
+                      {taskDetail?.fileName || "solution.cpp"}
+                    </span>
                   </div>
                 </div>
 
@@ -1150,37 +1921,27 @@ export function WorkspaceView({
                       )
                     }
                     className={cn(
-                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-semibold transition-all",
+                      "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-semibold transition-colors",
                       activeTool === "visualization"
-                        ? "border-cyan bg-cyan/15 text-cyan shadow-[0_0_14px_rgba(125,207,255,0.22)]"
-                        : "border-border-subtle bg-surface-secondary text-text-primary hover:border-cyan/60 hover:text-cyan"
+                        ? "border-[#7aa2f7]/60 bg-[#7aa2f7]/15 text-[#7aa2f7]"
+                        : "border-border-subtle bg-surface-secondary text-text-primary hover:border-[#7aa2f7]/60 hover:text-[#7aa2f7]"
                     )}
                   >
-                    <Box className="size-3.5 text-cyan" />
+                    <Box className="size-3.5 text-[#7aa2f7]" />
                     <span>Visualization</span>
                   </button>
 
-                  <button
-                    type="button"
-                    className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-border-subtle bg-surface-secondary px-2.5 font-mono text-[11px] text-text-primary"
-                  >
-                    <span>{taskDetail?.language || "C++"}</span>
-                    <ChevronDown className="size-3 text-text-muted" />
-                  </button>
+                  <div className="hidden sm:inline-flex h-7 items-center rounded-md border border-border-subtle bg-surface-secondary px-2.5 font-mono text-[11px] text-text-muted">
+                    <span>C++17</span>
+                  </div>
 
                   <button
                     type="button"
                     disabled={executionStatus === "running"}
                     onClick={handleRunCode}
-                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-[11px] font-semibold text-text-primary transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-[11px] font-semibold text-text-primary transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <Play
-                      className={`size-3 text-primary ${
-                        executionStatus === "running" && activeAction === "run"
-                          ? "animate-pulse"
-                          : ""
-                      }`}
-                    />
+                    <Play className="size-3 text-primary" />
                     <span>
                       {executionStatus === "running" && activeAction === "run"
                         ? "Running..."
@@ -1192,15 +1953,9 @@ export function WorkspaceView({
                     type="button"
                     disabled={executionStatus === "running"}
                     onClick={handleSubmitCode}
-                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[11px] font-bold text-surface-secondary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3.5 text-[11px] font-bold text-surface-secondary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <Send
-                      className={`size-3 ${
-                        executionStatus === "running" && activeAction === "submit"
-                          ? "animate-pulse"
-                          : ""
-                      }`}
-                    />
+                    <Send className="size-3" />
                     <span>
                       {executionStatus === "running" && activeAction === "submit"
                         ? "Submitting..."
@@ -1238,12 +1993,12 @@ export function WorkspaceView({
                 >
                   {/* Thanh chỉ báo mờ trỏ tới dòng code lỗi khi Run Code bị fail */}
                   {codeRunOutcome === "warning" && (
-                    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/35 bg-gradient-to-r from-danger/18 via-warning/10 to-transparent px-3.5 py-1.5 text-[11px]">
+                    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-danger/30 bg-danger/10 px-3.5 py-1.5 text-[11px]">
                       <div className="flex min-w-0 items-center gap-2 text-warning">
-                        <span className="inline-flex items-center gap-1 rounded bg-danger/25 px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-primary">
+                        <span className="inline-flex items-center gap-1 rounded bg-danger/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-text-primary tabular-nums">
                           ↳ Line {socraticProfile.faultyLine.line}
                         </span>
-                        <span className="truncate font-mono text-[10.5px] text-text-primary/90">
+                        <span className="truncate font-mono text-[10.5px] text-text-primary">
                           {socraticProfile.faultyLine.codeToken}
                         </span>
                         <span className="hidden truncate text-warning/90 sm:inline">
@@ -1256,7 +2011,7 @@ export function WorkspaceView({
                         onClick={() =>
                           handleFocusFaultyLine(socraticProfile.faultyLine.line)
                         }
-                        className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-danger/50 bg-surface-secondary/85 px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan transition-colors hover:border-cyan hover:text-text-primary"
+                        className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-danger/40 bg-surface px-2 py-0.5 font-mono text-[10px] font-semibold text-cyan transition-colors hover:border-cyan hover:text-text-primary"
                       >
                         <Target className="size-3 text-danger" />
                         <span>
@@ -1318,11 +2073,37 @@ export function WorkspaceView({
               status={executionStatus}
               activeAction={activeAction}
               executionResult={executionResult}
+              sampleTestCases={resolvedProblem?.examples}
               isOutdated={isOutdated}
               onRunCode={handleRunCode}
               onFocusFaultyLine={handleFocusFaultyLine}
             />
           </section>
+        )}
+        </div>
+
+        {/* -------------------- CỘT 3 (PHẢI): DOCKED SOCRATIC AI TUTOR PANEL -------------------- */}
+        {activeTool === "tutor" && (
+          <aside
+            aria-label="Socratic AI Tutor Docked Panel"
+            className="w-[340px] xl:w-[360px] h-full shrink-0 flex flex-col border border-[#292e42] bg-[#16161e] rounded-lg overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-right-4"
+          >
+            <SocraticTutorPanel
+              nodeId={node.id}
+              nodeLabel={node.label}
+              nodeComplexity={node.complexity || "O(N)"}
+              taskId={activeTask.id}
+              activeMode={activeMode}
+              taskDetail={taskDetail}
+              selectedOption={currentQSelectedOption}
+              selectedQuizOptionObj={selectedQuizOptionObj}
+              codeRunOutcome={codeRunOutcome}
+              hintsRemaining={hintsRemaining}
+              onUpdateHintsRemaining={handleUpdateHintsRemaining}
+              onFocusFaultyLine={handleFocusFaultyLine}
+              onClose={() => setActiveTool(null)}
+            />
+          </aside>
         )}
       </main>
 
@@ -1330,7 +2111,7 @@ export function WorkspaceView({
       {activeMode === "coding" && activeTool === "visualization" && (
         <div
           className={cn(
-            "fixed top-[108px] right-6 z-50 flex flex-col rounded-2xl border border-border bg-surface-secondary/98 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.65)] backdrop-blur-xl transition-all duration-200 animate-in fade-in zoom-in-95",
+            "fixed top-[108px] right-6 z-50 flex flex-col rounded-xl border border-border-subtle bg-surface p-4 shadow-xl transition-all duration-150 animate-in fade-in zoom-in-95",
             isVisExpanded
               ? "w-[min(540px,calc(100vw-2rem))]"
               : "w-[min(450px,calc(100vw-2rem))]"
@@ -1680,30 +2461,6 @@ export function WorkspaceView({
             </div>
           )}
         </div>
-      )}
-
-      {/* ==================== CỬA SỔ NỔI 2: SOCRATIC AI TUTOR FLOATING SIDE DRAWER ==================== */}
-      {activeTool === "tutor" && (
-        <aside
-          aria-label="Socratic AI Tutor Drawer"
-          className="fixed top-[102px] right-5 bottom-4 z-50 flex w-[min(460px,calc(100vw-2.5rem))] flex-col transition-all duration-200 animate-in fade-in slide-in-from-right-5"
-        >
-          <SocraticTutorPanel
-            nodeId={node.id}
-            nodeLabel={node.label}
-            nodeComplexity={node.complexity || "O(N)"}
-            taskId={activeTask.id}
-            activeMode={activeMode}
-            taskDetail={taskDetail}
-            selectedOption={selectedOption}
-            selectedQuizOptionObj={selectedQuizOptionObj}
-            codeRunOutcome={codeRunOutcome}
-            hintsRemaining={hintsRemaining}
-            onUpdateHintsRemaining={handleUpdateHintsRemaining}
-            onFocusFaultyLine={handleFocusFaultyLine}
-            onClose={() => setActiveTool(null)}
-          />
-        </aside>
       )}
     </div>
   )

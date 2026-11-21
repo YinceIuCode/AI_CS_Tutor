@@ -201,6 +201,93 @@
   }
 }
 
+/* Custom Sleek Developer Scrollbar (Global & Containers) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-subtle, #292E42) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-subtle, #292E42);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border, #3B4261);
+}
+
+[data-theme="light"] * {
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background-color: #94A3B8;
+}
+
+/* React Flow Custom Overrides to Prevent Default White Node Leak */
+.react-flow__node {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.react-flow__handle {
+  background: var(--bg-surface) !important;
+}
+
+/* Hide Next.js Dev Indicator completely so it never overlaps UI controls */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dev-overlay] {
+  display: none !important;
+}
+
+/* Dedicated sleek scrollbar utility for Workspace Description & Task Columns */
+.custom-description-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: #292E42 transparent !important;
+}
+
+.custom-description-scrollbar::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+}
+
+.custom-description-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.custom-description-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #292E42 !important;
+  border-radius: 9999px !important;
+}
+
+.custom-description-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #3B4261 !important;
+}
+
+[data-theme="light"] .custom-description-scrollbar {
+  scrollbar-color: #CBD5E1 transparent !important;
+}
+
+[data-theme="light"] .custom-description-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1 !important;
+}
+
 /* Monaco Editor Faulty Line Highlight & Translucent Pointer Decorations */
 .monaco-editor .algopath-faulty-line-bg {
   background: linear-gradient(

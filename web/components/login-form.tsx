@@ -47,6 +47,7 @@ export function LoginForm({
 }: LoginFormProps) {
   const router = useRouter()
   const {
+    currentUser,
     isAuthenticated,
     isInitializing,
     isLoading,
@@ -58,6 +59,7 @@ export function LoginForm({
   const [activeTab, setActiveTab] = React.useState<AuthTab>(defaultTab)
   const [showPassword, setShowPassword] = React.useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
+  const [lockCountdown, setLockCountdown] = React.useState<number>(0)
 
   // Controlled form state
   const [fullName, setFullName] = React.useState("")
@@ -69,12 +71,31 @@ export function LoginForm({
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [infoMessage, setInfoMessage] = React.useState<string | null>(null)
 
-  // Nếu người dùng đã có phiên đăng nhập và truy cập /auth thì chuyển về /roadmap
+  // Countdown timer for 429 Rate Limiting
+  React.useEffect(() => {
+    if (lockCountdown <= 0) return
+    const interval = setInterval(() => {
+      setLockCountdown((prev) => {
+        if (prev <= 1) {
+          setErrorMessage(null)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [lockCountdown])
+
+  // Nếu người dùng đã có phiên đăng nhập và truy cập /auth thì phân quyền chuyển trang
   React.useEffect(() => {
     if (!isInitializing && isAuthenticated) {
-      router.replace(AUTH_LINKS.afterLoginRedirect)
+      if (currentUser?.role === "admin") {
+        router.replace("/admin")
+      } else {
+        router.replace(AUTH_LINKS.afterLoginRedirect)
+      }
     }
-  }, [isInitializing, isAuthenticated, router])
+  }, [isInitializing, isAuthenticated, currentUser, router])
 
   const handleTabSwitch = (nextTab: AuthTab) => {
     setActiveTab(nextTab)
@@ -82,15 +103,28 @@ export function LoginForm({
     setInfoMessage(null)
   }
 
+  const handleQuickFill = (demoEmail: string, demoPass: string) => {
+    setActiveTab("login")
+    setEmail(demoEmail)
+    setPassword(demoPass)
+    setErrorMessage(null)
+    setInfoMessage(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (lockCountdown > 0) return
     setErrorMessage(null)
     setInfoMessage(null)
 
     try {
       if (activeTab === "login") {
-        await login(email, password)
-        router.push(AUTH_LINKS.afterLoginRedirect)
+        const loggedUser = await login(email, password)
+        if (loggedUser?.role === "admin") {
+          router.push("/admin")
+        } else {
+          router.push(AUTH_LINKS.afterLoginRedirect)
+        }
       } else {
         await register({
           fullName,
@@ -100,12 +134,22 @@ export function LoginForm({
         })
         router.push(AUTH_LINKS.afterSignupRedirect)
       }
-    } catch (err) {
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : "Authentication failed. Please check your input."
-      )
+    } catch (err: unknown) {
+      const authErr = err as { status?: number; retryAfter?: number; message?: string }
+      if (authErr?.status === 429 || authErr?.retryAfter) {
+        const retrySec = Number(authErr.retryAfter) || 30
+        setLockCountdown(retrySec)
+        setErrorMessage(
+          authErr.message ||
+            `Locked due to multiple failed attempts. Please wait ${retrySec} seconds.`
+        )
+      } else {
+        setErrorMessage(
+          err instanceof Error
+            ? err.message
+            : "Authentication failed. Please check your input."
+        )
+      }
     }
   }
 
@@ -145,18 +189,9 @@ export function LoginForm({
       {...props}
     >
       {/* Hiệu ứng quầng sáng nền Tokyo Night */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[15%] left-[8%] h-[400px] w-[400px] rounded-full bg-primary/12 blur-[130px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute right-[10%] bottom-[12%] h-[420px] w-[420px] rounded-full bg-cyan/10 blur-[140px]"
-      />
-
       {/* ==================== KHUNG THẺ CHÍNH 2 CỘT CĂN GIỮA MÀN HÌNH ==================== */}
       <main className="relative z-10 mx-auto flex w-full max-w-[1100px] items-center justify-center">
-        <div className="grid w-full grid-cols-1 overflow-hidden rounded-2xl border border-border-subtle bg-surface/90 shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md lg:grid-cols-12">
+        <div className="grid w-full grid-cols-1 overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-2xl lg:grid-cols-12">
           {/* -------------------- CỘT TRÁI: THƯƠNG HIỆU, THÔNG ĐIỆP & CÂY NHỊ PHÂN -------------------- */}
           <div className="flex flex-col justify-between border-b border-border-subtle bg-surface-secondary/45 p-6 sm:p-8 lg:col-span-6 lg:border-r lg:border-b-0 lg:px-10 lg:py-8">
             <div>
@@ -491,9 +526,9 @@ export function LoginForm({
                   aria-selected={activeTab === "login"}
                   onClick={() => handleTabSwitch("login")}
                   className={cn(
-                    "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
+                    "cursor-pointer rounded-md py-1.5 text-xs font-semibold transition-colors",
                     activeTab === "login"
-                      ? "bg-primary font-bold text-surface-secondary shadow-[0_0_20px_rgba(122,162,247,0.3)]"
+                      ? "bg-primary font-bold text-surface-secondary shadow-sm"
                       : "text-text-secondary hover:text-text-primary"
                   )}
                 >
@@ -505,9 +540,9 @@ export function LoginForm({
                   aria-selected={activeTab === "signup"}
                   onClick={() => handleTabSwitch("signup")}
                   className={cn(
-                    "cursor-pointer rounded-full py-2 text-xs font-semibold transition-all",
+                    "cursor-pointer rounded-md py-1.5 text-xs font-semibold transition-colors",
                     activeTab === "signup"
-                      ? "bg-primary font-bold text-surface-secondary shadow-[0_0_20px_rgba(122,162,247,0.3)]"
+                      ? "bg-primary font-bold text-surface-secondary shadow-sm"
                       : "text-text-secondary hover:text-text-primary"
                   )}
                 >
@@ -519,10 +554,10 @@ export function LoginForm({
               {errorMessage && (
                 <div
                   role="alert"
-                  className="mt-3 flex items-start gap-2 rounded-xl border border-danger/60 bg-danger/12 px-3 py-2 text-[11px] leading-snug text-warning"
+                  className="mt-3 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-[11px] leading-snug text-red-200 backdrop-blur-sm"
                 >
-                  <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-danger" />
-                  <span>{errorMessage}</span>
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-red-400" />
+                  <span className="grow font-medium">{errorMessage}</span>
                 </div>
               )}
 
@@ -632,6 +667,32 @@ export function LoginForm({
                         )}
                       </button>
                     </div>
+
+                    {/* Quick Demo Fill Pills */}
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] text-text-muted">Quick fill:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickFill("student@offbyone.demo", "Demo1234")}
+                        className="cursor-pointer rounded-full border border-border-subtle bg-surface-secondary/70 px-2 py-0.5 text-[10px] font-mono text-cyan transition-colors hover:border-cyan/50 hover:bg-cyan/10"
+                      >
+                        Student Demo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickFill("tutor@offbyone.demo", "Tutor1234")}
+                        className="cursor-pointer rounded-full border border-border-subtle bg-surface-secondary/70 px-2 py-0.5 text-[10px] font-mono text-primary transition-colors hover:border-primary/50 hover:bg-primary/10"
+                      >
+                        Tutor Demo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickFill("admin@offbyone.demo", "Admin1234")}
+                        className="cursor-pointer rounded-full border border-border-subtle bg-surface-secondary/70 px-2 py-0.5 text-[10px] font-mono text-[#bb9af7] transition-colors hover:border-[#bb9af7]/50 hover:bg-[#bb9af7]/10"
+                      >
+                        Admin Demo
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -714,19 +775,30 @@ export function LoginForm({
                 {/* Nút Submit chính (Log In / Sign Up) */}
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="mt-1 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-surface-secondary shadow-[0_0_25px_rgba(122,162,247,0.25)] transition-all hover:bg-primary-hover hover:shadow-[0_0_32px_rgba(122,162,247,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={isLoading || lockCountdown > 0}
+                  className={cn(
+                    "mt-1 inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-primary text-xs font-semibold text-surface-secondary shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70",
+                    lockCountdown > 0 &&
+                      "border border-red-500/40 bg-red-500/15 text-red-200 hover:bg-red-500/15 disabled:opacity-100"
+                  )}
                 >
                   {isLoading && <Loader2 className="size-4 animate-spin" />}
-                  <span>
-                    {isLoading
-                      ? activeTab === "login"
-                        ? "Logging in..."
-                        : "Creating account..."
-                      : activeTab === "login"
-                        ? "Log In"
-                        : "Sign Up"}
-                  </span>
+                  {lockCountdown > 0 ? (
+                    <span className="flex items-center gap-1.5 font-mono text-xs font-medium text-red-200">
+                      <Lock className="size-3.5 text-red-400" />
+                      Locked due to multiple failed attempts (Wait {lockCountdown}s...)
+                    </span>
+                  ) : (
+                    <span>
+                      {isLoading
+                        ? activeTab === "login"
+                          ? "Logging in..."
+                          : "Creating account..."
+                        : activeTab === "login"
+                          ? "Log In"
+                          : "Sign Up"}
+                    </span>
+                  )}
                 </button>
 
                 {/* Đường kẻ phân cách "or continue with" */}

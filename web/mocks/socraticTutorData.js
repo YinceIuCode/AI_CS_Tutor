@@ -144,7 +144,7 @@ export const SOCRATIC_NODE_PROFILES = {
         ["2 (Normal)", "Ln 20", "Node* T2 = x->right", "Node(30)", "Node(20)", "T2 = Node(25)"],
         ["3 (Normal)", "Ln 22-23", "x->right = y; y->left = T2", "y->left=25", "x->right=30", "Rewired O(1)"],
         ["4 (Test #5)", "Ln 19", "Node* x = y->left", "Node(10)", "nullptr", "y has no left child!"],
-        ["5 (Crash)", "Ln 20", "Node* T2 = x->right", "Node(10)", "nullptr", "💥 SIGSEGV (null->right)"],
+        ["5 (Crash)", "Ln 20", "Node* T2 = x->right", "Node(10)", "nullptr", "[SIGSEGV] null->right dereference"],
       ],
     },
   },
@@ -282,8 +282,8 @@ export const SOCRATIC_NODE_PROFILES = {
       rows: [
         ["Depth 0", "Ln 11", "Node(20)", "25", "25 > 20 → recurse root->right"],
         ["Depth 1", "Ln 11", "Node(30)", "25", "25 < 30 → recurse root->left"],
-        ["Depth 2 (Bug)", "Ln 11", "nullptr", "25", "💥 Dereferences nullptr->key"],
-        ["Depth 2 (Fixed)", "Ln 10", "nullptr", "25", "✓ Returns new TreeNode(25)"],
+        ["Depth 2 (Bug)", "Ln 11", "nullptr", "25", "[ERROR] Dereferences nullptr->key"],
+        ["Depth 2 (Fixed)", "Ln 10", "nullptr", "25", "[OK] Returns new TreeNode(25)"],
       ],
     },
   },
@@ -674,7 +674,7 @@ export function getSocraticTutorProfile(nodeId, nodeLabel = "Algorithm", complex
         ["1", "Ln 12", "nums = [4, 2, 9, 1, 7]", "n = 5", "Non-empty check passed"],
         ["2", `Ln ${extra.faultyLine.line}`, "i = 0", "result = 4", "Initial baseline set"],
         ["3", "Ln 16-18", "i = 1..4", "result = 9", "Optimal O(N) pass"],
-        ["4 (Edge #5)", `Ln ${extra.faultyLine.line}`, "Boundary / 1-element", "Needs explicit guard", "⚠️ Verify boundary invariant"],
+        ["4 (Edge #5)", `Ln ${extra.faultyLine.line}`, "Boundary / 1-element", "Needs explicit guard", "[WARN] Verify boundary invariant"],
       ],
     },
   }
@@ -701,7 +701,7 @@ export function generateCustomSocraticReply({
   ) {
     return {
       isSpoilerBlocked: true,
-      reply: `🛡️ **Spoiler-Free Guardrail Active:** As your Socratic Tutor, I won't hand over the full solution directly—that would take away your "aha!" moment! Instead, look at **Line ${profile.faultyLine.line}** (\`${profile.faultyLine.codeToken}\`): ${profile.faultyLine.suggestedFixHint}`,
+      reply: `**Spoiler-Free Guardrail Active:** As your Socratic Tutor, I won't hand over the full solution directly—that would take away your "aha!" moment! Instead, look at **Line ${profile.faultyLine.line}** (\`${profile.faultyLine.codeToken}\`): ${profile.faultyLine.suggestedFixHint}`,
       followUp: "What happens to your pointers/variables right before that line executes?",
     }
   }

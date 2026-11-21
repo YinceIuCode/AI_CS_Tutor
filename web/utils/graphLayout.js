@@ -25,8 +25,20 @@ const PLANAR_TRACK_SLOTS = {
   "avl-tree": { col: 4, row: 0 },
 }
 
-const COLUMN_STEP_X = 256
-const ROW_STEP_Y = 166
+/**
+ * Planar sequential layout for the 5 CS102 OOP C++ nodes:
+ * Col 0 -> Col 1 -> Col 2 -> Col 3 -> Col 4 along middle row (row 1)
+ */
+const PLANAR_OOP_TRACK_SLOTS = {
+  "oop-classes-encapsulation": { col: 0, row: 1 },
+  "oop-constructors-raii": { col: 1, row: 1 },
+  "oop-operator-overloading": { col: 2, row: 1 },
+  "oop-inheritance-polymorphism": { col: 3, row: 1 },
+  "oop-templates-smart-pointers": { col: 4, row: 1 },
+}
+
+const COLUMN_STEP_X = 248
+const ROW_STEP_Y = 172
 
 /**
  * Determine edge visual state ("completed" | "active" | "locked") based on source and target node statuses.
@@ -94,10 +106,17 @@ export function buildLayoutedRoadmapGraph(roadmapNodes = [], options = {}) {
 
       const strokeColor =
         edgeState === "completed"
-          ? "var(--color-success, #9ECE6A)"
+          ? "#10b981"
           : edgeState === "active"
-            ? "var(--color-cyan, #7DCFFF)"
-            : "var(--color-border, #414868)"
+            ? "#60a5fa"
+            : "#414868"
+
+      const strokeOpacity =
+        edgeState === "completed"
+          ? 0.9
+          : edgeState === "active"
+            ? 0.95
+            : 0.75
 
       rawEdges.push({
         id: `edge-${sourceId}-${targetNode.id}`,
@@ -107,12 +126,13 @@ export function buildLayoutedRoadmapGraph(roadmapNodes = [], options = {}) {
         animated: edgeState === "active",
         style: {
           stroke: strokeColor,
-          strokeWidth: edgeState === "locked" ? 2 : 2.5,
+          strokeWidth: 2.25,
+          opacity: strokeOpacity,
           strokeDasharray:
             edgeState === "locked"
-              ? "6 5"
+              ? "5 5"
               : edgeState === "active"
-                ? "7 4"
+                ? "5 5"
                 : undefined,
         },
       })
@@ -121,8 +141,23 @@ export function buildLayoutedRoadmapGraph(roadmapNodes = [], options = {}) {
 
   dagre.layout(dagreGraph)
 
+  const isDsaPlanarTree =
+    roadmapNodes.length > 0 &&
+    roadmapNodes.every((n) => PLANAR_TRACK_SLOTS[n.id] !== undefined)
+
+  const isOopPlanarTree =
+    roadmapNodes.length > 0 &&
+    roadmapNodes.every((n) => PLANAR_OOP_TRACK_SLOTS[n.id] !== undefined)
+
   const layoutedNodes = roadmapNodes.map((node) => {
-    const planarSlot = isHorizontal ? PLANAR_TRACK_SLOTS[node.id] : null
+    let planarSlot = null
+    if (isHorizontal) {
+      if (isDsaPlanarTree) {
+        planarSlot = PLANAR_TRACK_SLOTS[node.id]
+      } else if (isOopPlanarTree) {
+        planarSlot = PLANAR_OOP_TRACK_SLOTS[node.id]
+      }
+    }
     const dagreNode = dagreGraph.node(node.id)
 
     const position = planarSlot

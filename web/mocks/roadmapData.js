@@ -4,7 +4,7 @@
  */
 
 export const INITIAL_KNOWLEDGE_BASE_DOC = {
-  id: "doc-cs101-hcmus",
+  id: "doc-dsa-syllabus",
   name: "CS101_DSA_Syllabus_HCMUS.pdf",
   size: "2.4 MB",
   chunks: 48,
@@ -338,7 +338,7 @@ export const MOCK_ROADMAP_NODES = [
       "Comparison and non-comparison sorting: Merge Sort, Quick Sort partitioning, Heap Sort, stability analysis, and lower bounds.",
     status: "locked",
     complexity: "O(N log N)",
-    prerequisites: ["arrays-strings", "complexity-analysis"],
+    prerequisites: ["complexity-analysis", "arrays-strings"],
     progress: 0,
     totalTasks: 3,
     completedTasks: 0,
@@ -429,4 +429,229 @@ export const EMPTY_PLACEHOLDER_EDGES = [
   { from: 3, to: 6 },
   { from: 4, to: 5 },
   { from: 5, to: 6 },
+]
+
+/**
+ * 5 Core Roadmap Nodes for Object-Oriented Programming (CS102 OOP C++).
+ */
+export const MOCK_OOP_ROADMAP_NODES = [
+  {
+    id: "oop-classes-encapsulation",
+    shortCode: "01",
+    label: "Classes & Encapsulation",
+    description:
+      "Access specifiers (public, private, protected), getters/setters, class vs struct, this pointer, and const member functions.",
+    status: "completed",
+    complexity: "O(1)",
+    prerequisites: [],
+    progress: 100,
+    totalTasks: 3,
+    completedTasks: 3,
+    tasks: [
+      {
+        id: "oop-classes-encapsulation-task-1",
+        title: "Core Theory: Encapsulation & Class Invariants",
+        description:
+          "Understand data hiding, access control, and member function memory layout in modern C++.",
+        status: "completed",
+        type: "theory",
+      },
+      {
+        id: "oop-classes-encapsulation-task-2",
+        title: "Quiz: Const Member Functions & Access Specifiers",
+        description:
+          "Identify valid const member function declarations and constness invariants.",
+        status: "completed",
+        type: "quiz",
+      },
+      {
+        id: "oop-classes-encapsulation-task-3",
+        title: "Code: Student Class with Grade Encapsulation",
+        description:
+          "Implement a Student class with encapsulated private GPA, getter/setter validation, and formatted display.",
+        status: "completed",
+        type: "coding",
+      },
+    ],
+  },
+  {
+    id: "oop-constructors-raii",
+    shortCode: "02",
+    label: "Constructors, Destructors & RAII",
+    description:
+      "Default/parameterized constructors, initializer lists, copy constructor, destructor, and the Rule of Three/Five for dynamic memory.",
+    status: "current",
+    complexity: "O(1) / O(N) copy",
+    prerequisites: ["oop-classes-encapsulation"],
+    progress: 67,
+    totalTasks: 3,
+    completedTasks: 2,
+    tasks: [
+      {
+        id: "oop-constructors-raii-task-1",
+        title: "Core Theory: RAII & Lifetime Management",
+        description:
+          "Resource Acquisition Is Initialization (RAII) ties resource ownership to object lifetime to guarantee zero memory leaks.",
+        status: "completed",
+        type: "theory",
+      },
+      {
+        id: "oop-constructors-raii-task-2",
+        title: "Quiz: Copy Constructor & Shallow vs Deep Copy",
+        description:
+          "Analyze pointer aliasing and double-free exceptions under default shallow copying.",
+        status: "completed",
+        type: "quiz",
+      },
+      {
+        id: "oop-constructors-raii-task-3",
+        title: "Code: Dynamic IntArray with Rule of Three",
+        description:
+          "Implement copy constructor, copy assignment operator, and destructor for dynamic memory allocation.",
+        status: "current",
+        type: "coding",
+      },
+    ],
+  },
+  {
+    id: "oop-operator-overloading",
+    shortCode: "03",
+    label: "Operator Overloading",
+    description:
+      "Arithmetic operators (+, -, *), stream operators (<<, >>), comparison operators (==, <), and friend functions.",
+    status: "current",
+    complexity: "O(1)",
+    prerequisites: ["oop-classes-encapsulation"],
+    progress: 0,
+    totalTasks: 3,
+    completedTasks: 0,
+    tasks: [
+      {
+        id: "oop-operator-overloading-task-1",
+        title: "Core Theory: Member vs Friend Operator Overloading",
+        description:
+          "Contrast member operators vs friend function operators and preserve mathematical semantic symmetry.",
+        status: "current",
+        type: "theory",
+      },
+      {
+        id: "oop-operator-overloading-task-2",
+        title: "Quiz: Stream Operator Signatures (ostream & istream)",
+        description:
+          "Evaluate return-by-reference chaining for operator<< and stream state flags.",
+        status: "locked",
+        type: "quiz",
+      },
+      {
+        id: "oop-operator-overloading-task-3",
+        title: "Code: Complex Number Arithmetic Overloads",
+        description:
+          "Overload operator+ and operator<< for a Complex class with Cartesian coordinates.",
+        status: "locked",
+        type: "coding",
+      },
+    ],
+  },
+  {
+    id: "oop-inheritance-polymorphism",
+    shortCode: "04",
+    label: "Inheritance & Polymorphism",
+    description:
+      "Public/private inheritance, virtual functions, vtable mechanism, pure virtual functions, and abstract base classes.",
+    status: "locked",
+    complexity: "O(1) vtable",
+    prerequisites: ["oop-operator-overloading"],
+    progress: 0,
+    totalTasks: 3,
+    completedTasks: 0,
+    tasks: [
+      {
+        id: "oop-inheritance-polymorphism-task-1",
+        title: "Core Theory: VTable & Dynamic Binding",
+        description:
+          "Analyze the runtime dispatch mechanism of virtual method tables (vptr and vtable).",
+        status: "locked",
+        type: "theory",
+      },
+      {
+        id: "oop-inheritance-polymorphism-task-2",
+        title: "Quiz: Pure Virtual Functions & Abstract Classes",
+        description:
+          "Identify compile-time errors when attempting to instantiate incomplete abstract classes.",
+        status: "locked",
+        type: "quiz",
+      },
+      {
+        id: "oop-inheritance-polymorphism-task-3",
+        title: "Code: Shape Hierarchy (Circle & Rectangle)",
+        description:
+          "Design an abstract Shape base class with pure virtual calculateArea() and calculatePerimeter().",
+        status: "locked",
+        type: "coding",
+      },
+    ],
+  },
+  {
+    id: "oop-templates-smart-pointers",
+    shortCode: "05",
+    label: "Templates & Smart Pointers",
+    description:
+      "Function templates, class templates, std::unique_ptr, std::shared_ptr, and RAII modern memory ownership.",
+    status: "locked",
+    complexity: "O(1)",
+    prerequisites: ["oop-inheritance-polymorphism"],
+    progress: 0,
+    totalTasks: 3,
+    completedTasks: 0,
+    tasks: [
+      {
+        id: "oop-templates-smart-pointers-task-1",
+        title: "Core Theory: Unique vs Shared Ownership",
+        description:
+          "Master exclusive ownership semantics with std::unique_ptr and reference-counted std::shared_ptr.",
+        status: "locked",
+        type: "theory",
+      },
+      {
+        id: "oop-templates-smart-pointers-task-2",
+        title: "Quiz: Move Semantics & std::move",
+        description:
+          "Understand why unique_ptr cannot be copied and how std::move transfers ownership.",
+        status: "locked",
+        type: "quiz",
+      },
+      {
+        id: "oop-templates-smart-pointers-task-3",
+        title: "Code: SafeStack Template with std::unique_ptr",
+        description:
+          "Implement a generic LIFO stack bounded by smart pointer nodes guaranteeing zero leaks.",
+        status: "locked",
+        type: "coding",
+      },
+    ],
+  },
+]
+
+/**
+ * Syllabus / course datasets for Multi-PDF switching.
+ */
+export const SAMPLE_COURSES = [
+  {
+    id: "doc-dsa-syllabus",
+    name: "CS101_DSA_Syllabus_HCMUS.pdf",
+    size: "2.4 MB",
+    chunks: 48,
+    status: "indexed",
+    courseTitle: "CS101 - Data Structures & Algorithms (HCMUS)",
+    nodes: MOCK_ROADMAP_NODES,
+  },
+  {
+    id: "doc-oop-syllabus",
+    name: "CS102_OOP_Cpp_Syllabus_HCMUS.pdf",
+    size: "2.8 MB",
+    chunks: 52,
+    status: "indexed",
+    courseTitle: "CS102 - Object-Oriented Programming with C++ (HCMUS)",
+    nodes: MOCK_OOP_ROADMAP_NODES,
+  },
 ]

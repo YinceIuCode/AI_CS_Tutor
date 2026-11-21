@@ -1,78 +1,56 @@
 import uuid
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Response, HTTPException, status
 from modules.common.request import SignupRequest
 from modules.common.response import success_response, error_response
-from modules.authenticate.login import create_jwt_token
-from modules.common.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from modules.authenticate.security import (
+    hash_password,
+    create_access_token,
+    create_refresh_token,
+    REFRESH_TOKEN_EXPIRE_SECONDS,
+    ACCESS_TOKEN_EXPIRE_SECONDS,
+)
 from services.database.database import DatabaseService
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
+
 @router.post("/register")
 @router.post("/signup")
 def signup(request: SignupRequest, response: Response):
-    # 1. Validation
-    if not request.fullName or not request.fullName.strip():
-        return error_response("Vui lòng nhập họ và tên.", status_code=status.HTTP_400_BAD_REQUEST)
-
-    norm_email = request.email.strip().lower()
-    if not norm_email or "@" not in norm_email:
-        return error_response("Email không hợp lệ.", status_code=status.HTTP_400_BAD_REQUEST)
-
-    if len(request.password) < 8:
-        return error_response("Mật khẩu phải chứa ít nhất 8 ký tự.", status_code=status.HTTP_400_BAD_REQUEST)
-
-    if request.confirmPassword and request.password != request.confirmPassword:
-        return error_response("Mật khẩu xác nhận không khớp.", status_code=status.HTTP_400_BAD_REQUEST)
-
-    # 2. Check if email already exists
-    existing = DatabaseService.get_user_by_email(norm_email)
-    if existing:
-        return error_response("Email này đã được đăng ký tài khoản.", status_code=status.HTTP_400_BAD_REQUEST)
-
-    # 3. Create user in Supabase
-    new_user_id = str(uuid.uuid4())
-    password_hash = f"offbyone_demo_hash::{norm_email}::{request.password}"
-
-    new_user = {
-        "id": new_user_id,
-        "email": norm_email,
-        "full_name": request.fullName.strip(),
-        "password_hash": password_hash,
-        "role": "student",
-        "account_type": "registered"
-    }
-
-    created = DatabaseService.create_user(new_user)
-    if not created:
-        return error_response("Không thể tạo tài khoản trên máy chủ CSDL.", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # 4. Initialize empty user_progress
-    DatabaseService.upsert_user_progress({
-        "user_id": new_user_id,
-        "completed_tasks": {},
-        "quiz_answers": {},
-        "code_drafts": {},
-        "hints_remaining": 3
-    })
-
-    # 5. Issue token & set cookie
-    token = create_jwt_token(new_user_id, norm_email, "student")
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax",
-        secure=False
-    )
-
-    public_user = {
-        "id": new_user_id,
-        "email": norm_email,
-        "fullName": request.fullName.strip(),
-        "role": "student",
-        "accountType": "registered",
-        "token": token
-    }
-    return success_response({"user": public_user}, message="Đăng ký tài khoản thành công!", status_code=status.HTTP_201_CREATED)
+    """
+    TODO:
+    1. Nhiệm vụ:
+       - Đăng ký tài khoản người dùng mới (vai trò mặc định: student, loại tài khoản: registered).
+       - Validate định dạng dữ liệu (email hợp lệ, mật khẩu >= 8 ký tự, mật khẩu xác nhận trùng khớp).
+       - Kiểm tra email chưa tồn tại trong hệ thống.
+       - Mã hóa mật khẩu bằng bcrypt và lưu tài khoản mới vào database Supabase.
+       - Khởi tạo bản ghi tiến độ rỗng (user_progress) cho tài khoản mới.
+       - Cấp cặp Token kép (Access Token 15 phút, Refresh Token 7 ngày), gán HttpOnly Cookie và trả về thông tin user.
+    2. Input / Output:
+       - Input: SignupRequest {fullName: str, email: str, password: str, confirmPassword: Optional[str]}, response: Response.
+       - Output: JSON success_response chứa {"user": {id, email, fullName, role, accountType, token}, "accessToken": str}, HTTP 201 Created.
+       - Lỗi: 400 Bad Request (dữ liệu không hợp lệ hoặc email đã tồn tại), 500 Internal Server Error (lỗi ghi database).
+    3. Bảng Supabase liên quan:
+       - public.users:
+         + id: uuid (UUIDv4)
+         + email: text (unique, lowercase)
+         + full_name: text
+         + password_hash: text (bcrypt hash $2b$12$...)
+         + role: text ("student")
+         + account_type: text ("registered")
+       - public.user_progress:
+         + user_id: uuid (foreign key users.id)
+         + completed_tasks: jsonb (mặc định {})
+         + quiz_answers: jsonb (mặc định {})
+         + code_drafts: jsonb (mặc định {})
+         + hints_remaining: jsonb hoặc integer (mặc định 3 hoặc {"current": 3, "max": 3})
+    4. Các bước gợi ý:
+       - Step 1: Validate đầu vào (fullName không rỗng, email hợp lệ, len(password) >= 8, password == confirmPassword).
+       - Step 2: Gọi DatabaseService.get_user_by_email(email). Nếu tồn tại -> trả về 400.
+       - Step 3: Tạo new_user_id = str(uuid.uuid4()), hash mật khẩu qua hash_password(password).
+       - Step 4: Tạo record user trong public.users qua DatabaseService.create_user(new_user).
+       - Step 5: Khởi tạo user_progress rỗng qua DatabaseService.upsert_user_progress(...).
+       - Step 6: Tạo access_token và refresh_token, gắn cookie httponly vào response.
+       - Step 7: Trả về success_response với HTTP 201 Created.
+    """
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="TODO: Implement /api/auth/register")

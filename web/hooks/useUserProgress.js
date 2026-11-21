@@ -49,13 +49,14 @@ export function useUserProgress() {
 
     window.addEventListener("algopath:progress-updated", handleSync)
     window.addEventListener("storage", handleSync)
+    window.addEventListener("focus", handleSync)
 
     /** @type {BroadcastChannel | null} */
     let channel = null
     if (typeof BroadcastChannel !== "undefined") {
       channel = new BroadcastChannel("algopath_progress_sync")
       channel.onmessage = (event) => {
-        if (event?.data?.userId === currentUser.id) {
+        if (!event?.data?.userId || event?.data?.userId === "*" || event?.data?.userId === currentUser.id) {
           handleSync()
         }
       }
@@ -64,6 +65,7 @@ export function useUserProgress() {
     return () => {
       window.removeEventListener("algopath:progress-updated", handleSync)
       window.removeEventListener("storage", handleSync)
+      window.removeEventListener("focus", handleSync)
       if (channel) {
         channel.close()
       }

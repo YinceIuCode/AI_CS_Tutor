@@ -194,12 +194,12 @@ export function SocraticTutorPanel({
   ])
 
   return (
-    <div className="flex h-full min-h-0 flex-col justify-between rounded-2xl border border-border-subtle bg-surface-elevated/98 p-4 shadow-2xl backdrop-blur-xl">
+    <div className="flex h-full min-h-0 flex-col justify-between rounded-xl border border-border-subtle bg-surface p-4 shadow-xl">
       {/* ==================== 1. HEADER + RAG GROUNDED + CLOSE BUTTON ==================== */}
       <div className="shrink-0">
         <div className="flex items-start justify-between gap-2 border-b border-border-subtle pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-cyan/35 bg-cyan/10 text-cyan">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-cyan/35 bg-cyan/10 text-cyan">
               <Bot className="size-4" />
             </div>
             <div>
@@ -336,9 +336,9 @@ export function SocraticTutorPanel({
                   type="button"
                   onClick={() => handleSelectTierTab(t.tier)}
                   className={cn(
-                    "flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10.5px] font-semibold transition-all",
+                    "flex cursor-pointer items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-[10.5px] font-semibold transition-colors",
                     isSelected
-                      ? "border-primary bg-primary/20 text-text-primary shadow-[0_0_12px_var(--color-primary-glow)]"
+                      ? "border-primary bg-primary/15 text-text-primary"
                       : isUnlocked
                         ? "border-border-subtle bg-surface text-text-secondary hover:border-border"
                         : "border-border-subtle/60 bg-surface-secondary/60 text-text-muted hover:border-border"

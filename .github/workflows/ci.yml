@@ -7,38 +7,44 @@ on:
     branches: [ "main" ]
 
 jobs:
-  frontend-check:
-    name: Frontend Build & Lint
+  frontend:
+    name: Frontend Check and Build
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: ./web
 
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          
-      - run: npm install
-      - run: npm run build
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-  backend-check:
-    name: Backend Lint (Ruff)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+
+      - name: Install Packages
+        run: npm install
+
+      - name: Build Frontend
+        run: npm run build
+
+  backend:
+    name: Backend Check
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: ./api
 
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          
-      - run: |
-          pip install -r requirements.txt
-          pip install ruff
-      - run: ruff check .
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+
+      - name: Install Packages
+        run: pip install -e .
+
+      - name: Check Backend
+        run: ruff check .

@@ -1,0 +1,3103 @@
+{
+  "metadata": {
+    "exported_at": "2026-11-19T08:08:26.374Z",
+    "supabase_url": "https://kcpgwxsibuqgkudgbjgd.supabase.co",
+    "version": "1.0.0",
+    "counts": {
+      "users": 3,
+      "knowledge_documents": 2,
+      "roadmap_nodes": 15,
+      "tasks": 45,
+      "user_progress": 3,
+      "code_submissions": 1
+    }
+  },
+  "tables": {
+    "users": [
+      {
+        "id": "00000001-0000-4000-8000-000000000002",
+        "email": "tutor@offbyone.demo",
+        "full_name": "Dr. Le Thanh Tung",
+        "password_hash": "offbyone_demo_hash::Tutor1234",
+        "role": "tutor",
+        "account_type": "registered",
+        "created_at": "2026-11-18T08:29:40.584566+00:00",
+        "updated_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "00000001-0000-4000-8000-000000000003",
+        "email": "admin@offbyone.demo",
+        "full_name": "System Admin",
+        "password_hash": "offbyone_demo_hash::Admin1234",
+        "role": "admin",
+        "account_type": "registered",
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "updated_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "00000001-0000-4000-8000-000000000001",
+        "email": "student@offbyone.demo",
+        "full_name": "Demo Student",
+        "password_hash": "pbkdf2_sha256$12000$25c0a75b8a6d5c0b$e30c920228287151e517fa5c601eb3b4e3ef4343c834a8724023c10b36464002",
+        "role": "student",
+        "account_type": "registered",
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "updated_at": "2026-11-16T03:05:34.333982+00:00"
+      }
+    ],
+    "knowledge_documents": [
+      {
+        "id": "00000005-0000-4000-8000-000000000001",
+        "name": "CS101_DSA_Syllabus_HCMUS.pdf",
+        "file_url": "https://storage.offbyone.ai/syllabi/CS101_DSA_Syllabus_HCMUS.pdf",
+        "file_size": "2.4 MB",
+        "status": "indexed",
+        "chunks_count": 48,
+        "indexed_at": "2026-10-30T10:30:00+00:00",
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "00000005-0000-4000-8000-000000000002",
+        "name": "CS102_OOP_Cpp_Syllabus_HCMUS.pdf",
+        "file_url": "https://storage.offbyone.ai/syllabi/CS102_OOP_Cpp_Syllabus_HCMUS.pdf",
+        "file_size": "1.8 MB",
+        "status": "indexed",
+        "chunks_count": 34,
+        "indexed_at": "2026-11-18T08:29:40.584566+00:00",
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      }
+    ],
+    "roadmap_nodes": [
+      {
+        "id": "oop-classes-encapsulation",
+        "short_code": "01",
+        "label": "Classes & Encapsulation",
+        "description": "Access specifiers, data hiding invariants, and const member functions.",
+        "target_complexity": "O(1) access",
+        "sequence_order": 1,
+        "prerequisites": [],
+        "socratic_profile": {
+          "primarySlideReference": "CS102 Slide 09"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000002"
+      },
+      {
+        "id": "oop-constructors-raii",
+        "short_code": "02",
+        "label": "Constructors, Destructors & RAII",
+        "description": "Deep vs. shallow copy, Rule of Three, and deterministic cleanup.",
+        "target_complexity": "O(N) copy",
+        "sequence_order": 2,
+        "prerequisites": [
+          "oop-classes-encapsulation"
+        ],
+        "socratic_profile": {
+          "primarySlideReference": "CS102 Slide 18"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000002"
+      },
+      {
+        "id": "oop-operator-overloading",
+        "short_code": "03",
+        "label": "Operator Overloading",
+        "description": "Arithmetic, comparison, and stream operator overloading.",
+        "target_complexity": "O(1)",
+        "sequence_order": 3,
+        "prerequisites": [
+          "oop-constructors-raii"
+        ],
+        "socratic_profile": {
+          "primarySlideReference": "CS102 Slide 14"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000002"
+      },
+      {
+        "id": "oop-inheritance-polymorphism",
+        "short_code": "04",
+        "label": "Inheritance & Polymorphism",
+        "description": "VTable dynamic dispatch, pure virtual interfaces, and virtual destructors.",
+        "target_complexity": "O(1) vtable",
+        "sequence_order": 4,
+        "prerequisites": [
+          "oop-constructors-raii"
+        ],
+        "socratic_profile": {
+          "primarySlideReference": "CS102 Slide 22"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000002"
+      },
+      {
+        "id": "oop-templates-smart-pointers",
+        "short_code": "05",
+        "label": "Templates & Smart Pointers",
+        "description": "Generic templates, std::unique_ptr, std::shared_ptr, and std::weak_ptr.",
+        "target_complexity": "O(1)",
+        "sequence_order": 5,
+        "prerequisites": [
+          "oop-operator-overloading",
+          "oop-inheritance-polymorphism"
+        ],
+        "socratic_profile": {
+          "primarySlideReference": "CS102 Slide 27"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000002"
+      },
+      {
+        "id": "dsa-foundations",
+        "short_code": "01",
+        "label": "DSA Foundations",
+        "description": "Core memory models, pointers, recursion fundamentals, and mathematical induction for algorithmic problem solving.",
+        "target_complexity": "O(1) / O(N)",
+        "sequence_order": 1,
+        "prerequisites": [],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Bound Analysis",
+                "content": "Analyze the time and memory boundaries for DSA Foundations."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Boundary Guard",
+                "content": "Check pointer boundary conditions before dereferencing."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "DSA Foundations Invariant",
+                "content": "Understand foundational property of DSA Foundations."
+              }
+            ]
+          },
+          "nodeId": "dsa-foundations",
+          "topicLabel": "DSA Foundations",
+          "ragSourceBadge": "CS101 • DSA Foundations"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "linked-list",
+        "short_code": "04",
+        "label": "Linked List",
+        "description": "Singly, doubly, and circular linked lists, sentinel dummy nodes, fast-and-slow pointer cycle detection, and in-place reversal.",
+        "target_complexity": "O(1) insert / O(N)",
+        "sequence_order": 4,
+        "prerequisites": [
+          "dsa-foundations"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Hash Set vs. Two Pointers for Cycle Detection",
+                "content": "Storing visited node addresses in an `unordered_set` takes O(N) auxiliary memory. How does Floyd's Tortoise and Hare avoid storing past nodes?"
+              },
+              {
+                "tier": 2,
+                "badge": "Pointer / Dry-Run Trace",
+                "color": "var(--color-cyan)",
+                "title": "Relative Speed Inside a Cycle",
+                "content": "Once both `slow` (+1 step) and `fast` (+2 steps) enter the cycle, the distance between them shrinks by 1 link per iteration, guaranteeing collision in O(N) time and O(1) space."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Safe Loop Condition for Fast Pointer",
+                "content": "Why must the loop condition check `while (fast && fast->next)` before evaluating `fast = fast->next->next`?"
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Inspecting the Reversal Invariant at Line 16",
+                "content": "At Line 16 (`curr->next = prev;`), `curr` detaches from the forward chain and points backward. What invariant holds between `prev` and `curr` at the start of each iteration?"
+              },
+              {
+                "tier": 2,
+                "badge": "Pointer / Dry-Run Trace",
+                "color": "var(--color-cyan)",
+                "title": "Tracing Boundary Inputs (Empty & 1-Node List)",
+                "content": "On a 1-node list `[42]`, `nextTemp` is `nullptr`, `42->next` becomes `nullptr`, `prev` becomes `42`, and `curr` becomes `nullptr`."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Explicit Early-Exit Guard",
+                "content": "Add an explicit guard `if (!head || !head->next) return head;` at the top of `reverseList` to short-circuit empty and single-element lists."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Why We Need Three Pointers to Reverse In-Place",
+                "content": "As soon as you execute `curr->next = prev`, the original forward link is overwritten. How do you keep track of the remainder of the list without O(N) extra memory?"
+              },
+              {
+                "tier": 2,
+                "badge": "Pointer / Dry-Run Trace",
+                "color": "var(--color-cyan)",
+                "title": "Lockstep Advancement: prev → curr → nextTemp",
+                "content": "In every iteration: (1) save `nextTemp = curr->next`, (2) flip `curr->next = prev`, (3) advance `prev = curr`, (4) advance `curr = nextTemp`."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Empty List & Single-Node Termination",
+                "content": "When `curr` finally becomes `nullptr`, `prev` sits on the last non-null node—which is now the new head of the reversed list."
+              }
+            ]
+          },
+          "nodeId": "linked-list",
+          "faultyLine": {
+            "line": 16,
+            "codeToken": "curr->next = prev;",
+            "shortReason": "Verify head == nullptr guard & cycle safety before rewiring curr->next",
+            "calloutTitle": "Pointer Rewiring Check at Line 16",
+            "calloutDetail": "Line 16 reverses the link direction (`curr->next = prev`). Ensure boundary guards (`if (!head || !head->next) return head;`) are explicit for edge-case verification.",
+            "suggestedFixHint": "Add `if (!head || !head->next) return head;` before the loop to handle 0/1-node lists explicitly."
+          },
+          "topicLabel": "Linked List",
+          "dryRunTable": {
+            "rows": [
+              [
+                "Init",
+                "Ln 11-12",
+                "null",
+                "1",
+                "—",
+                "null   1 -> 2 -> 3"
+              ],
+              [
+                "Iter 1",
+                "Ln 15-18",
+                "1",
+                "2",
+                "2",
+                "null <- 1   2 -> 3"
+              ],
+              [
+                "Iter 2",
+                "Ln 15-18",
+                "2",
+                "3",
+                "3",
+                "null <- 1 <- 2   3"
+              ],
+              [
+                "Iter 3",
+                "Ln 15-18",
+                "3",
+                "null",
+                "null",
+                "null <- 1 <- 2 <- 3 (Return prev=3)"
+              ]
+            ],
+            "title": "Pointer Dry-Run Trace • reverseList([1 -> 2 -> 3])",
+            "columns": [
+              "Iter",
+              "Line",
+              "prev",
+              "curr",
+              "nextTemp",
+              "List State"
+            ]
+          },
+          "quickReplies": [
+            {
+              "id": "ll-q1",
+              "label": "What if I swap Line 15 and 16?",
+              "aiResponse": "If you overwrite `curr->next = prev` first, `nextTemp = curr->next` will just set `nextTemp = prev`! You permanently lose the pointer to the rest of the linked list (a memory leak + infinite/truncated loop).",
+              "studentPrompt": "What happens if I write `curr->next = prev` BEFORE `nextTemp = curr->next`?",
+              "followUpQuestion": "Why does `return prev;` at Line 20 return the new head instead of `return curr;`?"
+            },
+            {
+              "id": "ll-q2",
+              "label": "Why return prev instead of curr?",
+              "aiResponse": "Because the `while (curr != nullptr)` loop only stops when `curr` walks off the end of the list (`curr == nullptr`). At that exact moment, `prev` is pointing to the last real node—which is the new head!",
+              "studentPrompt": "At the end of the while loop, why do we return `prev` instead of `curr`?",
+              "followUpQuestion": "How can you add a fast guard for `!head || !head->next` at the top of `reverseList`?"
+            },
+            {
+              "id": "ll-q3",
+              "label": "How to pass Edge Case #3?",
+              "aiResponse": "Add `if (!head || !head->next) return head;` at the start of `reverseList` before initializing `prev` and `curr`, then click **Run Code**.",
+              "studentPrompt": "How do I satisfy the Edge Case #3 boundary check in the editor?",
+              "followUpQuestion": "What is the auxiliary space complexity of this iterative reversal vs. recursive reversal?"
+            }
+          ],
+          "slideCitation": {
+            "excerpt": "In-place reversal maintains two disjoint sublists: the already-reversed prefix headed by `prev`, and the unreversed suffix headed by `curr`. Caching `nextTemp = curr->next` preserves reachability before pointer inversion.",
+            "courseRef": "CS201 Data Structures • Week 3 Lecture Notes",
+            "slideTitle": "Slide 06: Three-Pointer Singly Linked List Reversal",
+            "keyInvariant": "Loop Invariant: `prev` points to reversed prefix; `curr` points to unreversed suffix."
+          },
+          "ragSourceBadge": "Slide 06 • Pointer Rewiring"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "binary-search-tree",
+        "short_code": "07",
+        "label": "Binary Search Tree",
+        "description": "BST ordering invariant, logarithmic search, insertion, Hibbard deletion with inorder successor, and range queries.",
+        "target_complexity": "O(log N) avg",
+        "sequence_order": 7,
+        "prerequisites": [
+          "trees"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Preserving BST Order During Two-Child Deletion",
+                "content": "If node K has both a left and a right subtree, its replacement must be larger than every key in K's left subtree and smaller than every remaining key in K's right subtree."
+              },
+              {
+                "tier": 2,
+                "badge": "Pointer / Dry-Run Trace",
+                "color": "var(--color-cyan)",
+                "title": "Locating the Inorder Successor",
+                "content": "Step once into `K->right`, then walk `left` as far as possible until `left == nullptr`. That node is the minimum of the right subtree (Inorder Successor)."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Why Maximum of Right Subtree Fails",
+                "content": "If you replaced K with the maximum of K's right subtree, K's new key would be larger than its right children—violating the BST property immediately."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Where Does Recursive Insertion Stop?",
+                "content": "Look at `insertBST(TreeNode* root, int key)` on Line 10. As recursion walks down `root->left` or `root->right`, it eventually hits `nullptr`. Where is the new `TreeNode(key)` allocated?"
+              },
+              {
+                "tier": 2,
+                "badge": "Pointer / Dry-Run Trace",
+                "color": "var(--color-cyan)",
+                "title": "Tracing Line 11 on an Empty Tree (Test Case #1)",
+                "content": "When `root == nullptr`, execution jumps straight to Line 11 (`if (key < root->key)`), attempting to read memory at `0x0` and crashing."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Adding the Base Case Before Line 11",
+                "content": "At the very top of `insertBST`, check `if (!root) return new TreeNode(key);` so recursion terminates cleanly and links the new leaf back up."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Local vs. Global Subtree Ordering",
+                "content": "Why is checking `node->left->key < node->key` at every node NOT enough to guarantee a valid Binary Search Tree?"
+              },
+              {
+                "tier": 2,
+                "badge": "Invariant Trace",
+                "color": "var(--color-cyan)",
+                "title": "Propagating [minBound, maxBound] Downward",
+                "content": "Every time you branch left from ancestor P, all descendants in that subtree must be strictly less than P.key—even if they are on a right branch deeper down."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Duplicate Keys & Skewed Degeneration",
+                "content": "If sorted keys [10, 20, 30, 40] are inserted into an unbalanced BST, what shape does the tree take and what happens to search complexity?"
+              }
+            ]
+          },
+          "nodeId": "binary-search-tree",
+          "faultyLine": {
+            "line": 11,
+            "codeToken": "if (key < root->key) {",
+            "shortReason": "Missing base case: if (!root) return new TreeNode(key);",
+            "calloutTitle": "Null Dereference at Line 11",
+            "calloutDetail": "Comparing `key < root->key` without first checking `if (!root)` crashes immediately when inserting into an empty tree or reaching a leaf spot.",
+            "suggestedFixHint": "Insert `if (!root) return new TreeNode(key);` at Line 10."
+          },
+          "topicLabel": "Binary Search Tree",
+          "dryRunTable": {
+            "rows": [
+              [
+                "Depth 0",
+                "Ln 11",
+                "Node(20)",
+                "25",
+                "25 > 20 → recurse root->right"
+              ],
+              [
+                "Depth 1",
+                "Ln 11",
+                "Node(30)",
+                "25",
+                "25 < 30 → recurse root->left"
+              ],
+              [
+                "Depth 2 (Bug)",
+                "Ln 11",
+                "nullptr",
+                "25",
+                "💥 Dereferences nullptr->key"
+              ],
+              [
+                "Depth 2 (Fixed)",
+                "Ln 10",
+                "nullptr",
+                "25",
+                "✓ Returns new TreeNode(25)"
+              ]
+            ],
+            "title": "Recursive Call Trace • insertBST(root, 25)",
+            "columns": [
+              "Call Depth",
+              "Line",
+              "root",
+              "key",
+              "Action / Result"
+            ]
+          },
+          "quickReplies": [
+            {
+              "id": "bst-q1",
+              "label": "Why does Line 11 crash?",
+              "aiResponse": "Because every recursive search in a BST eventually reaches a `nullptr` child where the new key should be attached! Without `if (!root) return new TreeNode(key);` before Line 11, `root->key` dereferences a null pointer.",
+              "studentPrompt": "Why does `if (key < root->key)` on Line 11 fail on Test Case #1?",
+              "followUpQuestion": "What should `insertBST` return when `root == nullptr`?"
+            },
+            {
+              "id": "bst-q2",
+              "label": "Inorder Successor vs Predecessor?",
+              "aiResponse": "Yes! Either the maximum of the left subtree (Inorder Predecessor) or the minimum of the right subtree (Inorder Successor) satisfies the global BST ordering invariant.",
+              "studentPrompt": "Can we use Inorder Predecessor instead of Inorder Successor when deleting?",
+              "followUpQuestion": "How many children can an Inorder Successor have at most?"
+            },
+            {
+              "id": "bst-q3",
+              "label": "What if key == root->key?",
+              "aiResponse": "In standard strict-key BSTs, if `key == root->key`, neither the `<` nor `>` branch executes, and `return root;` leaves the existing node unchanged without duplicates.",
+              "studentPrompt": "What happens in `insertBST` if the key already exists in the tree?",
+              "followUpQuestion": "Try adding the base case above Line 11 and click Run Code!"
+            }
+          ],
+          "slideCitation": {
+            "excerpt": "Recursive BST insertion walks down the unique search path in O(H) time until encountering a null link (root == nullptr), where it allocates and returns a new leaf node to be assigned to the parent's child pointer.",
+            "courseRef": "CS201 Data Structures • Week 6 Lecture Notes",
+            "slideTitle": "Slide 11: Recursive BST Insertion & Hibbard Deletion",
+            "keyInvariant": "Invariant: For every node u, max(Left(u)) < u.key < min(Right(u))."
+          },
+          "ragSourceBadge": "Slide 11 • BST Invariants"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "avl-tree",
+        "short_code": "08",
+        "label": "AVL Tree",
+        "description": "Self-balancing binary search trees, height-balance factor invariants, and single/double rotations (LL, RR, LR, RL).",
+        "target_complexity": "O(log N) strict",
+        "sequence_order": 8,
+        "prerequisites": [
+          "binary-search-tree"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Interpreting the Sign of Balance Factor",
+                "content": "Balance Factor = Height(Left) - Height(Right) = 3 - 1 = +2. A positive sign means the Left subtree is heavier. Which direction must the tree tip to equalize height?"
+              },
+              {
+                "tier": 2,
+                "badge": "Pointer / Dry-Run Trace",
+                "color": "var(--color-cyan)",
+                "title": "Visualizing Left-Left (LL) Imbalance",
+                "content": "Imagine holding node N and pulling its taller left child up to become the new root while N drops down to the right. That clockwise motion is a Right Rotation."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "When Single vs. Double Rotation Applies",
+                "content": "If the left child itself had BF = -1 (Left-Right case), you would perform Left-Right rotation. Here, standard LL imbalance with BF = +2 requires a single Right Rotation."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "What Happens When a Subtree Is Empty?",
+                "content": "Look at Line 19: `Node* x = y->left;` followed by `Node* T2 = x->right;`. What happens in memory if `rotateRight` is called when `y == nullptr` or `y->left == nullptr`?"
+              },
+              {
+                "tier": 2,
+                "badge": "Pointer / Dry-Run Trace",
+                "color": "var(--color-cyan)",
+                "title": "Tracing Test Case #5 (Leaf / Null Pivot)",
+                "content": "In Test Case #5, `y->left` is `nullptr`. Line 19 sets `x = nullptr`, and Line 20 immediately evaluates `nullptr->right`, triggering `SIGSEGV` before any rotation occurs."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Defensive Guard Clause Before Dereferencing",
+                "content": "Guard the entry of `rotateRight(Node* y)` by checking whether `y` or `y->left` is null (`if (!y || !y->left) return y;`) right before Line 19."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "color": "var(--color-purple)",
+                "title": "Why Local Subtree Heights Suffice",
+                "content": "Notice how Balance Factor (BF) is defined as Height(Left) - Height(Right). When you rotate node y with its child x, why don't nodes above y's parent need their pointers rewired?"
+              },
+              {
+                "tier": 2,
+                "badge": "Invariant Trace",
+                "color": "var(--color-cyan)",
+                "title": "Subtree Order Preservation (T1 < x < T2 < y < T3)",
+                "content": "During a Right Rotation, only subtree T2 changes parent (from x->right to y->left). Since all keys in T2 are strictly between x and y, the global BST ordering remains intact in O(1) time."
+              },
+              {
+                "tier": 3,
+                "badge": "Edge-Case Guard",
+                "color": "var(--color-warning)",
+                "title": "Height Recalculation Order",
+                "content": "After rotating, y becomes the child of x. Which node's height MUST be recomputed first—y (the lower node) or x (the new root)?"
+              }
+            ]
+          },
+          "nodeId": "avl-tree",
+          "faultyLine": {
+            "line": 19,
+            "codeToken": "Node* x = y->left;",
+            "shortReason": "Null pointer dereference if y == nullptr or y->left == nullptr",
+            "calloutTitle": "SIGSEGV Risk at Line 19",
+            "calloutDetail": "Dereferencing y->left and x->right without verifying (!y || !y->left) crashes on empty or single-node subtrees (Test Case #5).",
+            "suggestedFixHint": "Add: if (!y || !y->left) return y; before Line 19."
+          },
+          "topicLabel": "AVL Tree",
+          "dryRunTable": {
+            "rows": [
+              [
+                "1 (Normal)",
+                "Ln 19",
+                "Node* x = y->left",
+                "Node(30)",
+                "Node(20)",
+                "Valid pivot"
+              ],
+              [
+                "2 (Normal)",
+                "Ln 20",
+                "Node* T2 = x->right",
+                "Node(30)",
+                "Node(20)",
+                "T2 = Node(25)"
+              ],
+              [
+                "3 (Normal)",
+                "Ln 22-23",
+                "x->right = y; y->left = T2",
+                "y->left=25",
+                "x->right=30",
+                "Rewired O(1)"
+              ],
+              [
+                "4 (Test #5)",
+                "Ln 19",
+                "Node* x = y->left",
+                "Node(10)",
+                "nullptr",
+                "y has no left child!"
+              ],
+              [
+                "5 (Crash)",
+                "Ln 20",
+                "Node* T2 = x->right",
+                "Node(10)",
+                "nullptr",
+                "💥 SIGSEGV (null->right)"
+              ]
+            ],
+            "title": "Pointer Dry-Run Trace • rotateRight(y) on Test Case #5",
+            "columns": [
+              "Step",
+              "Line",
+              "Expression",
+              "y",
+              "x",
+              "T2 / Status"
+            ]
+          },
+          "quickReplies": [
+            {
+              "id": "avl-q1",
+              "label": "Why does T2 move to y->left?",
+              "aiResponse": "Great question! Every key in `T2` was originally in `x->right` (so `T2 > x`) and inside `y->left` (so `T2 < y`). When `x` becomes the new root and `y` becomes `x->right`, attaching `T2` to `y->left` keeps `x < T2 < y` without touching any node inside `T2`!",
+              "studentPrompt": "Why does subtree T2 move from x->right to y->left during rotateRight?",
+              "followUpQuestion": "If we updated `x->height` before `y->height`, what wrong value would `x->height` compute?"
+            },
+            {
+              "id": "avl-q2",
+              "label": "Why update y->height before x->height?",
+              "aiResponse": "Look at the tree after rotation: `y` is now the right child of `x`. Since `height(x)` depends on `max(height(x->left), height(x->right)) + 1`, and `x->right` is `y`, `y->height` must be fresh first!",
+              "studentPrompt": "Why must we update y->height before x->height on Lines 25-26?",
+              "followUpQuestion": "What happens at Line 19 if `y->left` is `nullptr`?"
+            },
+            {
+              "id": "avl-q3",
+              "label": "How to fix Line 19 SIGSEGV?",
+              "aiResponse": "Before dereferencing `y->left` on Line 19 and `x->right` on Line 20, ask yourself: can a rotation happen if `y` is null or has no left child? Adding `if (!y || !y->left) return y;` at the start of `rotateRight` safely exits without crashing.",
+              "studentPrompt": "What guard condition do I need around Line 19 to pass Test Case #5?",
+              "followUpQuestion": "Try adding that guard in the editor and clicking Run Code!"
+            }
+          ],
+          "slideCitation": {
+            "excerpt": "In a Left-Left (LL) imbalance where BF(y) = +2 and BF(y->left) >= 0, a single Right Rotation around pivot y promotes x = y->left to subtree root, re-attaches T2 = x->right as y->left, and restores BF ∈ {-1, 0, +1} in O(1) time.",
+            "courseRef": "CS201 Data Structures • Week 7 Lecture Notes",
+            "slideTitle": "Slide 14: AVL Tree Right Rotation (LL Case)",
+            "keyInvariant": "Invariant: key(T1) < key(x) < key(T2) < key(y) < key(T3) before and after rotation."
+          },
+          "ragSourceBadge": "Slide 14 • AVL Rotations"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "complexity-analysis",
+        "short_code": "02",
+        "label": "Complexity Analysis",
+        "description": "Asymptotic notation (Big-O, Big-Omega, Big-Theta), time-space trade-offs, and recurrence relations using the Master Theorem.",
+        "target_complexity": "O(1) to O(N²)",
+        "sequence_order": 2,
+        "prerequisites": [
+          "dsa-foundations"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Bound Analysis",
+                "content": "Analyze the time and memory boundaries for Complexity Analysis."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Boundary Guard",
+                "content": "Check pointer boundary conditions before dereferencing."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Complexity Analysis Invariant",
+                "content": "Understand foundational property of Complexity Analysis."
+              }
+            ]
+          },
+          "nodeId": "complexity-analysis",
+          "topicLabel": "Complexity Analysis",
+          "ragSourceBadge": "CS101 • Complexity Analysis"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "arrays-strings",
+        "short_code": "03",
+        "label": "Arrays & Strings",
+        "description": "Contiguous memory operations, dynamic resizing, two-pointer techniques, sliding window, and prefix sum patterns.",
+        "target_complexity": "O(1) access / O(N)",
+        "sequence_order": 3,
+        "prerequisites": [
+          "dsa-foundations"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Bound Analysis",
+                "content": "Analyze the time and memory boundaries for Arrays & Strings."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Boundary Guard",
+                "content": "Check pointer boundary conditions before dereferencing."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Arrays & Strings Invariant",
+                "content": "Understand foundational property of Arrays & Strings."
+              }
+            ]
+          },
+          "nodeId": "arrays-strings",
+          "topicLabel": "Arrays & Strings",
+          "ragSourceBadge": "CS101 • Arrays & Strings"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "stack-queue",
+        "short_code": "05",
+        "label": "Stack & Queue",
+        "description": "LIFO and FIFO abstract data types, circular ring buffers, monotonic stacks/deques, and expression parsing.",
+        "target_complexity": "O(1) push / pop",
+        "sequence_order": 5,
+        "prerequisites": [
+          "arrays-strings",
+          "linked-list"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Bound Analysis",
+                "content": "Analyze the time and memory boundaries for Stack & Queue."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Boundary Guard",
+                "content": "Check pointer boundary conditions before dereferencing."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Stack & Queue Invariant",
+                "content": "Understand foundational property of Stack & Queue."
+              }
+            ]
+          },
+          "nodeId": "stack-queue",
+          "topicLabel": "Stack & Queue",
+          "ragSourceBadge": "CS101 • Stack & Queue"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "trees",
+        "short_code": "06",
+        "label": "Trees",
+        "description": "Hierarchical tree terminology, binary tree representations, recursive and iterative DFS (Pre/In/Post-order), and level-order BFS.",
+        "target_complexity": "O(N) traversal",
+        "sequence_order": 6,
+        "prerequisites": [
+          "linked-list"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Bound Analysis",
+                "content": "Analyze the time and memory boundaries for Trees."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Boundary Guard",
+                "content": "Check pointer boundary conditions before dereferencing."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Trees Invariant",
+                "content": "Understand foundational property of Trees."
+              }
+            ]
+          },
+          "nodeId": "trees",
+          "topicLabel": "Trees",
+          "ragSourceBadge": "CS101 • Trees"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "sorting-algorithms",
+        "short_code": "09",
+        "label": "Sorting Algorithms",
+        "description": "Comparison and non-comparison sorting: Merge Sort, Quick Sort partitioning, Heap Sort, stability analysis, and lower bounds.",
+        "target_complexity": "O(N log N)",
+        "sequence_order": 9,
+        "prerequisites": [
+          "complexity-analysis",
+          "arrays-strings"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Bound Analysis",
+                "content": "Analyze the time and memory boundaries for Sorting Algorithms."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Boundary Guard",
+                "content": "Check pointer boundary conditions before dereferencing."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Sorting Algorithms Invariant",
+                "content": "Understand foundational property of Sorting Algorithms."
+              }
+            ]
+          },
+          "nodeId": "sorting-algorithms",
+          "topicLabel": "Sorting Algorithms",
+          "ragSourceBadge": "CS101 • Sorting Algorithms"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      },
+      {
+        "id": "graph-algorithms",
+        "short_code": "10",
+        "label": "Graph Algorithms",
+        "description": "Adjacency list/matrix representations, BFS shortest path, DFS cycle detection, topological sorting, and Dijkstra's algorithm.",
+        "target_complexity": "O(V + E)",
+        "sequence_order": 10,
+        "prerequisites": [
+          "trees",
+          "stack-queue"
+        ],
+        "socratic_profile": {
+          "tiers": {
+            "quiz": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Bound Analysis",
+                "content": "Analyze the time and memory boundaries for Graph Algorithms."
+              }
+            ],
+            "coding": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Boundary Guard",
+                "content": "Check pointer boundary conditions before dereferencing."
+              }
+            ],
+            "theory": [
+              {
+                "tier": 1,
+                "badge": "Conceptual Probe",
+                "title": "Graph Algorithms Invariant",
+                "content": "Understand foundational property of Graph Algorithms."
+              }
+            ]
+          },
+          "nodeId": "graph-algorithms",
+          "topicLabel": "Graph Algorithms",
+          "ragSourceBadge": "CS101 • Graph Algorithms"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00",
+        "document_id": "00000005-0000-4000-8000-000000000001"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "dsa-foundations-task-1",
+        "node_id": "dsa-foundations",
+        "task_type": "theory",
+        "title": "Core Theory & Memory Models",
+        "description": "Understand stack vs. heap allocation, pointer dereferencing, and base/recursive cases.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Foundation",
+              "badge": "01",
+              "title": "DSA Foundations Core Principles",
+              "detail": "Core memory models, pointers, recursion fundamentals, and mathematical induction for algorithmic problem solving."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "02",
+              "title": "Time & Space Boundaries",
+              "detail": "Optimal complexity: O(1) / O(N)."
+            },
+            {
+              "tag": "Invariant",
+              "badge": "03",
+              "title": "Structural Invariants",
+              "detail": "Ensure tree/list invariants remain valid."
+            },
+            {
+              "tag": "Practical",
+              "badge": "04",
+              "title": "Practical Trade-offs",
+              "detail": "Evaluate cache locality and edge cases."
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "CORE THEORY: DSA FOUNDATIONS",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "Core memory models, pointers, recursion fundamentals, and mathematical induction for algorithmic problem solving.",
+          "socraticCheck": "How do operations on DSA Foundations maintain O(1) / O(N)?",
+          "highlightTerms": {
+            "concept": "DSA Foundations",
+            "complexity": "O(1) / O(N)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "dsa-foundations-task-2",
+        "node_id": "dsa-foundations",
+        "task_type": "quiz",
+        "title": "Quiz: Stack Frames & Pointers",
+        "description": "Trace memory addresses and recursion tree depth on sample C++ snippets.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! You identified the correct structural invariant.",
+            "awaiting": "Select an option to test your algorithmic hypothesis.",
+            "incorrect": "Consider the boundary edge cases and memory layouts."
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Option A: Enforces O(1) / O(N) invariant properly",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Option B: Degrades asymptotic complexity to O(N^2)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Option C: Fails boundary null check condition",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Option D: None of the above",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "QUIZ: DSA FOUNDATIONS",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "What is the core boundary invariant when implementing DSA Foundations?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "dsa-foundations-task-3",
+        "node_id": "dsa-foundations",
+        "task_type": "coding",
+        "title": "Code: Recursive Array Reversal",
+        "description": "Implement in-place pointer manipulation and recursive helper functions.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Watch boundary null pointer conditions.",
+            "title": "Code: Recursive Array Reversal",
+            "examples": [
+              {
+                "input": "Sample Input",
+                "output": "Sample Output",
+                "explanation": "Sample trace"
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "Time Complexity: O(1) / O(N)",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Implement in-place pointer manipulation and recursive helper functions.",
+            "inputFormat": "Standard pointer / array format.",
+            "outputFormat": "Return updated structure or pointer."
+          },
+          "analysis": {
+            "errorCause": "Pointer dereference before null check",
+            "errorTitle": "Runtime Error: boundary null violation",
+            "errorAction": "Add defensive null guard before dereferencing.",
+            "optimalNote": "Meets optimal complexity bounds.",
+            "timeComplexity": "O(1) / O(N)",
+            "failedTestLabel": "Test Case #2 Failed",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "Input 1",
+              "label": "Sample Case 1",
+              "expected": "Output 1",
+              "isPublic": true
+            },
+            {
+              "input": "Boundary Input",
+              "label": "Sample Case 2",
+              "expected": "Boundary Output",
+              "isPublic": true
+            },
+            {
+              "input": "Stress Input",
+              "label": "Hidden Case 3",
+              "expected": "Stress Output",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide Reference",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+          "socraticHint": {
+            "paragraph1": "Consider what happens when the input pointer is null.",
+            "paragraph2": "Can you add a defensive guard before accessing child members?",
+            "triggerLabel": "Socratic Guidance:"
+          },
+          "visualization": {
+            "badge": "DSA Foundations",
+            "afterTitle": "After Operation",
+            "beforeTitle": "Before Operation"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "complexity-analysis-task-1",
+        "node_id": "complexity-analysis",
+        "task_type": "theory",
+        "title": "Core Theory & Asymptotic Bounds",
+        "description": "Analyze worst-case, average-case, and amortized complexity across nested loops and recurrences.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Foundation",
+              "badge": "01",
+              "title": "Complexity Analysis Core Principles",
+              "detail": "Asymptotic notation (Big-O, Big-Omega, Big-Theta), time-space trade-offs, and recurrence relations using the Master Theorem."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "02",
+              "title": "Time & Space Boundaries",
+              "detail": "Optimal complexity: O(1) to O(N²)."
+            },
+            {
+              "tag": "Invariant",
+              "badge": "03",
+              "title": "Structural Invariants",
+              "detail": "Ensure tree/list invariants remain valid."
+            },
+            {
+              "tag": "Practical",
+              "badge": "04",
+              "title": "Practical Trade-offs",
+              "detail": "Evaluate cache locality and edge cases."
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "CORE THEORY: COMPLEXITY ANALYSIS",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "Asymptotic notation (Big-O, Big-Omega, Big-Theta), time-space trade-offs, and recurrence relations using the Master Theorem.",
+          "socraticCheck": "How do operations on Complexity Analysis maintain O(1) to O(N²)?",
+          "highlightTerms": {
+            "concept": "Complexity Analysis",
+            "complexity": "O(1) to O(N²)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "complexity-analysis-task-2",
+        "node_id": "complexity-analysis",
+        "task_type": "quiz",
+        "title": "Quiz: Master Theorem Check",
+        "description": "Evaluate tight time and auxiliary space bounds for divide-and-conquer recurrences.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! You identified the correct structural invariant.",
+            "awaiting": "Select an option to test your algorithmic hypothesis.",
+            "incorrect": "Consider the boundary edge cases and memory layouts."
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Option A: Enforces O(1) to O(N²) invariant properly",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Option B: Degrades asymptotic complexity to O(N^2)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Option C: Fails boundary null check condition",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Option D: None of the above",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "QUIZ: COMPLEXITY ANALYSIS",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "What is the core boundary invariant when implementing Complexity Analysis?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "linked-list-task-2",
+        "node_id": "linked-list",
+        "task_type": "quiz",
+        "title": "Quiz: Floyd's Cycle Check",
+        "description": "Detect lost references and memory leaks during pointer rewiring.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Exactly! Because Floyd's algorithm only tracks two node pointers (slow and fast) without a hash table or recursion, its extra space is strictly O(1).",
+            "awaiting": "Choose an option (A, B, C, or D) to analyze the memory footprint of Floyd's Tortoise and Hare algorithm.",
+            "incorrect": "Does Floyd's Tortoise and Hare algorithm allocate any hash set or recursive stack frames, or does it only move two pointers along existing nodes?"
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "O(1) auxiliary space (Only two pointers used)",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "O(N) auxiliary space due to visited node storage",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "O(log N) auxiliary call stack space",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "O(N²) time and O(N) space",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Slide 06 (PDF)",
+          "headerTitle": "QUIZ: LINKED LIST",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "In Floyd's Cycle Detection algorithm on a Linked List, if the fast pointer (2 steps/iter) and slow pointer (1 step/iter) meet inside a cycle, what is the auxiliary space complexity?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "complexity-analysis-task-3",
+        "node_id": "complexity-analysis",
+        "task_type": "coding",
+        "title": "Code: Optimize O(N²) to O(N)",
+        "description": "Refactor a brute-force prefix sum solution into an optimal linear-time algorithm.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Watch boundary null pointer conditions.",
+            "title": "Code: Optimize O(N²) to O(N)",
+            "examples": [
+              {
+                "input": "Sample Input",
+                "output": "Sample Output",
+                "explanation": "Sample trace"
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "Time Complexity: O(1) to O(N²)",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Refactor a brute-force prefix sum solution into an optimal linear-time algorithm.",
+            "inputFormat": "Standard pointer / array format.",
+            "outputFormat": "Return updated structure or pointer."
+          },
+          "analysis": {
+            "errorCause": "Pointer dereference before null check",
+            "errorTitle": "Runtime Error: boundary null violation",
+            "errorAction": "Add defensive null guard before dereferencing.",
+            "optimalNote": "Meets optimal complexity bounds.",
+            "timeComplexity": "O(1) to O(N²)",
+            "failedTestLabel": "Test Case #2 Failed",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "Input 1",
+              "label": "Sample Case 1",
+              "expected": "Output 1",
+              "isPublic": true
+            },
+            {
+              "input": "Boundary Input",
+              "label": "Sample Case 2",
+              "expected": "Boundary Output",
+              "isPublic": true
+            },
+            {
+              "input": "Stress Input",
+              "label": "Hidden Case 3",
+              "expected": "Stress Output",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide Reference",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+          "socraticHint": {
+            "paragraph1": "Consider what happens when the input pointer is null.",
+            "paragraph2": "Can you add a defensive guard before accessing child members?",
+            "triggerLabel": "Socratic Guidance:"
+          },
+          "visualization": {
+            "badge": "Complexity Analysis",
+            "afterTitle": "After Operation",
+            "beforeTitle": "Before Operation"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "arrays-strings-task-1",
+        "node_id": "arrays-strings",
+        "task_type": "theory",
+        "title": "Core Theory & Sliding Window",
+        "description": "Explore amortized O(1) push_back doubling and two-pointer monotonic window maintenance.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Foundation",
+              "badge": "01",
+              "title": "Arrays & Strings Core Principles",
+              "detail": "Contiguous memory operations, dynamic resizing, two-pointer techniques, sliding window, and prefix sum patterns."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "02",
+              "title": "Time & Space Boundaries",
+              "detail": "Optimal complexity: O(1) access / O(N)."
+            },
+            {
+              "tag": "Invariant",
+              "badge": "03",
+              "title": "Structural Invariants",
+              "detail": "Ensure tree/list invariants remain valid."
+            },
+            {
+              "tag": "Practical",
+              "badge": "04",
+              "title": "Practical Trade-offs",
+              "detail": "Evaluate cache locality and edge cases."
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "CORE THEORY: ARRAYS & STRINGS",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "Contiguous memory operations, dynamic resizing, two-pointer techniques, sliding window, and prefix sum patterns.",
+          "socraticCheck": "How do operations on Arrays & Strings maintain O(1) access / O(N)?",
+          "highlightTerms": {
+            "concept": "Arrays & Strings",
+            "complexity": "O(1) access / O(N)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "arrays-strings-task-2",
+        "node_id": "arrays-strings",
+        "task_type": "quiz",
+        "title": "Quiz: Two-Pointer Boundaries",
+        "description": "Identify off-by-one invariants in sliding window and partitioning algorithms.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! You identified the correct structural invariant.",
+            "awaiting": "Select an option to test your algorithmic hypothesis.",
+            "incorrect": "Consider the boundary edge cases and memory layouts."
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Option A: Enforces O(1) access / O(N) invariant properly",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Option B: Degrades asymptotic complexity to O(N^2)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Option C: Fails boundary null check condition",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Option D: None of the above",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "QUIZ: ARRAYS & STRINGS",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "What is the core boundary invariant when implementing Arrays & Strings?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "arrays-strings-task-3",
+        "node_id": "arrays-strings",
+        "task_type": "coding",
+        "title": "Code: Longest Unique Substring",
+        "description": "Implement an O(N) sliding window scanner with constant extra space.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Watch boundary null pointer conditions.",
+            "title": "Code: Longest Unique Substring",
+            "examples": [
+              {
+                "input": "Sample Input",
+                "output": "Sample Output",
+                "explanation": "Sample trace"
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "Time Complexity: O(1) access / O(N)",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Implement an O(N) sliding window scanner with constant extra space.",
+            "inputFormat": "Standard pointer / array format.",
+            "outputFormat": "Return updated structure or pointer."
+          },
+          "analysis": {
+            "errorCause": "Pointer dereference before null check",
+            "errorTitle": "Runtime Error: boundary null violation",
+            "errorAction": "Add defensive null guard before dereferencing.",
+            "optimalNote": "Meets optimal complexity bounds.",
+            "timeComplexity": "O(1) access / O(N)",
+            "failedTestLabel": "Test Case #2 Failed",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "Input 1",
+              "label": "Sample Case 1",
+              "expected": "Output 1",
+              "isPublic": true
+            },
+            {
+              "input": "Boundary Input",
+              "label": "Sample Case 2",
+              "expected": "Boundary Output",
+              "isPublic": true
+            },
+            {
+              "input": "Stress Input",
+              "label": "Hidden Case 3",
+              "expected": "Stress Output",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide Reference",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+          "socraticHint": {
+            "paragraph1": "Consider what happens when the input pointer is null.",
+            "paragraph2": "Can you add a defensive guard before accessing child members?",
+            "triggerLabel": "Socratic Guidance:"
+          },
+          "visualization": {
+            "badge": "Arrays & Strings",
+            "afterTitle": "After Operation",
+            "beforeTitle": "Before Operation"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "linked-list-task-1",
+        "node_id": "linked-list",
+        "task_type": "theory",
+        "title": "Core Theory & Pointer Nodes",
+        "description": "Compare pointer-based node allocation against contiguous arrays and handle edge cases cleanly.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Trade-off",
+              "badge": "01",
+              "title": "O(1) Pointer Insertion vs. O(N) Sequential Lookup",
+              "detail": "Unlike arrays, linked lists do not support O(1) random indexing, but splicing a node in or out requires only local pointer updates."
+            },
+            {
+              "tag": "Clean Code",
+              "badge": "02",
+              "title": "Sentinel (Dummy Head) Pattern",
+              "detail": "Using a stack-allocated dummy head node eliminates special-case branching when inserting at or deleting the first node."
+            },
+            {
+              "tag": "In-Place O(1)",
+              "badge": "03",
+              "title": "Three-Pointer In-Place Reversal",
+              "detail": "Maintaining prev, curr, and nextTemp pointers reverses a singly linked list in O(N) time and O(1) auxiliary space."
+            },
+            {
+              "tag": "Two Pointers",
+              "badge": "04",
+              "title": "Floyd's Tortoise and Hare Cycle Detection",
+              "detail": "Advancing slow by 1 step and fast by 2 steps detects cycles in O(N) time without a hash set."
+            }
+          ],
+          "slideLabel": "Open Slide 06 (PDF)",
+          "headerTitle": "CORE THEORY: LINKED LISTS & POINTER REWIRING",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "A Linked List stores elements in non-contiguous heap nodes connected via next/prev pointers, enabling O(1) insertion and deletion once a node reference is known.",
+          "socraticCheck": "When reversing a singly linked list in-place, why must you save ListNode* nextTemp = curr->next BEFORE assigning curr->next = prev?",
+          "highlightTerms": {
+            "concept": "Linked List",
+            "complexity": "O(1) insert / O(N)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "linked-list-task-3",
+        "node_id": "linked-list",
+        "task_type": "coding",
+        "title": "Code: In-Place List Reversal",
+        "description": "Write O(N) time and O(1) space linked list reversal and tortoise-hare cycle detection.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Maintain three pointers: prev (initially nullptr), curr (initially head), and nextTemp (to store curr->next before rewiring).",
+            "title": "Reverse a Singly Linked List",
+            "examples": [
+              {
+                "input": "head = [1, 2, 3, 4, 5]",
+                "output": "[5, 4, 3, 2, 1]",
+                "explanation": "Pointer directions are reversed: 5 -> 4 -> 3 -> 2 -> 1 -> nullptr."
+              },
+              {
+                "input": "head = [1, 2]",
+                "output": "[2, 1]",
+                "explanation": "2 points to 1, and 1 points to nullptr."
+              },
+              {
+                "input": "head = []",
+                "output": "[]",
+                "explanation": "An empty linked list (head == nullptr) reverses to an empty linked list."
+              }
+            ],
+            "difficulty": "Easy",
+            "constraints": [
+              "The number of nodes in the list is in the range [0, 5000].",
+              "-5000 <= Node.val <= 5000",
+              "Time Complexity: O(N)",
+              "Space Complexity: O(1) in-place auxiliary space"
+            ],
+            "description": "Given the head of a singly linked list, reverse the list in-place and return the reversed list's new head pointer.\n\nYou should alter the next pointers of each node so that the last node becomes the head and the original head points to nullptr.",
+            "inputFormat": "The pointer ListNode* head representing the first node of the list.",
+            "outputFormat": "Return ListNode* pointing to the new head of the reversed list."
+          },
+          "analysis": {
+            "errorCause": "Ensure loop invariant holds when curr starts as nullptr.",
+            "errorTitle": "Verify empty list (head == nullptr) & single-node list.",
+            "errorAction": "Trace prev return value when head is nullptr.",
+            "optimalNote": "Single-pass in-place pointer reversal.",
+            "timeComplexity": "O(N)",
+            "failedTestLabel": "Edge Case Check (#3)",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "reverse_list.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "head = [1, 2, 3, 4, 5]",
+              "label": "Test Case #1: Multi-node List",
+              "expected": "[5, 4, 3, 2, 1]",
+              "isPublic": true
+            },
+            {
+              "input": "head = [1, 2]",
+              "label": "Test Case #2: Two-node List",
+              "expected": "[2, 1]",
+              "isPublic": true
+            },
+            {
+              "input": "head = []",
+              "label": "Test Case #3: Empty List",
+              "expected": "[]",
+              "isPublic": true
+            }
+          ],
+          "slideLabel": "Open Slide 06 (PDF)",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nstruct ListNode {\n    int val;\n    ListNode* next;\n    ListNode(int v) : val(v), next(nullptr) {}\n};\n\nListNode* reverseList(ListNode* head) {\n    ListNode* prev = nullptr;\n    ListNode* curr = head;\n\n    while (curr != nullptr) {\n        ListNode* nextTemp = curr->next;\n        curr->next = prev;\n        prev = curr;\n        curr = nextTemp;\n    }\n    return prev;\n}",
+          "socraticHint": {
+            "paragraph1": "In each iteration, curr->next is redirected to point backward at prev. Saving nextTemp = curr->next beforehand prevents losing the rest of the list.",
+            "paragraph2": "When the while loop terminates (curr == nullptr), why does prev point to the new head of the reversed list?",
+            "triggerLabel": "Socratic Hint (Pointer Rewiring Trace):"
+          },
+          "visualization": {
+            "badge": "Linked List",
+            "afterTitle": "After (2 → 1 → null)",
+            "beforeTitle": "Before (head → 1 → 2)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "stack-queue-task-1",
+        "node_id": "stack-queue",
+        "task_type": "theory",
+        "title": "Core Theory & Monotonic Stack",
+        "description": "Master circular queue indexing and next-greater-element monotonic stack patterns.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Foundation",
+              "badge": "01",
+              "title": "Stack & Queue Core Principles",
+              "detail": "LIFO and FIFO abstract data types, circular ring buffers, monotonic stacks/deques, and expression parsing."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "02",
+              "title": "Time & Space Boundaries",
+              "detail": "Optimal complexity: O(1) push / pop."
+            },
+            {
+              "tag": "Invariant",
+              "badge": "03",
+              "title": "Structural Invariants",
+              "detail": "Ensure tree/list invariants remain valid."
+            },
+            {
+              "tag": "Practical",
+              "badge": "04",
+              "title": "Practical Trade-offs",
+              "detail": "Evaluate cache locality and edge cases."
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "CORE THEORY: STACK & QUEUE",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "LIFO and FIFO abstract data types, circular ring buffers, monotonic stacks/deques, and expression parsing.",
+          "socraticCheck": "How do operations on Stack & Queue maintain O(1) push / pop?",
+          "highlightTerms": {
+            "concept": "Stack & Queue",
+            "complexity": "O(1) push / pop"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "stack-queue-task-2",
+        "node_id": "stack-queue",
+        "task_type": "quiz",
+        "title": "Quiz: Circular Buffer Trace",
+        "description": "Trace front/rear modulo pointers and stack states across push/pop sequences.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! You identified the correct structural invariant.",
+            "awaiting": "Select an option to test your algorithmic hypothesis.",
+            "incorrect": "Consider the boundary edge cases and memory layouts."
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Option A: Enforces O(1) push / pop invariant properly",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Option B: Degrades asymptotic complexity to O(N^2)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Option C: Fails boundary null check condition",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Option D: None of the above",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "QUIZ: STACK & QUEUE",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "What is the core boundary invariant when implementing Stack & Queue?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "stack-queue-task-3",
+        "node_id": "stack-queue",
+        "task_type": "coding",
+        "title": "Code: Next Greater Element",
+        "description": "Implement an O(N) monotonic stack solver and fixed-capacity ring buffer.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Watch boundary null pointer conditions.",
+            "title": "Code: Next Greater Element",
+            "examples": [
+              {
+                "input": "Sample Input",
+                "output": "Sample Output",
+                "explanation": "Sample trace"
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "Time Complexity: O(1) push / pop",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Implement an O(N) monotonic stack solver and fixed-capacity ring buffer.",
+            "inputFormat": "Standard pointer / array format.",
+            "outputFormat": "Return updated structure or pointer."
+          },
+          "analysis": {
+            "errorCause": "Pointer dereference before null check",
+            "errorTitle": "Runtime Error: boundary null violation",
+            "errorAction": "Add defensive null guard before dereferencing.",
+            "optimalNote": "Meets optimal complexity bounds.",
+            "timeComplexity": "O(1) push / pop",
+            "failedTestLabel": "Test Case #2 Failed",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "Input 1",
+              "label": "Sample Case 1",
+              "expected": "Output 1",
+              "isPublic": true
+            },
+            {
+              "input": "Boundary Input",
+              "label": "Sample Case 2",
+              "expected": "Boundary Output",
+              "isPublic": true
+            },
+            {
+              "input": "Stress Input",
+              "label": "Hidden Case 3",
+              "expected": "Stress Output",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide Reference",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+          "socraticHint": {
+            "paragraph1": "Consider what happens when the input pointer is null.",
+            "paragraph2": "Can you add a defensive guard before accessing child members?",
+            "triggerLabel": "Socratic Guidance:"
+          },
+          "visualization": {
+            "badge": "Stack & Queue",
+            "afterTitle": "After Operation",
+            "beforeTitle": "Before Operation"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "trees-task-1",
+        "node_id": "trees",
+        "task_type": "theory",
+        "title": "Core Theory & Tree Traversals",
+        "description": "Understand structural properties of binary trees and recursive subtree decomposition.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Foundation",
+              "badge": "01",
+              "title": "Trees Core Principles",
+              "detail": "Hierarchical tree terminology, binary tree representations, recursive and iterative DFS (Pre/In/Post-order), and level-order BFS."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "02",
+              "title": "Time & Space Boundaries",
+              "detail": "Optimal complexity: O(N) traversal."
+            },
+            {
+              "tag": "Invariant",
+              "badge": "03",
+              "title": "Structural Invariants",
+              "detail": "Ensure tree/list invariants remain valid."
+            },
+            {
+              "tag": "Practical",
+              "badge": "04",
+              "title": "Practical Trade-offs",
+              "detail": "Evaluate cache locality and edge cases."
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "CORE THEORY: TREES",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "Hierarchical tree terminology, binary tree representations, recursive and iterative DFS (Pre/In/Post-order), and level-order BFS.",
+          "socraticCheck": "How do operations on Trees maintain O(N) traversal?",
+          "highlightTerms": {
+            "concept": "Trees",
+            "complexity": "O(N) traversal"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "oop-inheritance-polymorphism-task-2",
+        "node_id": "oop-inheritance-polymorphism",
+        "task_type": "quiz",
+        "title": "Quiz: Non-Virtual Destructor Leak",
+        "description": "Deleting Derived via Base pointer.",
+        "sequence_order": 2,
+        "content": {
+          "options": [
+            {
+              "id": "A",
+              "text": "~Derived() is skipped, causing memory leak / UB",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Both destructors run",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Only ~Derived() runs",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Compile error",
+              "isCorrect": false
+            }
+          ],
+          "question": "What happens on `delete basePtr;` if `~Base()` is not virtual?"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "trees-task-2",
+        "node_id": "trees",
+        "task_type": "quiz",
+        "title": "Quiz: Traversal Reconstruction",
+        "description": "Reconstruct unique binary trees from traversal sequences and compute subtree heights.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! You identified the correct structural invariant.",
+            "awaiting": "Select an option to test your algorithmic hypothesis.",
+            "incorrect": "Consider the boundary edge cases and memory layouts."
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Option A: Enforces O(N) traversal invariant properly",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Option B: Degrades asymptotic complexity to O(N^2)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Option C: Fails boundary null check condition",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Option D: None of the above",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "QUIZ: TREES",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "What is the core boundary invariant when implementing Trees?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "trees-task-3",
+        "node_id": "trees",
+        "task_type": "coding",
+        "title": "Code: Level-Order BFS Traversal",
+        "description": "Implement tree traversals using an explicit stack and queue without recursion.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Watch boundary null pointer conditions.",
+            "title": "Code: Level-Order BFS Traversal",
+            "examples": [
+              {
+                "input": "Sample Input",
+                "output": "Sample Output",
+                "explanation": "Sample trace"
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "Time Complexity: O(N) traversal",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Implement tree traversals using an explicit stack and queue without recursion.",
+            "inputFormat": "Standard pointer / array format.",
+            "outputFormat": "Return updated structure or pointer."
+          },
+          "analysis": {
+            "errorCause": "Pointer dereference before null check",
+            "errorTitle": "Runtime Error: boundary null violation",
+            "errorAction": "Add defensive null guard before dereferencing.",
+            "optimalNote": "Meets optimal complexity bounds.",
+            "timeComplexity": "O(N) traversal",
+            "failedTestLabel": "Test Case #2 Failed",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "Input 1",
+              "label": "Sample Case 1",
+              "expected": "Output 1",
+              "isPublic": true
+            },
+            {
+              "input": "Boundary Input",
+              "label": "Sample Case 2",
+              "expected": "Boundary Output",
+              "isPublic": true
+            },
+            {
+              "input": "Stress Input",
+              "label": "Hidden Case 3",
+              "expected": "Stress Output",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide Reference",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+          "socraticHint": {
+            "paragraph1": "Consider what happens when the input pointer is null.",
+            "paragraph2": "Can you add a defensive guard before accessing child members?",
+            "triggerLabel": "Socratic Guidance:"
+          },
+          "visualization": {
+            "badge": "Trees",
+            "afterTitle": "After Operation",
+            "beforeTitle": "Before Operation"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "bst-task-1",
+        "node_id": "binary-search-tree",
+        "task_type": "theory",
+        "title": "Core Theory & BST Ordering",
+        "description": "Analyze why balanced BSTs achieve O(log N) operations while skewed trees degrade to O(N).",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "BST Invariant",
+              "badge": "01",
+              "title": "Global Subtree Key Ordering",
+              "detail": "For any node N, max(LeftSubtree) < N.key < min(RightSubtree). Checking only immediate children is insufficient to validate a BST."
+            },
+            {
+              "tag": "Traversal",
+              "badge": "02",
+              "title": "Inorder Traversal Produces Sorted Output",
+              "detail": "Visiting Left → Root → Right on a valid BST always yields keys in strictly ascending order in O(N) time."
+            },
+            {
+              "tag": "Deletion",
+              "badge": "03",
+              "title": "Hibbard Deletion (Two-Child Case)",
+              "detail": "When deleting a node with two children, replace its key with its Inorder Successor (minimum key in right subtree) and delete the successor."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "04",
+              "title": "Average O(log N) vs. Skewed O(N) Worst Case",
+              "detail": "Random insertions yield O(log N) height, whereas sorted insertions without rebalancing degenerate into a linked list of height O(N)."
+            }
+          ],
+          "slideLabel": "Open Slide 11 (PDF)",
+          "headerTitle": "CORE THEORY: BINARY SEARCH TREE INVARIANTS",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "A Binary Search Tree (BST) enforces a strict global ordering property: every key in the left subtree is strictly smaller than the root, and every key in the right subtree is strictly larger.",
+          "socraticCheck": "Why does checking only (node->left->key < node->key && node->right->key > node->key) fail to detect an invalid BST when a deep grandchild violates an ancestor's bound?",
+          "highlightTerms": {
+            "concept": "Binary Search Tree",
+            "complexity": "O(log N) avg"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "bst-task-2",
+        "node_id": "binary-search-tree",
+        "task_type": "quiz",
+        "title": "Quiz: BST Invariant Validation",
+        "description": "Spot invalid local-only BST checks and trace two-child node deletion.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Correct! The minimum key in K's right subtree (Inorder Successor) is larger than everything in K's left subtree and smaller than all remaining keys in K's right subtree.",
+            "awaiting": "Select one of the options (A, B, C, or D) on the left to verify how BST deletion preserves key ordering.",
+            "incorrect": "Think about the ordering requirement: the replacement key must be greater than all keys in K's left subtree, yet smaller than all other keys in K's right subtree. Which node satisfies both bounds?"
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "The minimum node in K's right subtree (Inorder Successor)",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "The maximum node in K's right subtree",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "The minimum node in K's left subtree",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Any leaf node in the tree",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Slide 11 (PDF)",
+          "headerTitle": "QUIZ: BINARY SEARCH TREE",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "When deleting a node K that has two children in a Binary Search Tree, which node can safely replace K while preserving the BST ordering property?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "bst-task-3",
+        "node_id": "binary-search-tree",
+        "task_type": "coding",
+        "title": "Code: BST Insert & Search",
+        "description": "Implement recursive and iterative BST operations maintaining strict key bounds.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Pay special attention to the empty tree edge case where root is nullptr. Ensure you handle it as the base case of your recursion or loop.",
+            "title": "Insert Node into Binary Search Tree",
+            "examples": [
+              {
+                "input": "root = [4, 2, 7, 1, 3], key = 5",
+                "output": "[4, 2, 7, 1, 3, 5]",
+                "explanation": "5 > 4 (traverse right) -> 5 < 7 (traverse left) -> 7's left is null, insert 5 here."
+              },
+              {
+                "input": "root = [40, 20, 60, 10, 30, 50, 70], key = 25",
+                "output": "[40, 20, 60, 10, 30, 50, 70, null, null, 25]",
+                "explanation": "25 < 40 -> 25 > 20 -> 25 < 30 -> insert 25 as 30's left child."
+              },
+              {
+                "input": "root = [], key = 5",
+                "output": "[5]",
+                "explanation": "When the initial tree is empty (root == nullptr), create and return a new node with key = 5."
+              }
+            ],
+            "difficulty": "Easy",
+            "constraints": [
+              "The number of nodes in the tree will be in the range [0, 10^4].",
+              "-10^8 <= Node.val <= 10^8",
+              "All values Node.val are unique.",
+              "-10^8 <= key <= 10^8",
+              "It is guaranteed that key does not exist in the original BST."
+            ],
+            "description": "You are given the root node of a Binary Search Tree (BST) and a key value to insert into the tree. Return the root node of the BST after the insertion. It is guaranteed that the new key does not exist in the original BST.\n\nNotice that there may exist multiple valid ways for the insertion, as long as the tree remains a BST after insertion. You can return any of them.",
+            "inputFormat": "The root pointer TreeNode* root and an integer key to insert.",
+            "outputFormat": "Return TreeNode* pointing to the root of the modified BST."
+          },
+          "analysis": {
+            "errorCause": "Possible cause: missing base case when root == nullptr.",
+            "errorTitle": "Null pointer dereference on root->key in insertBST.",
+            "errorAction": "Return new TreeNode(key) when root is nullptr.",
+            "optimalNote": "Logarithmic path traversal on balanced BST inputs.",
+            "timeComplexity": "O(H) / O(log N)",
+            "failedTestLabel": "Failed (Test Case #1 - Empty Tree)",
+            "spaceComplexity": "O(H) stack"
+          },
+          "fileName": "bst_insert.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "root = [4, 2, 7, 1, 3], key = 5",
+              "label": "Test Case #1: Insert into standard BST",
+              "expected": "[4, 2, 7, 1, 3, 5]",
+              "isPublic": true
+            },
+            {
+              "input": "root = [], key = 5",
+              "label": "Test Case #2: Insert into empty tree",
+              "expected": "[5]",
+              "isPublic": true
+            },
+            {
+              "input": "root = [4, 2, 7], key = 2",
+              "label": "Test Case #3: Duplicate key handling",
+              "expected": "[4, 2, 7] (No duplicate)",
+              "isPublic": false
+            },
+            {
+              "input": "root = [10, 5, 15], key = 1",
+              "label": "Test Case #4: Insert smallest key",
+              "expected": "[10, 5, 15, 1]",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide 11 (PDF)",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nstruct TreeNode {\n    int key;\n    TreeNode *left, *right;\n    TreeNode(int k) : key(k), left(nullptr), right(nullptr) {}\n};\n\nTreeNode* insertBST(TreeNode* root, int key) {\n    if (key < root->key) {\n        root->left = insertBST(root->left, key);\n    } else if (key > root->key) {\n        root->right = insertBST(root->right, key);\n    }\n    return root;\n}\n\nTreeNode* searchBST(TreeNode* root, int target) {\n    if (!root || root->key == target) return root;\n    return target < root->key\n        ? searchBST(root->left, target)\n        : searchBST(root->right, target);\n}",
+          "socraticHint": {
+            "paragraph1": "In insertBST(TreeNode* root, int key), when recursion reaches the empty spot where the new key belongs, root becomes nullptr.",
+            "paragraph2": "What base condition should you place at the top of insertBST before comparing key < root->key?",
+            "triggerLabel": "Socratic Hint (Triggered by Test Case #1):"
+          },
+          "visualization": {
+            "badge": "Binary Search Tree",
+            "afterTitle": "Subtree Insertion",
+            "beforeTitle": "Recursive Search Path"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "avl-tree-task-1",
+        "node_id": "avl-tree",
+        "task_type": "theory",
+        "title": "Core Theory & Big-O",
+        "description": "Master height balance factors BF(N) = height(left) - height(right) and O(1) structural rotations.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Invariant",
+              "badge": "01",
+              "title": "AVL Balance Factor Invariant",
+              "detail": "Balance Factor (BF) = Height(Left Subtree) - Height(Right Subtree). Every node in an AVL tree must strictly satisfy BF ∈ {-1, 0, +1}."
+            },
+            {
+              "tag": "LL Rotation",
+              "badge": "02",
+              "title": "Left-Heavy Imbalance (BF = +2 → Right Rotation)",
+              "detail": "When inserting into the left-left (LL) subtree causes BF = +2, a single Right Rotation around the unbalanced root restores height balance in O(1) time."
+            },
+            {
+              "tag": "RR Rotation",
+              "badge": "03",
+              "title": "Right-Heavy Imbalance (BF = -2 → Left Rotation)",
+              "detail": "When inserting into the right-right (RR) subtree causes BF = -2, a single Left Rotation pulls the right child up as the new subtree root."
+            },
+            {
+              "tag": "Big-O Guaranteed",
+              "badge": "04",
+              "title": "Guaranteed O(log N) Worst-Case Complexity",
+              "detail": "By bounding tree height to ~1.44 log2(N), AVL trees prevent degenerate O(N) skewed chains on sorted inputs for Search, Insert, and Delete."
+            }
+          ],
+          "slideLabel": "Open Slide 14 (PDF)",
+          "headerTitle": "CORE THEORY: AVL TREE & BIG-O COMPLEXITY",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "An AVL Tree is a self-balancing Binary Search Tree where the difference between heights of left and right subtrees (the Balance Factor) cannot exceed 1 for any node.",
+          "socraticCheck": "Notice how the Balance Factor only depends on the height of direct child subtrees. Why do we only need O(1) local pointer updates during a rotation instead of rebuilding the entire tree?",
+          "highlightTerms": {
+            "bound": "1",
+            "concept": "Balance Factor"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "avl-tree-task-2",
+        "node_id": "avl-tree",
+        "task_type": "quiz",
+        "title": "Quiz: Balance Factor",
+        "description": "Identify LL, RR, LR, and RL imbalance cases and choose the exact rotation sequence.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! The Balance Factor is +2 (3 - 1 = 2). Because the Left Subtree is heavier, rotating the tree to the Right restores balance in O(1) time.",
+            "awaiting": "Select one of the options (A, B, C, or D) on the left. If your choice has a logical flaw, Socratic AI will guide your reasoning without spoiling the answer.",
+            "incorrect": "You calculated the Balance Factor as +2 (3 - 1 = 2). However, since the Left Subtree is taller (height 3 > height 1), which direction should the heavy left side rotate towards to restore balance?"
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Balance Factor = +2 (Requires Right Rotation)",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Balance Factor = +2 (Requires Left Rotation)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Balance Factor = -2 (Requires Right Rotation)",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Balance Factor = +1 (Tree is already balanced)",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Slide 14 (PDF)",
+          "headerTitle": "QUIZ: AVL TREE",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "Given an AVL Tree node N with Left Subtree Height = 3 and Right Subtree Height = 1. What is the Balance Factor of node N, and does it require a rotation?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "avl-tree-task-3",
+        "node_id": "avl-tree",
+        "task_type": "coding",
+        "title": "Code: Right Rotation",
+        "description": "Implement rotateRight and rotateLeft with null-safe pointer updates and height recalculation.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Recalculate heights in bottom-up order: update height(y) first, and then height(x), because y is now a child of x.",
+            "title": "Right Rotation on AVL Tree",
+            "examples": [
+              {
+                "input": "y = [30, left: 20, right: 40]\ny->left = [20, left: 10, right: 25]",
+                "output": "x = [20, left: 10, right: 30]\nx->right = [30, left: 25, right: 40]",
+                "explanation": "Node 20 is promoted to the new subtree root. Node 30 becomes the right child of 20, and subtree T2 (rooted at 25) is transferred to become the left child of 30."
+              },
+              {
+                "input": "y = [10, left: 5, right: null]\ny->left = [5, left: 2, right: null]",
+                "output": "x = [5, left: 2, right: 10]",
+                "explanation": "Node 5 becomes the root with left child 2 and right child 10. T2 is nullptr."
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "The number of nodes in the subtree is in the range [1, 10^4].",
+              "-10^5 <= Node.key <= 10^5",
+              "Node y and its left child y->left are guaranteed to be non-null in valid rotation calls.",
+              "Time Complexity: O(1)",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Given the root pointer y of an unbalanced subtree in an AVL tree, perform a single Right Rotation (Clockwise) so that its left child x becomes the new subtree root while preserving the Binary Search Tree (BST) ordering property. After rotation, update the heights of both affected nodes and return the pointer to the new root node x.",
+            "inputFormat": "A pointer Node* y pointing to the root of the unbalanced subtree.",
+            "outputFormat": "Return Node* pointing to the new root node x of the rotated subtree."
+          },
+          "analysis": {
+            "errorCause": "Possible cause: dereferencing a null pointer (y->left).",
+            "errorTitle": "Segmentation fault (SIGSEGV) on Test Case #5.",
+            "errorAction": "Check for null pointers before accessing y->left.",
+            "optimalNote": "Meets optimal bounds for AVL operations.",
+            "timeComplexity": "O(1)",
+            "failedTestLabel": "Failed (Test Case #5)",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "y = [30, 20, 40], y->left = [20, 10, 25]",
+              "label": "Test Case #1: Standard Left-Heavy Tree",
+              "expected": "x = 20, rotated",
+              "isPublic": true
+            },
+            {
+              "input": "y = [10, 5, null], y->left = [5, 2, null]",
+              "label": "Test Case #2: Single Branch Rotation",
+              "expected": "x = 5, rotated",
+              "isPublic": true
+            },
+            {
+              "input": "y = nullptr",
+              "label": "Test Case #3: Boundary Null Subtree",
+              "expected": "nullptr (Graceful Guard)",
+              "isPublic": false
+            },
+            {
+              "input": "y = [20, 10, null], y->left = [10, 5, null]",
+              "label": "Test Case #4: Left Child Has No Right Child",
+              "expected": "x = 10, x->right = 20",
+              "isPublic": false
+            },
+            {
+              "input": "y = [50, 30, 70], y->left = [30, 20, 40]",
+              "label": "Test Case #5: Full Subtree Rebalancing",
+              "expected": "x = 30, x->left = 20, x->right = 50",
+              "isPublic": false
+            },
+            {
+              "input": "y = [100, 50, 150]",
+              "label": "Test Case #6: Deep Subtree Height Recalculation",
+              "expected": "Updated heights bottom-up",
+              "isPublic": false
+            },
+            {
+              "input": "y = [2, 1, null]",
+              "label": "Test Case #7: Minimal Tree Rotation",
+              "expected": "x = 1, x->right = 2",
+              "isPublic": false
+            },
+            {
+              "input": "10000 sequential random rotations",
+              "label": "Test Case #8: Stress Verification (10^4 iterations)",
+              "expected": "Valid AVL balance factor",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide 14 (PDF)",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nstruct Node {\n    int key, height;\n    Node *left, *right;\n    Node(int k) : key(k), height(1), left(nullptr), right(nullptr) {}\n};\n\nint height(Node* n) {\n    return n ? n->height : 0;\n}\n\nint getBalance(Node* n) {\n    return n ? height(n->left) - height(n->right) : 0;\n}\n\nNode* rotateRight(Node* y) {\n    Node* x = y->left;\n    Node* T2 = x->right;\n\n    x->right = y;\n    y->left = T2;\n\n    y->height = max(height(y->left), height(y->right)) + 1;\n    x->height = max(height(x->left), height(x->right)) + 1;\n\n    return x;\n}",
+          "socraticHint": {
+            "paragraph1": "Before accessing y->left, make sure that y is not a null pointer. In some test cases, the node can be empty, which leads to a segmentation fault when you try to dereference it.",
+            "paragraph2": "Can you add a null check at the beginning of the rotateRight function?",
+            "triggerLabel": "Socratic Hint (Triggered by Test Case #5):"
+          },
+          "visualization": {
+            "badge": "AVL Tree",
+            "afterTitle": "After",
+            "beforeTitle": "Before (Right Rotation)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "sorting-task-1",
+        "node_id": "sorting-algorithms",
+        "task_type": "theory",
+        "title": "Core Theory & Sorting Stability",
+        "description": "Compare Merge Sort, Quick Sort pivot selection, and the Ω(N log N) decision-tree lower bound.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Foundation",
+              "badge": "01",
+              "title": "Sorting Algorithms Core Principles",
+              "detail": "Comparison and non-comparison sorting: Merge Sort, Quick Sort partitioning, Heap Sort, stability analysis, and lower bounds."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "02",
+              "title": "Time & Space Boundaries",
+              "detail": "Optimal complexity: O(N log N)."
+            },
+            {
+              "tag": "Invariant",
+              "badge": "03",
+              "title": "Structural Invariants",
+              "detail": "Ensure tree/list invariants remain valid."
+            },
+            {
+              "tag": "Practical",
+              "badge": "04",
+              "title": "Practical Trade-offs",
+              "detail": "Evaluate cache locality and edge cases."
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "CORE THEORY: SORTING ALGORITHMS",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "Comparison and non-comparison sorting: Merge Sort, Quick Sort partitioning, Heap Sort, stability analysis, and lower bounds.",
+          "socraticCheck": "How do operations on Sorting Algorithms maintain O(N log N)?",
+          "highlightTerms": {
+            "concept": "Sorting Algorithms",
+            "complexity": "O(N log N)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "sorting-task-2",
+        "node_id": "sorting-algorithms",
+        "task_type": "quiz",
+        "title": "Quiz: Partition & Stability",
+        "description": "Trace pivot partitioning steps and identify worst-case input permutations.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! You identified the correct structural invariant.",
+            "awaiting": "Select an option to test your algorithmic hypothesis.",
+            "incorrect": "Consider the boundary edge cases and memory layouts."
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Option A: Enforces O(N log N) invariant properly",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Option B: Degrades asymptotic complexity to O(N^2)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Option C: Fails boundary null check condition",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Option D: None of the above",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "QUIZ: SORTING ALGORITHMS",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "What is the core boundary invariant when implementing Sorting Algorithms?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "sorting-task-3",
+        "node_id": "sorting-algorithms",
+        "task_type": "coding",
+        "title": "Code: Quick Sort & Merge Sort",
+        "description": "Implement randomized Quick Sort and count array inversions using Merge Sort.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Watch boundary null pointer conditions.",
+            "title": "Code: Quick Sort & Merge Sort",
+            "examples": [
+              {
+                "input": "Sample Input",
+                "output": "Sample Output",
+                "explanation": "Sample trace"
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "Time Complexity: O(N log N)",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Implement randomized Quick Sort and count array inversions using Merge Sort.",
+            "inputFormat": "Standard pointer / array format.",
+            "outputFormat": "Return updated structure or pointer."
+          },
+          "analysis": {
+            "errorCause": "Pointer dereference before null check",
+            "errorTitle": "Runtime Error: boundary null violation",
+            "errorAction": "Add defensive null guard before dereferencing.",
+            "optimalNote": "Meets optimal complexity bounds.",
+            "timeComplexity": "O(N log N)",
+            "failedTestLabel": "Test Case #2 Failed",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "Input 1",
+              "label": "Sample Case 1",
+              "expected": "Output 1",
+              "isPublic": true
+            },
+            {
+              "input": "Boundary Input",
+              "label": "Sample Case 2",
+              "expected": "Boundary Output",
+              "isPublic": true
+            },
+            {
+              "input": "Stress Input",
+              "label": "Hidden Case 3",
+              "expected": "Stress Output",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide Reference",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+          "socraticHint": {
+            "paragraph1": "Consider what happens when the input pointer is null.",
+            "paragraph2": "Can you add a defensive guard before accessing child members?",
+            "triggerLabel": "Socratic Guidance:"
+          },
+          "visualization": {
+            "badge": "Sorting Algorithms",
+            "afterTitle": "After Operation",
+            "beforeTitle": "Before Operation"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "graph-task-1",
+        "node_id": "graph-algorithms",
+        "task_type": "theory",
+        "title": "Core Theory & Graph Traversals",
+        "description": "Contrast adjacency lists vs. matrices and analyze BFS/DFS time and space complexity.",
+        "sequence_order": 1,
+        "content": {
+          "cards": [
+            {
+              "tag": "Foundation",
+              "badge": "01",
+              "title": "Graph Algorithms Core Principles",
+              "detail": "Adjacency list/matrix representations, BFS shortest path, DFS cycle detection, topological sorting, and Dijkstra's algorithm."
+            },
+            {
+              "tag": "Complexity",
+              "badge": "02",
+              "title": "Time & Space Boundaries",
+              "detail": "Optimal complexity: O(V + E)."
+            },
+            {
+              "tag": "Invariant",
+              "badge": "03",
+              "title": "Structural Invariants",
+              "detail": "Ensure tree/list invariants remain valid."
+            },
+            {
+              "tag": "Practical",
+              "badge": "04",
+              "title": "Practical Trade-offs",
+              "detail": "Evaluate cache locality and edge cases."
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "CORE THEORY: GRAPH ALGORITHMS",
+          "moduleLabel": "Module 1 of 3:",
+          "summaryLead": "Adjacency list/matrix representations, BFS shortest path, DFS cycle detection, topological sorting, and Dijkstra's algorithm.",
+          "socraticCheck": "How do operations on Graph Algorithms maintain O(V + E)?",
+          "highlightTerms": {
+            "concept": "Graph Algorithms",
+            "complexity": "O(V + E)"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "oop-inheritance-polymorphism-task-3",
+        "node_id": "oop-inheritance-polymorphism",
+        "task_type": "coding",
+        "title": "Code: Polymorphic Shape Hierarchy",
+        "description": "Implement Shape with virtual destructor and area().",
+        "sequence_order": 3,
+        "content": {
+          "language": "C++",
+          "starterCode": "#include <iostream>\nusing namespace std;\nclass Shape {\npublic:\n    virtual ~Shape() = default;\n    virtual long long area() const = 0;\n};\n"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-templates-smart-pointers-task-1",
+        "node_id": "oop-templates-smart-pointers",
+        "task_type": "theory",
+        "title": "Core Theory: Templates & Smart Pointers",
+        "description": "unique_ptr, shared_ptr, and weak_ptr.",
+        "sequence_order": 1,
+        "content": {
+          "markdown": "# Templates & Smart Pointers\nUse `std::weak_ptr` to break cyclic `std::shared_ptr` references."
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "graph-task-2",
+        "node_id": "graph-algorithms",
+        "task_type": "quiz",
+        "title": "Quiz: Topological & Dijkstra",
+        "description": "Trace priority queue edge relaxations and DAG in-degree ordering.",
+        "sequence_order": 2,
+        "content": {
+          "hints": {
+            "correct": "Spot on! You identified the correct structural invariant.",
+            "awaiting": "Select an option to test your algorithmic hypothesis.",
+            "incorrect": "Consider the boundary edge cases and memory layouts."
+          },
+          "options": [
+            {
+              "id": "A",
+              "text": "Option A: Enforces O(V + E) invariant properly",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Option B: Degrades asymptotic complexity to O(N^2)",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Option C: Fails boundary null check condition",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Option D: None of the above",
+              "isCorrect": false
+            }
+          ],
+          "slideLabel": "Open Syllabus Reference (PDF)",
+          "headerTitle": "QUIZ: GRAPH ALGORITHMS",
+          "questionLabel": "Question 2 of 3:",
+          "questionPrompt": "What is the core boundary invariant when implementing Graph Algorithms?"
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "graph-task-3",
+        "node_id": "graph-algorithms",
+        "task_type": "coding",
+        "title": "Code: Dijkstra Shortest Path",
+        "description": "Implement shortest-path algorithms on weighted and unweighted directed graphs.",
+        "sequence_order": 3,
+        "content": {
+          "problem": {
+            "notes": "Watch boundary null pointer conditions.",
+            "title": "Code: Dijkstra Shortest Path",
+            "examples": [
+              {
+                "input": "Sample Input",
+                "output": "Sample Output",
+                "explanation": "Sample trace"
+              }
+            ],
+            "difficulty": "Medium",
+            "constraints": [
+              "Time Complexity: O(V + E)",
+              "Auxiliary Space: O(1)"
+            ],
+            "description": "Implement shortest-path algorithms on weighted and unweighted directed graphs.",
+            "inputFormat": "Standard pointer / array format.",
+            "outputFormat": "Return updated structure or pointer."
+          },
+          "analysis": {
+            "errorCause": "Pointer dereference before null check",
+            "errorTitle": "Runtime Error: boundary null violation",
+            "errorAction": "Add defensive null guard before dereferencing.",
+            "optimalNote": "Meets optimal complexity bounds.",
+            "timeComplexity": "O(V + E)",
+            "failedTestLabel": "Test Case #2 Failed",
+            "spaceComplexity": "O(1)"
+          },
+          "fileName": "solution.cpp",
+          "language": "C++",
+          "testCases": [
+            {
+              "input": "Input 1",
+              "label": "Sample Case 1",
+              "expected": "Output 1",
+              "isPublic": true
+            },
+            {
+              "input": "Boundary Input",
+              "label": "Sample Case 2",
+              "expected": "Boundary Output",
+              "isPublic": true
+            },
+            {
+              "input": "Stress Input",
+              "label": "Hidden Case 3",
+              "expected": "Stress Output",
+              "isPublic": false
+            }
+          ],
+          "slideLabel": "Open Slide Reference",
+          "initialCode": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+          "socraticHint": {
+            "paragraph1": "Consider what happens when the input pointer is null.",
+            "paragraph2": "Can you add a defensive guard before accessing child members?",
+            "triggerLabel": "Socratic Guidance:"
+          },
+          "visualization": {
+            "badge": "Graph Algorithms",
+            "afterTitle": "After Operation",
+            "beforeTitle": "Before Operation"
+          }
+        },
+        "created_at": "2026-11-16T03:05:34.333982+00:00"
+      },
+      {
+        "id": "oop-classes-encapsulation-task-1",
+        "node_id": "oop-classes-encapsulation",
+        "task_type": "theory",
+        "title": "Core Theory: Data Hiding & Const Correctness",
+        "description": "Class invariants and const member functions.",
+        "sequence_order": 1,
+        "content": {
+          "markdown": "# Classes & Encapsulation\nEncapsulation protects class invariants via private fields and const-correct getters."
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-classes-encapsulation-task-2",
+        "node_id": "oop-classes-encapsulation",
+        "task_type": "quiz",
+        "title": "Quiz: Const Member Guarantees",
+        "description": "Verify const member rules.",
+        "sequence_order": 2,
+        "content": {
+          "options": [
+            {
+              "id": "A",
+              "text": "Compile-time error",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Compiles normally",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Runtime crash",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Creates a copy",
+              "isCorrect": false
+            }
+          ],
+          "question": "What happens if a const member function modifies a normal member variable?"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-classes-encapsulation-task-3",
+        "node_id": "oop-classes-encapsulation",
+        "task_type": "coding",
+        "title": "Code: BankAccount Invariant",
+        "description": "Implement safe deposit and withdraw.",
+        "sequence_order": 3,
+        "content": {
+          "language": "C++",
+          "starterCode": "#include <iostream>\nusing namespace std;\nclass BankAccount {\n    long long balance;\npublic:\n    BankAccount(long long b) : balance(b >= 0 ? b : 0) {}\n    bool withdraw(long long amt) { if (amt <= 0 || amt > balance) return false; balance -= amt; return true; }\n};\n"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-constructors-raii-task-1",
+        "node_id": "oop-constructors-raii",
+        "task_type": "theory",
+        "title": "Core Theory: RAII & Rule of Three",
+        "description": "Deep copy, destructor, and self-assignment guard.",
+        "sequence_order": 1,
+        "content": {
+          "markdown": "# Constructors & RAII\nAlways implement Destructor, Copy Constructor, and Copy Assignment with self-assignment check `if (this == &other) return *this;`."
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-constructors-raii-task-2",
+        "node_id": "oop-constructors-raii",
+        "task_type": "quiz",
+        "title": "Quiz: Self-Assignment Trap",
+        "description": "Identify why self-assignment check is mandatory.",
+        "sequence_order": 2,
+        "content": {
+          "options": [
+            {
+              "id": "A",
+              "text": "Deletes buffer before copying, reading dangling memory",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Compiler skips it",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "No effect",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Syntax error",
+              "isCorrect": false
+            }
+          ],
+          "question": "What happens in `s1 = s1` if `delete[] buffer` runs before checking `this == &other`?"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-constructors-raii-task-3",
+        "node_id": "oop-constructors-raii",
+        "task_type": "coding",
+        "title": "Code: Safe Copy Assignment (RAII)",
+        "description": "Fix operator= with self-assignment check and deep copy.",
+        "sequence_order": 3,
+        "content": {
+          "language": "C++",
+          "starterCode": "#include <iostream>\nusing namespace std;\nclass IntBuffer {\npublic:\n    int* data; int size;\n    IntBuffer(int n) : size(n), data(new int[n]()) {}\n    ~IntBuffer() { delete[] data; }\n    IntBuffer& operator=(const IntBuffer& other) {\n        if (this == &other) return *this;\n        delete[] data;\n        size = other.size;\n        data = new int[size];\n        for (int i = 0; i < size; ++i) data[i] = other.data[i];\n        return *this;\n    }\n};\n"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-operator-overloading-task-1",
+        "node_id": "oop-operator-overloading",
+        "task_type": "theory",
+        "title": "Core Theory: Operator Overloading",
+        "description": "Value vs reference returns in operators.",
+        "sequence_order": 1,
+        "content": {
+          "markdown": "# Operator Overloading\nBinary arithmetic operators return a new value; stream operators return `ostream&`."
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-operator-overloading-task-2",
+        "node_id": "oop-operator-overloading",
+        "task_type": "quiz",
+        "title": "Quiz: Return Type of operator+",
+        "description": "Why operator+ returns by value.",
+        "sequence_order": 2,
+        "content": {
+          "options": [
+            {
+              "id": "A",
+              "text": "Local result on stack is destroyed upon return",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "References are forbidden in C++",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Value return is faster",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "Const methods cannot return references",
+              "isCorrect": false
+            }
+          ],
+          "question": "Why must binary `operator+` return by value instead of reference?"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-operator-overloading-task-3",
+        "node_id": "oop-operator-overloading",
+        "task_type": "coding",
+        "title": "Code: Complex Number Operators",
+        "description": "Implement operator+ and operator==.",
+        "sequence_order": 3,
+        "content": {
+          "language": "C++",
+          "starterCode": "#include <iostream>\nusing namespace std;\nstruct Complex {\n    long long re, im;\n    Complex(long long r = 0, long long i = 0) : re(r), im(i) {}\n    Complex operator+(const Complex& rhs) const { return Complex(re + rhs.re, im + rhs.im); }\n};\n"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-inheritance-polymorphism-task-1",
+        "node_id": "oop-inheritance-polymorphism",
+        "task_type": "theory",
+        "title": "Core Theory: VTable & Virtual Destructors",
+        "description": "Dynamic dispatch and polymorphic cleanup.",
+        "sequence_order": 1,
+        "content": {
+          "markdown": "# Inheritance & Polymorphism\nPolymorphic base classes must declare `virtual ~Base()` to avoid leaking derived resources."
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-templates-smart-pointers-task-2",
+        "node_id": "oop-templates-smart-pointers",
+        "task_type": "quiz",
+        "title": "Quiz: Breaking shared_ptr Cycles",
+        "description": "Resolve circular reference leaks.",
+        "sequence_order": 2,
+        "content": {
+          "options": [
+            {
+              "id": "A",
+              "text": "Change one link to std::weak_ptr",
+              "isCorrect": true
+            },
+            {
+              "id": "B",
+              "text": "Call delete manually",
+              "isCorrect": false
+            },
+            {
+              "id": "C",
+              "text": "Use raw pointers only",
+              "isCorrect": false
+            },
+            {
+              "id": "D",
+              "text": "shared_ptr has automatic GC",
+              "isCorrect": false
+            }
+          ],
+          "question": "How do you break a circular reference between two `std::shared_ptr` nodes?"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "oop-templates-smart-pointers-task-3",
+        "node_id": "oop-templates-smart-pointers",
+        "task_type": "coding",
+        "title": "Code: Generic Clamp Template",
+        "description": "Write template function clampValue<T>.",
+        "sequence_order": 3,
+        "content": {
+          "language": "C++",
+          "starterCode": "#include <iostream>\nusing namespace std;\ntemplate <typename T>\nT clampValue(T val, T low, T high) {\n    return (val < low) ? low : (val > high ? high : val);\n}\n"
+        },
+        "created_at": "2026-11-18T08:29:40.584566+00:00"
+      }
+    ],
+    "user_progress": [
+      {
+        "id": "00000010-0000-4000-8000-000000000001",
+        "user_id": "00000001-0000-4000-8000-000000000001",
+        "roadmap_flow_state": "populated",
+        "completed_tasks": {
+          "trees-task-1": true,
+          "trees-task-2": true,
+          "trees-task-3": true,
+          "avl-tree-task-1": true,
+          "linked-list-task-1": true,
+          "linked-list-task-2": true,
+          "linked-list-task-3": true,
+          "stack-queue-task-1": true,
+          "stack-queue-task-2": true,
+          "arrays-strings-task-1": true,
+          "arrays-strings-task-2": true,
+          "arrays-strings-task-3": true,
+          "dsa-foundations-task-1": true,
+          "dsa-foundations-task-2": true,
+          "dsa-foundations-task-3": true,
+          "binary-search-tree-task-1": true,
+          "binary-search-tree-task-2": true,
+          "binary-search-tree-task-3": true,
+          "complexity-analysis-task-1": true,
+          "complexity-analysis-task-2": true,
+          "oop-constructors-raii-task-1": true,
+          "oop-constructors-raii-task-2": true,
+          "oop-classes-encapsulation-task-1": true,
+          "oop-classes-encapsulation-task-2": true,
+          "oop-classes-encapsulation-task-3": true
+        },
+        "quiz_answers": {
+          "dsa-foundations-task-2": {
+            "isSubmitted": true,
+            "selectedOption": "A"
+          }
+        },
+        "code_drafts": {
+          "dsa-foundations-task-3": {
+            "code": "#include <iostream>\nusing namespace std;\n\nint solve() {\n    return 0;\n}",
+            "language": "C++",
+            "isSubmitted": true
+          }
+        },
+        "hints_remaining": {
+          "default": 2,
+          "avl-tree": 2,
+          "sorting-algorithms": 3
+        },
+        "updated_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "00000009-0000-4000-8000-000000000002",
+        "user_id": "00000001-0000-4000-8000-000000000002",
+        "roadmap_flow_state": "populated",
+        "completed_tasks": {},
+        "quiz_answers": {},
+        "code_drafts": {},
+        "hints_remaining": {
+          "default": 3
+        },
+        "updated_at": "2026-11-18T08:29:40.584566+00:00"
+      },
+      {
+        "id": "00000009-0000-4000-8000-000000000003",
+        "user_id": "00000001-0000-4000-8000-000000000003",
+        "roadmap_flow_state": "populated",
+        "completed_tasks": {},
+        "quiz_answers": {},
+        "code_drafts": {},
+        "hints_remaining": {
+          "default": 3
+        },
+        "updated_at": "2026-11-18T08:29:40.584566+00:00"
+      }
+    ],
+    "code_submissions": [
+      {
+        "id": "00000015-0000-4000-8000-000000000001",
+        "user_id": "00000001-0000-4000-8000-000000000001",
+        "task_id": "avl-tree-task-3",
+        "action_type": "submit",
+        "status": "success",
+        "code": "#include <iostream>\r\nusing namespace std;\r\n\r\nstruct Node {\r\n    int key, height;\r\n    Node *left, *right;\r\n    Node(int k) : key(k), height(1), left(nullptr), right(nullptr) {}\r\n};\r\n\r\nint height(Node* n) {\r\n    return n ? n->height : 0;\r\n}\r\n\r\nNode* rotateRight(Node* y) {\r\n    if (!y || !y->left) return y; // Null guard added!\r\n    Node* x = y->left;\r\n    Node* T2 = x->right;\r\n\r\n    x->right = y;\r\n    y->left = T2;\r\n\r\n    y->height = max(height(y->left), height(y->right)) + 1;\r\n    x->height = max(height(x->left), height(x->right)) + 1;\r\n\r\n    return x;\r\n}",
+        "language": "C++",
+        "passed_test_cases": 8,
+        "total_test_cases": 8,
+        "runtime_ms": 14,
+        "memory_mb": "4.2 MB",
+        "stdout": "[Execution Success]\\nAll 8 comprehensive test cases passed successfully.\\nTime Complexity: O(1) optimal.\\nAuxiliary Space: O(1).",
+        "error_details": null,
+        "test_case_results": [
+          {
+            "id": 1,
+            "label": "Test Case #1: Standard Left-Heavy Tree",
+            "actual": "x = 20, rotated",
+            "passed": true
+          },
+          {
+            "id": 2,
+            "label": "Test Case #2: Single Branch Rotation",
+            "actual": "x = 5, rotated",
+            "passed": true
+          },
+          {
+            "id": 3,
+            "label": "Test Case #3: Boundary Null Subtree",
+            "actual": "nullptr (Graceful Guard)",
+            "passed": true
+          },
+          {
+            "id": 4,
+            "label": "Test Case #4: Left Child Has No Right Child",
+            "actual": "x = 10, x->right = 20",
+            "passed": true
+          },
+          {
+            "id": 5,
+            "label": "Test Case #5: Full Subtree Rebalancing",
+            "actual": "x = 30, x->left = 20, x->right = 50",
+            "passed": true
+          },
+          {
+            "id": 6,
+            "label": "Test Case #6: Deep Subtree Height Recalculation",
+            "actual": "Updated heights bottom-up",
+            "passed": true
+          },
+          {
+            "id": 7,
+            "label": "Test Case #7: Minimal Tree Rotation",
+            "actual": "x = 1, x->right = 2",
+            "passed": true
+          },
+          {
+            "id": 8,
+            "label": "Test Case #8: Stress Verification (10^4 iterations)",
+            "actual": "Valid AVL balance factor",
+            "passed": true
+          }
+        ],
+        "submitted_at": "2026-11-16T00:05:34.333982+00:00"
+      }
+    ]
+  },
+  "audit": {
+    "orphan_nodes": [],
+    "orphan_tasks": [],
+    "incomplete_nodes": []
+  }
+}

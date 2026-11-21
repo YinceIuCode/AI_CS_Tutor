@@ -536,6 +536,802 @@ analysis: {
       slideLabel: "Open Slide 06 (PDF)",
     },
   },
+
+  /* ==================== 4. OOP C++: CLASSES & ENCAPSULATION ==================== */
+  "oop-classes-encapsulation": {
+    "oop-classes-encapsulation-task-1": {
+      nodeId: "oop-classes-encapsulation",
+      taskId: "oop-classes-encapsulation-task-1",
+      type: "theory",
+      headerTitle: "CORE THEORY: CLASSES & ENCAPSULATION (O(1))",
+      moduleLabel: "Module 1 of 3:",
+      summaryLead:
+        "Encapsulation bundles data attributes with methods operating on that data while restricting direct access to object internals via private/protected access specifiers.",
+      cards: [
+        {
+          badge: "01",
+          title: "Access Specifiers & Information Hiding",
+          detail:
+            "public members define the class interface; private members hide state representation and prevent invariant corruption.",
+          tag: "Encapsulation",
+        },
+        {
+          badge: "02",
+          title: "The Implicit this Pointer",
+          detail:
+            "Every non-static member function receives a hidden pointer 'this' to the invoking object instance (Type* const this).",
+          tag: "this Pointer",
+        },
+        {
+          badge: "03",
+          title: "Const Member Functions",
+          detail:
+            "Appending const promises not to modify non-mutable members, allowing safe invocation on const object references.",
+          tag: "Constness",
+        },
+        {
+          badge: "04",
+          title: "Memory Layout & Class Alignment",
+          detail:
+            "Non-virtual classes incur zero runtime memory overhead compared to raw C structs with member padding.",
+          tag: "Zero-Cost",
+        },
+      ],
+      socraticCheck:
+        "Why is it considered dangerous in OOP to expose raw member pointers through public getter functions without const qualifiers?",
+      slideLabel: "Open Lecture 01 Slides (PDF)",
+    },
+    "oop-classes-encapsulation-task-2": {
+      nodeId: "oop-classes-encapsulation",
+      taskId: "oop-classes-encapsulation-task-2",
+      type: "quiz",
+      headerTitle: "QUIZ: CONST MEMBER FUNCTIONS & ACCESS SPECIFIERS",
+      questionLabel: "Question 2 of 3:",
+      questionPrompt:
+        "Which of the following member functions promises not to modify any non-mutable member variables of the calling object?",
+      options: [
+        { id: "A", text: "const double getGPA()", isCorrect: false },
+        { id: "B", text: "double getGPA() const", isCorrect: true },
+        { id: "C", text: "virtual double getGPA()", isCorrect: false },
+        { id: "D", text: "static double getGPA()", isCorrect: false },
+      ],
+      hints: {
+        awaiting: "Notice where the const keyword is placed relative to the parameter list.",
+        correct: "Exactly right! Placing const after the parameter list changes the type of 'this' to 'const Type*', guarding all member variables against mutation.",
+        incorrect: "Placing const before the return type only makes the returned value constant, not the object itself.",
+      },
+      slideLabel: "Open Lecture 01 Slides (PDF)",
+    },
+    "oop-classes-encapsulation-task-3": {
+      nodeId: "oop-classes-encapsulation",
+      taskId: "oop-classes-encapsulation-task-3",
+      type: "coding",
+      fileName: "solution.cpp",
+      language: "C++",
+      initialCode: `#include <iostream>
+#include <string>
+#include <iomanip>
+using namespace std;
+
+class Student {
+private:
+    string name;
+    double gpa;
+
+public:
+    // Constructor
+    Student(string n, double g) : name(n) {
+        setGPA(g);
+    }
+
+    // Getters
+    string getName() const { return name; }
+    double getGPA() const { return gpa; }
+
+    // Setter with validation: GPA must be between 0.0 and 4.0
+    void setGPA(double g) {
+        if (g >= 0.0 && g <= 4.0) {
+            gpa = g;
+        } else {
+            gpa = 0.0;
+        }
+    }
+
+    void display() const {
+        cout << name << " - " << fixed << setprecision(2) << gpa << endl;
+    }
+};
+
+int main() {
+    Student s("Nguyen Van A", 3.85);
+    s.display();
+    return 0;
+}`,
+      starterCode: `#include <iostream>
+#include <string>
+#include <iomanip>
+using namespace std;
+
+class Student {
+private:
+    string name;
+    double gpa;
+
+public:
+    Student(string n, double g) : name(n) {
+        setGPA(g);
+    }
+
+    string getName() const { return name; }
+    double getGPA() const { return gpa; }
+
+    // TODO: Implement setGPA with validation [0.0, 4.0]
+    void setGPA(double g) {
+        // Your code here
+    }
+
+    void display() const {
+        cout << name << " - " << fixed << setprecision(2) << gpa << endl;
+    }
+};
+
+int main() {
+    Student s("Test Student", 3.85);
+    s.display();
+    return 0;
+}`,
+      problem: {
+        title: "Student Class with Validated GPA Encapsulation",
+        difficulty: "Easy",
+        description:
+          "Design a Student class with private fields for name and gpa. Ensure gpa is strictly bounded in [0.0, 4.0].\n\nImplement setGPA with validation, getName/getGPA const getters, and display.",
+        inputFormat: "Method calls `s.setGPA(value)`.",
+        outputFormat: "GPA bounded in [0.0, 4.0].",
+        examples: [
+          { input: "s.setGPA(3.85)", output: "GPA = 3.85", explanation: "Valid GPA is preserved." },
+          { input: "s.setGPA(-1.0)", output: "GPA = 0.00", explanation: "Negative GPA resets to 0.0." },
+        ],
+        constraints: ["GPA in range [0.0, 4.0]", "All display methods must be const"],
+      },
+      description: {
+        title: "Student Class with Validated GPA Encapsulation",
+        difficulty: "Easy",
+        difficultyColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+        paragraph1:
+          "Design a Student class with private fields for name and gpa. Ensure gpa is strictly bounded in [0.0, 4.0].",
+        examples: [
+          { id: 1, input: "s.setGPA(3.85)", output: "GPA = 3.85", explanation: "Valid GPA is preserved." },
+          { id: 2, input: "s.setGPA(-1.0)", output: "GPA = 0.00", explanation: "Negative GPA resets to 0.0." },
+        ],
+        constraints: ["GPA in range [0.0, 4.0]", "All display methods must be const"],
+      },
+    },
+  },
+
+  /* ==================== 5. OOP C++: CONSTRUCTORS & RAII ==================== */
+  "oop-constructors-raii": {
+    "oop-constructors-raii-task-1": {
+      nodeId: "oop-constructors-raii",
+      taskId: "oop-constructors-raii-task-1",
+      type: "theory",
+      headerTitle: "CORE THEORY: CONSTRUCTORS, DESTRUCTORS & RAII (O(1))",
+      moduleLabel: "Module 1 of 3:",
+      summaryLead:
+        "RAII ties dynamic resource acquisition (memory, file handles, mutexes) to object initialization and releases it in the destructor, guaranteeing zero memory leaks even under exceptions.",
+      cards: [
+        {
+          badge: "01",
+          title: "Constructor Initializer Lists",
+          detail: "Member initializer lists initialize fields directly upon allocation before the constructor body executes.",
+          tag: "Construction",
+        },
+        {
+          badge: "02",
+          title: "The Destructor Contract (~Class)",
+          detail: "Destructors execute automatically when stack objects go out of scope or delete is invoked on heap instances.",
+          tag: "Cleanup",
+        },
+        {
+          badge: "03",
+          title: "The Rule of Three Invariant",
+          detail: "If a class manages raw resources, you must explicitly declare Destructor, Copy Constructor, and Copy Assignment Operator.",
+          tag: "Rule of Three",
+        },
+        {
+          badge: "04",
+          title: "Shallow vs Deep Copying",
+          detail: "Default compiler copy copies raw pointer addresses, causing catastrophic double-free crashes when both instances destruct.",
+          tag: "Deep Copy",
+        },
+      ],
+      socraticCheck:
+        "What happens when an exception is thrown in a constructor after dynamic memory has already been allocated with new?",
+      slideLabel: "Open Lecture 02 Slides (PDF)",
+    },
+    "oop-constructors-raii-task-2": {
+      nodeId: "oop-constructors-raii",
+      taskId: "oop-constructors-raii-task-2",
+      type: "quiz",
+      headerTitle: "QUIZ: COPY CONSTRUCTOR & SHALLOW COPY HAZARDS",
+      questionLabel: "Question 2 of 3:",
+      questionPrompt:
+        "If class Array holds a raw pointer `int* data = new int[size]` and you rely on compiler-generated copy constructor, what bug occurs?",
+      options: [
+        { id: "A", text: "Double-free runtime crash due to shallow pointer copying", isCorrect: true },
+        { id: "B", text: "Compile-time error: raw pointer cannot be duplicated", isCorrect: false },
+        { id: "C", text: "Automatic deep clone performed by the OS virtual memory manager", isCorrect: false },
+        { id: "D", text: "The second object receives an empty nullptr", isCorrect: false },
+      ],
+      hints: {
+        awaiting: "Consider what happens when both object A and object B call delete[] on the same memory address in their destructors.",
+        correct: "Spot on! The compiler's default shallow copy copies the pointer value verbatim. When both objects go out of scope, the same address is deleted twice.",
+        incorrect: "The compiler will gladly synthesize a shallow copy, but runtime memory management will crash on the second destruction.",
+      },
+      slideLabel: "Open Lecture 02 Slides (PDF)",
+    },
+    "oop-constructors-raii-task-3": {
+      nodeId: "oop-constructors-raii",
+      taskId: "oop-constructors-raii-task-3",
+      type: "coding",
+      fileName: "solution.cpp",
+      language: "C++",
+      initialCode: `#include <iostream>
+#include <algorithm>
+using namespace std;
+
+class IntArray {
+private:
+    int* data;
+    size_t size;
+
+public:
+    // 1. Parameterized Constructor
+    IntArray(size_t s) : size(s), data(new int[s]()) {}
+
+    // 2. Destructor
+    ~IntArray() {
+        delete[] data;
+    }
+
+    // 3. Copy Constructor - Deep Copy
+    IntArray(const IntArray& other) : size(other.size) {
+        data = new int[other.size];
+        std::copy(other.data, other.data + other.size, data);
+    }
+
+    // 4. Copy Assignment Operator (Rule of Three)
+    IntArray& operator=(const IntArray& other) {
+        if (this != &other) {
+            delete[] data;
+            size = other.size;
+            data = new int[other.size];
+            std::copy(other.data, other.data + other.size, data);
+        }
+        return *this;
+    }
+
+    size_t getSize() const { return size; }
+    void set(size_t idx, int val) { if (idx < size) data[idx] = val; }
+    int get(size_t idx) const { return (idx < size) ? data[idx] : 0; }
+};
+
+int main() {
+    IntArray arr1(3);
+    arr1.set(0, 10);
+    arr1.set(1, 20);
+
+    IntArray arr2 = arr1; // Deep copy constructor
+    arr2.set(0, 99);
+
+    cout << "arr1[0] = " << arr1.get(0) << ", arr2[0] = " << arr2.get(0) << endl;
+    return 0;
+}`,
+      starterCode: `#include <iostream>
+#include <algorithm>
+using namespace std;
+
+class IntArray {
+private:
+    int* data;
+    size_t size;
+
+public:
+    IntArray(size_t s) : size(s), data(new int[s]()) {}
+    ~IntArray() { delete[] data; }
+
+    // TODO: Implement Deep Copy Constructor
+    IntArray(const IntArray& other) : size(other.size) {
+        // Deep copy data here
+    }
+
+    // TODO: Implement Copy Assignment Operator (operator=)
+    IntArray& operator=(const IntArray& other) {
+        if (this != &other) {
+            // Delete old memory, allocate new, copy elements
+        }
+        return *this;
+    }
+
+    size_t getSize() const { return size; }
+};
+
+int main() {
+    IntArray a(5);
+    IntArray b = a;
+    cout << "Deep copy verified!" << endl;
+    return 0;
+}`,
+      problem: {
+        title: "Dynamic IntArray with Rule of Three Deep Copy",
+        difficulty: "Medium",
+        description:
+          "Implement the Rule of Three for a dynamic IntArray class, ensuring deep copying and self-assignment guard.\n\nEnsure copy constructor and copy assignment operator allocate independent heap memory.",
+        inputFormat: "IntArray creation, copying, and mutation.",
+        outputFormat: "Deep copied array values independent of source.",
+        examples: [
+          { input: "IntArray b = a; b.set(0, 99);", output: "a[0] remains 10", explanation: "Mutation of b does not affect a." },
+        ],
+        constraints: ["Must prevent double-free", "Self-assignment (a = a) must be safe"],
+      },
+      description: {
+        title: "Dynamic IntArray with Rule of Three Deep Copy",
+        difficulty: "Medium",
+        difficultyColor: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+        paragraph1:
+          "Implement the Rule of Three for a dynamic IntArray class, ensuring deep copying and self-assignment guard.",
+        examples: [
+          { id: 1, input: "IntArray b = a; b.set(0, 99);", output: "a[0] remains 10", explanation: "Mutation of b does not affect a." },
+        ],
+        constraints: ["Must prevent double-free", "Self-assignment (a = a) must be safe"],
+      },
+    },
+  },
+
+  /* ==================== 6. OOP C++: OPERATOR OVERLOADING ==================== */
+  "oop-operator-overloading": {
+    "oop-operator-overloading-task-1": {
+      nodeId: "oop-operator-overloading",
+      taskId: "oop-operator-overloading-task-1",
+      type: "theory",
+      headerTitle: "CORE THEORY: OPERATOR OVERLOADING & FRIEND FUNCTIONS (O(1))",
+      moduleLabel: "Module 1 of 3:",
+      summaryLead:
+        "Operator overloading provides intuitive mathematical syntax for custom user-defined types without sacrificing type safety or runtime efficiency.",
+      cards: [
+        {
+          badge: "01",
+          title: "Member vs Non-member Operators",
+          detail: "Binary operators where the left-hand operand is a foreign type (e.g., std::ostream<<) must be declared as non-member friend functions.",
+          tag: "Syntax",
+        },
+        {
+          badge: "02",
+          title: "Stream Insertion (<<) & Extraction (>>)",
+          detail: "Always return ostream& / istream& by reference to enable fluent stream chaining (cout << a << b).",
+          tag: "Chaining",
+        },
+        {
+          badge: "03",
+          title: "Arithmetic Overload Patterns",
+          detail: "Implement compound assignment (+=) as a member first, then implement binary (+) as a non-member reusing (+=).",
+          tag: "Best Practice",
+        },
+        {
+          badge: "04",
+          title: "Comparison Operators & Spaceship (<=>)",
+          detail: "Providing == and < allows custom objects to be sorted and placed inside std::set and std::map.",
+          tag: "Sorting Support",
+        },
+      ],
+      socraticCheck:
+        "Why must operator<< for custom classes be implemented as a non-member friend function rather than a regular member function?",
+      slideLabel: "Open Lecture 03 Slides (PDF)",
+    },
+    "oop-operator-overloading-task-2": {
+      nodeId: "oop-operator-overloading",
+      taskId: "oop-operator-overloading-task-2",
+      type: "quiz",
+      headerTitle: "QUIZ: STREAM INSERTION OPERATOR SIGNATURES",
+      questionLabel: "Question 2 of 3:",
+      questionPrompt:
+        "What is the correct canonical signature for overloading the stream insertion operator `<<` for class Complex?",
+      options: [
+        { id: "A", text: "friend ostream& operator<<(ostream& os, const Complex& c)", isCorrect: true },
+        { id: "B", text: "ostream operator<<(const Complex& c)", isCorrect: false },
+        { id: "C", text: "void operator<<(ostream os, Complex c)", isCorrect: false },
+        { id: "D", text: "Complex& operator<<(ostream& os)", isCorrect: false },
+      ],
+      hints: {
+        awaiting: "Stream chaining requires returning the modified stream reference `os`.",
+        correct: "Spot on! Returning ostream& by reference allows chaining `cout << c1 << c2`.",
+        incorrect: "Streams cannot be copied (they are non-copyable in C++), so they must be passed and returned by reference.",
+      },
+      slideLabel: "Open Lecture 03 Slides (PDF)",
+    },
+    "oop-operator-overloading-task-3": {
+      nodeId: "oop-operator-overloading",
+      taskId: "oop-operator-overloading-task-3",
+      type: "coding",
+      fileName: "solution.cpp",
+      language: "C++",
+      initialCode: `#include <iostream>
+using namespace std;
+
+class Complex {
+private:
+    double real, imag;
+
+public:
+    Complex(double r = 0, double i = 0) : real(r), imag(i) {}
+
+    // Overload + operator
+    Complex operator+(const Complex& other) const {
+        return Complex(real + other.real, imag + other.imag);
+    }
+
+    // Overload << operator
+    friend ostream& operator<<(ostream& os, const Complex& c) {
+        os << c.real << " + " << c.imag << "i";
+        return os;
+    }
+};
+
+int main() {
+    Complex c1(3.0, 4.0), c2(1.5, 2.5);
+    Complex c3 = c1 + c2;
+    cout << "Sum: " << c3 << endl;
+    return 0;
+}`,
+      starterCode: `#include <iostream>
+using namespace std;
+
+class Complex {
+private:
+    double real, imag;
+
+public:
+    Complex(double r = 0, double i = 0) : real(r), imag(i) {}
+
+    // TODO: Overload operator+
+    Complex operator+(const Complex& other) const {
+        return Complex(0, 0);
+    }
+
+    // TODO: Overload operator<<
+    friend ostream& operator<<(ostream& os, const Complex& c) {
+        return os;
+    }
+};
+
+int main() {
+    Complex c1(1.0, 2.0), c2(3.0, 4.0);
+    cout << c1 + c2 << endl;
+    return 0;
+}`,
+      problem: {
+        title: "Complex Number Arithmetic & Stream Overloads",
+        difficulty: "Easy",
+        description:
+          "Overload operator+ and operator<< for a Complex number class.\n\nSupport arithmetic addition of real and imaginary parts, and stream insertion into std::ostream.",
+        inputFormat: "Complex objects c1 and c2.",
+        outputFormat: "Stream format `a + bi`.",
+        examples: [
+          { input: "c1(3,4) + c2(1,2)", output: "4 + 6i", explanation: "Real and imaginary components add component-wise." },
+        ],
+        constraints: ["Must support stream chaining `cout << a << b`"],
+      },
+      description: {
+        title: "Complex Number Arithmetic & Stream Overloads",
+        difficulty: "Easy",
+        difficultyColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+        paragraph1:
+          "Overload operator+ and operator<< for a Complex number class.",
+        examples: [
+          { id: 1, input: "c1(3,4) + c2(1,2)", output: "4 + 6i", explanation: "Real and imaginary components add component-wise." },
+        ],
+        constraints: ["Must support stream chaining"],
+      },
+    },
+  },
+
+  /* ==================== 7. OOP C++: INHERITANCE & POLYMORPHISM ==================== */
+  "oop-inheritance-polymorphism": {
+    "oop-inheritance-polymorphism-task-1": {
+      nodeId: "oop-inheritance-polymorphism",
+      taskId: "oop-inheritance-polymorphism-task-1",
+      type: "theory",
+      headerTitle: "CORE THEORY: INHERITANCE & RUNTIME POLYMORPHISM (O(1) VTABLE)",
+      moduleLabel: "Module 1 of 3:",
+      summaryLead:
+        "Polymorphism enables treating derived objects through base class pointers while dynamically dispatching to the overridden derived implementation via virtual method tables.",
+      cards: [
+        {
+          badge: "01",
+          title: "Public vs Private Inheritance",
+          detail: "Public inheritance represents an 'is-a' relationship adhering to the Liskov Substitution Principle.",
+          tag: "Inheritance",
+        },
+        {
+          badge: "02",
+          title: "Virtual Functions & VTable Mechanism",
+          detail: "Classes with virtual functions contain an invisible vptr pointer indexing a compiler-generated table of function pointers.",
+          tag: "VTable",
+        },
+        {
+          badge: "03",
+          title: "Virtual Destructors Obligation",
+          detail: "Always declare base class destructors as virtual to prevent partial destruction and memory leaks during polymorphic deletion.",
+          tag: "Destructor Guard",
+        },
+        {
+          badge: "04",
+          title: "Pure Virtual Functions & Interfaces",
+          detail: "A class with at least one pure virtual function (= 0) is abstract and cannot be instantiated directly.",
+          tag: "Abstract Class",
+        },
+      ],
+      socraticCheck:
+        "What critical disaster occurs if you delete a derived class object through a base class pointer whose destructor is NOT marked virtual?",
+      slideLabel: "Open Lecture 04 Slides (PDF)",
+    },
+    "oop-inheritance-polymorphism-task-2": {
+      nodeId: "oop-inheritance-polymorphism",
+      taskId: "oop-inheritance-polymorphism-task-2",
+      type: "quiz",
+      headerTitle: "QUIZ: PURE VIRTUAL FUNCTIONS & ABSTRACT CLASSES",
+      questionLabel: "Question 2 of 3:",
+      questionPrompt:
+        "What syntax declares a pure virtual function, transforming the containing class into an abstract base class?",
+      options: [
+        { id: "A", text: "virtual void draw() = 0;", isCorrect: true },
+        { id: "B", text: "abstract void draw();", isCorrect: false },
+        { id: "C", text: "virtual void draw() override;", isCorrect: false },
+        { id: "D", text: "pure virtual void draw();", isCorrect: false },
+      ],
+      hints: {
+        awaiting: "C++ uses the `= 0` specifier suffix rather than an abstract keyword.",
+        correct: "Correct! The `= 0` pure-specifier denotes an interface contract that derived classes must implement.",
+        incorrect: "C++ does not have an 'abstract' keyword for methods like Java or C#; it uses `= 0`.",
+      },
+      slideLabel: "Open Lecture 04 Slides (PDF)",
+    },
+    "oop-inheritance-polymorphism-task-3": {
+      nodeId: "oop-inheritance-polymorphism",
+      taskId: "oop-inheritance-polymorphism-task-3",
+      type: "coding",
+      fileName: "solution.cpp",
+      language: "C++",
+      initialCode: `#include <iostream>
+#include <vector>
+using namespace std;
+
+class Shape {
+public:
+    virtual ~Shape() {}
+    virtual double area() const = 0; // Pure virtual
+};
+
+class Rectangle : public Shape {
+private:
+    double width, height;
+public:
+    Rectangle(double w, double h) : width(w), height(h) {}
+    double area() const override {
+        return width * height;
+    }
+};
+
+class Circle : public Shape {
+private:
+    double radius;
+public:
+    Circle(double r) : radius(r) {}
+    double area() const override {
+        return 3.1415926535 * radius * radius;
+    }
+};
+
+int main() {
+    Rectangle r(4, 5);
+    Circle c(3);
+    cout << "Rectangle area: " << r.area() << ", Circle area: " << c.area() << endl;
+    return 0;
+}`,
+      starterCode: `#include <iostream>
+using namespace std;
+
+class Shape {
+public:
+    virtual ~Shape() {}
+    // TODO: Declare pure virtual area() method
+};
+
+class Rectangle : public Shape {
+    // TODO: Implement Rectangle area
+};
+
+int main() {
+    cout << "Polymorphic hierarchy ready!" << endl;
+    return 0;
+}`,
+      problem: {
+        title: "Polymorphic Shape Hierarchy (Circle & Rectangle)",
+        difficulty: "Medium",
+        description:
+          "Design an abstract Shape base class with pure virtual calculateArea() and calculatePerimeter() methods, and implement concrete Circle and Rectangle derived classes.\n\nEnsure base class destructor is declared virtual to support polymorphic deletion.",
+        inputFormat: "Polymorphic Shape pointer calls `shape->area()`.",
+        outputFormat: "Calculated areas and perimeters.",
+        examples: [
+          { input: "Rectangle(4, 5)", output: "Area = 20.0", explanation: "width * height" },
+        ],
+        constraints: ["Base class destructor must be virtual", "Virtual dispatch via Shape*"],
+      },
+      description: {
+        title: "Polymorphic Shape Hierarchy (Circle & Rectangle)",
+        difficulty: "Medium",
+        difficultyColor: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+        paragraph1:
+          "Design an abstract Shape base class with pure virtual area() and implement concrete derived classes.",
+        examples: [
+          { id: 1, input: "Rectangle(4, 5)", output: "Area = 20.0", explanation: "width * height" },
+        ],
+        constraints: ["Base class destructor must be virtual"],
+      },
+    },
+  },
+
+  /* ==================== 8. OOP C++: TEMPLATES & SMART POINTERS ==================== */
+  "oop-templates-smart-pointers": {
+    "oop-templates-smart-pointers-task-1": {
+      nodeId: "oop-templates-smart-pointers",
+      taskId: "oop-templates-smart-pointers-task-1",
+      type: "theory",
+      headerTitle: "CORE THEORY: TEMPLATES & SMART POINTERS (O(1))",
+      moduleLabel: "Module 1 of 3:",
+      summaryLead:
+        "C++ templates enable compile-time generic programming while smart pointers (std::unique_ptr and std::shared_ptr) automate memory management without garbage collection overhead.",
+      cards: [
+        {
+          badge: "01",
+          title: "Template Metaprogramming",
+          detail: "Templates generate specialized machine code for each instantiated type with zero runtime dispatch cost.",
+          tag: "Generics",
+        },
+        {
+          badge: "02",
+          title: "std::unique_ptr Exclusive Ownership",
+          detail: "std::unique_ptr owns a dynamically allocated object exclusively; copying is disabled, and transfer requires std::move.",
+          tag: "unique_ptr",
+        },
+        {
+          badge: "03",
+          title: "std::shared_ptr & Reference Counting",
+          detail: "Maintains an atomic control block counting references; automatically deallocates when the last shared_ptr destructs.",
+          tag: "shared_ptr",
+        },
+        {
+          badge: "04",
+          title: "std::weak_ptr Breaking Cycles",
+          detail: "std::weak_ptr observes a shared_ptr without incrementing the strong reference count, preventing cyclic memory leaks.",
+          tag: "weak_ptr",
+        },
+      ],
+      socraticCheck:
+        "Why does std::unique_ptr have zero runtime memory overhead compared to a raw pointer, whereas std::shared_ptr requires extra heap allocation?",
+      slideLabel: "Open Lecture 05 Slides (PDF)",
+    },
+    "oop-templates-smart-pointers-task-2": {
+      nodeId: "oop-templates-smart-pointers",
+      taskId: "oop-templates-smart-pointers-task-2",
+      type: "quiz",
+      headerTitle: "QUIZ: SMART POINTER OWNERSHIP & MOVE SEMANTICS",
+      questionLabel: "Question 2 of 3:",
+      questionPrompt:
+        "What happens when you attempt to copy an std::unique_ptr: `std::unique_ptr<int> p2 = p1;`?",
+      options: [
+        { id: "A", text: "Compile-time error: copy constructor is deleted", isCorrect: true },
+        { id: "B", text: "Runtime double-free crash", isCorrect: false },
+        { id: "C", text: "p1 transfers ownership automatically without move", isCorrect: false },
+        { id: "D", text: "Creates a shared reference count of 2", isCorrect: false },
+      ],
+      hints: {
+        awaiting: "unique_ptr models exclusive ownership. What does C++ do to prevent sharing?",
+        correct: "Spot on! The copy constructor of std::unique_ptr is explicitly deleted (`= delete`). Ownership can only be moved with `std::move`.",
+        incorrect: "The compiler rejects copying unique_ptr at compile time before the program can even run.",
+      },
+      slideLabel: "Open Lecture 05 Slides (PDF)",
+    },
+    "oop-templates-smart-pointers-task-3": {
+      nodeId: "oop-templates-smart-pointers",
+      taskId: "oop-templates-smart-pointers-task-3",
+      type: "coding",
+      fileName: "solution.cpp",
+      language: "C++",
+      initialCode: `#include <iostream>
+#include <memory>
+using namespace std;
+
+template <typename T>
+class SafeStack {
+private:
+    struct Node {
+        T data;
+        unique_ptr<Node> next;
+        Node(T val) : data(val), next(nullptr) {}
+    };
+    unique_ptr<Node> head;
+
+public:
+    SafeStack() : head(nullptr) {}
+
+    void push(T val) {
+        auto newNode = make_unique<Node>(val);
+        newNode->next = move(head);
+        head = move(newNode);
+    }
+
+    bool pop(T& val) {
+        if (!head) return false;
+        val = head->data;
+        head = move(head->next);
+        return true;
+    }
+
+    bool empty() const {
+        return head == nullptr;
+    }
+};
+
+int main() {
+    SafeStack<int> s;
+    s.push(10);
+    s.push(20);
+    int x;
+    while (s.pop(x)) {
+        cout << x << " ";
+    }
+    cout << endl;
+    return 0;
+}`,
+      starterCode: `#include <iostream>
+#include <memory>
+using namespace std;
+
+template <typename T>
+class SafeStack {
+    // TODO: Implement SafeStack with unique_ptr
+};
+
+int main() {
+    cout << "SafeStack template ready!" << endl;
+    return 0;
+}`,
+      problem: {
+        title: "Generic SafeStack with std::unique_ptr",
+        difficulty: "Hard",
+        description:
+          "Implement a generic SafeStack template using std::unique_ptr for node ownership, guaranteeing zero leaks.\n\nEnsure push and pop maintain strict LIFO semantics without manual delete calls.",
+        inputFormat: "Template instance `SafeStack<T>` operations.",
+        outputFormat: "Popped elements in reverse insertion order.",
+        examples: [
+          { input: "push(10); push(20); pop()", output: "20 then 10", explanation: "LIFO order preserved." },
+        ],
+        constraints: ["Zero raw delete calls allowed", "All node pointers must be unique_ptr"],
+      },
+      description: {
+        title: "Generic SafeStack with std::unique_ptr",
+        difficulty: "Hard",
+        difficultyColor: "text-red-400 bg-red-500/10 border-red-500/20",
+        paragraph1:
+          "Implement a generic SafeStack template using std::unique_ptr for node ownership, guaranteeing zero leaks.",
+        examples: [
+          { id: 1, input: "push(10); push(20); pop()", output: "20 then 10", explanation: "LIFO order preserved." },
+        ],
+        constraints: ["Zero raw delete calls allowed", "All node pointers must be unique_ptr"],
+      },
+    },
+  },
+      slideLabel: "Open Slide 06 (PDF)",
 }
 
 /**
@@ -545,6 +1341,24 @@ analysis: {
  */
 export function getWorkspaceTaskDetail(node, task) {
   if (!node || !task) return null
+
+  // Check for Admin visual builder overrides
+  if (typeof window !== "undefined") {
+    try {
+      const raw = window.localStorage.getItem("offbyone_curriculum_override_v2")
+      if (raw) {
+        const overrides = JSON.parse(raw)
+        if (overrides.tasks && overrides.tasks[task.id]?.content) {
+          return {
+            ...overrides.tasks[task.id].content,
+            nodeId: node.id,
+            taskId: task.id,
+            type: task.type || overrides.tasks[task.id].task_type,
+          }
+        }
+      }
+    } catch {}
+  }
 
   const nodeBucket = WORKSPACE_TASK_DETAILS[node.id]
   if (nodeBucket && nodeBucket[task.id]) {
