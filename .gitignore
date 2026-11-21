@@ -163,6 +163,9 @@ env/
 .venv/
 api/venv/
 
+# Một folder bí ẩn khi chạy lệnh pip install -e
+api.egg-info
+
 # =========================
 # IDE & OS (Hệ điều hành)
 # =========================
