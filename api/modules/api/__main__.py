@@ -4,10 +4,14 @@ from modules.common.config import ALLOWED_ORIGINS
 from modules.authenticate.login import router as login_router
 from modules.authenticate.signup import router as signup_router
 from modules.authenticate.logout import router as logout_router
-from modules.judge.evaluate import router as judge_router
 from modules.lecture.roadmap import router as roadmap_router
 from modules.lecture.ocr import router as ocr_router
-from modules.tutor import router as tutor_router
+
+# Import an toàn router chấm code nếu tồn tại
+try:
+    from modules.exercise.evaluate import router as judge_router
+except Exception:
+    judge_router = None
 
 app = FastAPI(
     title="OffByOne AI CS Tutor API",
@@ -29,9 +33,10 @@ app.include_router(login_router)
 app.include_router(signup_router)
 app.include_router(logout_router)
 app.include_router(roadmap_router)
-app.include_router(judge_router)
 app.include_router(ocr_router)
-app.include_router(tutor_router)
+if judge_router:
+    app.include_router(judge_router)
+
 
 @app.get("/")
 def read_root():
